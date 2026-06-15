@@ -85,17 +85,18 @@ function StatCounter({ value, label }: { value: number; label: string }) {
   );
 }
 
-function RegistrationForm({ event, onClose, cfg }: { event: Event; onClose: () => void; cfg: FormConfig }) {
+function RegistrationForm({ event, onClose, cfg, initialTab }: { event: Event; onClose: () => void; cfg: FormConfig; initialTab?: string }) {
   const enabledTypes = cfg.enabled_types || ['startup', 'general'];
-  const [tab, setTab] = useState<string>(enabledTypes[0] || 'general');
+  const [tab, setTab] = useState<string>(initialTab && enabledTypes.includes(initialTab) ? initialTab : (enabledTypes[0] || 'general'));
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({
     full_name: '', email: '', phone: '', city: '', motivation: '',
     company_name: '', sector: '', stage: '', team_size: '', website: '', description: '',
+    work_field: '', participation_reason: '',
     agreed: false,
-  });
+  } as Record<string, any>);
 
   const set = (k: string, v: string | boolean) => setForm(f => ({ ...f, [k]: v }));
   const primaryColor = event.primary_color || '#6C63FF';
@@ -111,6 +112,10 @@ function RegistrationForm({ event, onClose, cfg }: { event: Event; onClose: () =
         ...(cfg.show_phone ? { phone: form.phone } : {}),
         ...(cfg.show_city ? { city: form.city } : {}),
         ...(cfg.show_motivation ? { motivation: form.motivation } : {}),
+        // extra_fields for this tab
+        ...Object.fromEntries(
+          (cfg.extra_fields || []).filter(f => f.for_types.includes(tab)).map(f => [f.key, form[f.key] || null])
+        ),
         ...(tab === 'startup' ? {
           company_name: form.company_name, sector: form.sector, stage: form.stage,
           team_size: form.team_size, website: form.website, description: form.description
@@ -178,6 +183,22 @@ function RegistrationForm({ event, onClose, cfg }: { event: Event; onClose: () =
             <textarea className="input-field" rows={3} value={form.motivation} onChange={e => set('motivation', e.target.value)} placeholder="اكتب إجابتك هنا..." />
           </div>
         )}
+        {/* Extra fields for this tab */}
+        {(cfg.extra_fields || []).filter(f => f.for_types.includes(tab)).map(f => (
+          <div key={f.key} className={f.type === 'textarea' ? 'md:col-span-2' : ''}>
+            <label className="block text-sm text-[var(--text-muted)] mb-1">{f.label}{f.required ? ' *' : ''}</label>
+            {f.type === 'select' ? (
+              <select className="input-field" required={f.required} value={form[f.key] || ''} onChange={e => set(f.key, e.target.value)}>
+                <option value="">اختر...</option>
+                {(f.options || []).map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
+            ) : f.type === 'textarea' ? (
+              <textarea className="input-field" required={f.required} rows={3} value={form[f.key] || ''} onChange={e => set(f.key, e.target.value)} placeholder={f.placeholder || ''} />
+            ) : (
+              <input className="input-field" required={f.required} value={form[f.key] || ''} onChange={e => set(f.key, e.target.value)} placeholder={f.placeholder || ''} />
+            )}
+          </div>
+        ))}
       </div>
 
       {/* Startup-specific */}
@@ -262,8 +283,10 @@ export default function EventLandingClient() {
     cities: ['دمشق','حلب','حمص','اللاذقية','طرطوس','حماة','دير الزور','الرقة','القامشلي','إدلب','درعا','خارج سوريا'],
     sectors: ['تكنولوجيا المعلومات','التجارة الإلكترونية','التعليم','الصحة','التمويل والدفع','الزراعة','الطاقة','التصنيع','الخدمات اللوجستية','أخرى'],
     stages: ['فكرة','نموذج أولي MVP','مرحلة مبكرة','نمو','توسع'],
-    type_labels: { startup: '🚀 شركة ناشئة', general: '👤 حضور عام', investor: '💼 مستثمر', speaker: '🎙️ متحدث', sponsor: '🏅 راعي', media: '📹 إعلام' },
-  });
+    type_labels: { startup: '🚀 شركة ناشئة', general: '👤 حضور عام', investor: '💼 مستثمر', speaker: '🎙️ متحدث', sponsor: '🏅 راعي', media: '📹 إعلام' },    extra_fields: [
+      { key: 'work_field', label: 'مجال العمل أو الاهتمام', type: 'text', placeholder: 'مثل: تقنية معلومات، تعليم، طب...', required: false, for_types: ['general','investor','speaker','media'] },
+      { key: 'participation_reason', label: 'لماذا تريد المشاركة في القمة؟', type: 'textarea', placeholder: 'شاركنا بدوافعك...', required: false, for_types: ['general','investor'] },
+    ],  });
   const [siteCfg, setSiteCfg] = useState<SiteConfig>({
     hero_abbr: 'S3',
     hero_btn_primary: '🚀 سجّل شركتك الناشئة',
@@ -285,6 +308,8 @@ export default function EventLandingClient() {
   });
   const [activeDay, setActiveDay] = useState(0);
   const [showRegModal, setShowRegModal] = useState(false);
+  const [regInitialTab, setRegInitialTab] = useState<string | undefined>(undefined);
+  const openModal = (tab?: string) => { setRegInitialTab(tab); setShowRegModal(true); };
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -367,7 +392,7 @@ export default function EventLandingClient() {
               </a>
             ))}
           </div>
-          <button onClick={() => setShowRegModal(true)} className="btn-primary text-sm py-2 px-4">
+          <button onClick={() => openModal()} className="btn-primary text-sm py-2 px-4">
             سجّل الآن
           </button>
         </div>
@@ -410,8 +435,8 @@ export default function EventLandingClient() {
           <Countdown targetDate={startDate + 'T09:00:00'} />
 
           <div className="flex flex-wrap gap-3 justify-center">
-            <button onClick={() => setShowRegModal(true)} className="btn-primary">{siteCfg.hero_btn_primary}</button>
-            {siteCfg.hero_btn_secondary && <button onClick={() => setShowRegModal(true)} className="btn-outline">{siteCfg.hero_btn_secondary}</button>}
+            <button onClick={() => openModal('startup')} className="btn-primary">{siteCfg.hero_btn_primary}</button>
+            {siteCfg.hero_btn_secondary && <button onClick={() => openModal('general')} className="btn-outline">{siteCfg.hero_btn_secondary}</button>}
           </div>
         </div>
       </section>
@@ -567,7 +592,7 @@ export default function EventLandingClient() {
             <p className="text-[var(--text-muted)] mt-2">{cfg.form_subtitle || 'سجّل الآن وكن جزءاً من أكبر تجمع لريادة الأعمال'}</p>
           </div>
           <div className="card" style={{ background: 'rgba(13,11,26,0.9)' }}>
-            {event ? <RegistrationForm event={event} onClose={() => {}} cfg={cfg} /> : (
+            {event ? <RegistrationForm event={event} onClose={() => {}} cfg={cfg} initialTab={regInitialTab} /> : (
               <p className="text-center text-[var(--text-muted)] py-8">لم يتم تحميل بيانات الفعالية.</p>
             )}
           </div>
@@ -643,7 +668,7 @@ export default function EventLandingClient() {
               <h3 className="text-xl font-bold text-white">التسجيل في القمة</h3>
               <button onClick={() => setShowRegModal(false)} className="text-[var(--text-muted)] hover:text-white text-2xl leading-none">×</button>
             </div>
-            {event && <RegistrationForm event={event} onClose={() => setShowRegModal(false)} cfg={cfg} />}
+            {event && <RegistrationForm event={event} onClose={() => setShowRegModal(false)} cfg={cfg} initialTab={regInitialTab} />}
           </div>
         </div>
       )}

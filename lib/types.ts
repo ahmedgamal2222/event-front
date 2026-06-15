@@ -9,6 +9,16 @@ export interface SiteConfig {
   about_cards: Array<{ emoji: string; title: string; desc: string }>;
 }
 
+export interface ExtraField {
+  key: string;           // مفتاح الحقل (يُرسل للـ API)
+  label: string;         // التسمية العربية
+  type: 'text' | 'textarea' | 'select';
+  placeholder?: string;
+  required: boolean;
+  options?: string[];    // للـ select فقط
+  for_types: string[];   // أنواع التسجيل التي يظهر فيها
+}
+
 export interface FormConfig {
   enabled_types: string[];
   form_title: string;
@@ -24,6 +34,7 @@ export interface FormConfig {
   sectors: string[];
   stages: string[];
   type_labels: Record<string, string>;
+  extra_fields: ExtraField[];
 }
 
 export interface Event {

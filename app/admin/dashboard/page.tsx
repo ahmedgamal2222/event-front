@@ -332,7 +332,7 @@ function RegistrationsTab({ eventId, token, router }: any) {
             <span style={{ fontWeight: 700, color: 'white', fontSize: '0.95rem' }}>التفاصيل</span>
             <button onClick={() => setSelected(null)} style={{ color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
           </div>
-          {([['الاسم',selected.full_name],['البريد',selected.email],['الهاتف',selected.phone||'—'],['المدينة',selected.city||'—'],['المنظمة',selected.organization||'—'],['المسمى',selected.job_title||'—'],['الدوافع',selected.motivation||'—']] as [string,string][]).map(([k,v]) => (
+          {([['الاسم',selected.full_name],['البريد',selected.email],['الهاتف',selected.phone||'—'],['المدينة',selected.city||'—'],['المنظمة',selected.organization||'—'],['المسمى',selected.job_title||'—'],['الدوافع',selected.motivation||'—'],['مجال العمل',selected.work_field||'—'],['سبب المشاركة',selected.participation_reason||'—']] as [string,string][]).map(([k,v]) => (
             <div key={k} style={{ marginBottom: 6 }}>
               <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{k}: </span>
               <span style={{ fontSize: '0.82rem', color: 'white' }}>{v}</span>
@@ -691,6 +691,10 @@ const DEFAULT_CFG: FormConfig = {
   sectors: ['تكنولوجيا المعلومات','التجارة الإلكترونية','التعليم','الصحة','التمويل والدفع','الزراعة','الطاقة','التصنيع','الخدمات اللوجستية','أخرى'],
   stages: ['فكرة','نموذج أولي MVP','مرحلة مبكرة','نمو','توسع'],
   type_labels: { ...TYPE_LABEL_DEFAULTS },
+  extra_fields: [
+    { key: 'work_field', label: 'مجال العمل أو الاهتمام', type: 'text' as const, placeholder: 'مثل: تقنية، تعليم، طب...', required: false, for_types: ['general','investor','speaker','media'] },
+    { key: 'participation_reason', label: 'لماذا تريد المشاركة في القمة؟', type: 'textarea' as const, placeholder: 'شاركنا بدوافعك...', required: false, for_types: ['general','investor'] },
+  ],
 };
 
 function FormConfigTab({ eventId, token, save, saving }: any) {
@@ -699,6 +703,7 @@ function FormConfigTab({ eventId, token, save, saving }: any) {
   const [newCity, setNewCity] = useState('');
   const [newSector, setNewSector] = useState('');
   const [newStage, setNewStage] = useState('');
+  const [newFieldOptions, setNewFieldOptions] = useState<Record<number,string>>({});
 
   useEffect(() => {
     if (!token) return;
@@ -723,6 +728,23 @@ function FormConfigTab({ eventId, token, save, saving }: any) {
     set(key, [...(cfg[key] as string[]), val.trim()]);
     clearFn();
   };
+
+  // Extra fields helpers
+  const setField = (i: number, k: string, v: any) =>
+    setCfg(f => ({ ...f, extra_fields: (f.extra_fields||[]).map((ef, idx) => idx === i ? { ...ef, [k]: v } : ef) }));
+  const toggleFieldType = (i: number, t: string) =>
+    setCfg(f => ({ ...f, extra_fields: (f.extra_fields||[]).map((ef, idx) => idx === i ? { ...ef, for_types: ef.for_types.includes(t) ? ef.for_types.filter(x => x !== t) : [...ef.for_types, t] } : ef) }));
+  const addFieldOption = (i: number) => {
+    const val = (newFieldOptions[i] || '').trim();
+    if (!val) return;
+    setField(i, 'options', [...((cfg.extra_fields||[])[i]?.options||[]), val]);
+    setNewFieldOptions(p => ({ ...p, [i]: '' }));
+  };
+  const removeFieldOption = (i: number, opt: string) =>
+    setField(i, 'options', ((cfg.extra_fields||[])[i]?.options||[]).filter(o => o !== opt));
+  const addExtraField = () => setCfg(f => ({ ...f, extra_fields: [...(f.extra_fields||[]), { key: `field_${Date.now()}`, label: 'حقل جديد', type: 'text' as const, placeholder: '', required: false, for_types: ['general'] }] }));
+  const removeExtraField = (i: number) => setCfg(f => ({ ...f, extra_fields: (f.extra_fields||[]).filter((_, idx) => idx !== i) }));
+
   const saveAll = () => save(async () => { await updateEvent(eventId, { form_config: cfg }, token); });
 
   if (!loaded) return <p style={{ color: '#94a3b8' }}>جار التحميل...</p>;
@@ -822,6 +844,68 @@ function FormConfigTab({ eventId, token, save, saving }: any) {
           </div>
         </div>
       ))}
+
+      {/* حقول مخصصة */}
+      <div style={S.card}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <h3 style={{ color: 'white', fontWeight: 700 }}>حقول مخصصة إضافية</h3>
+          <button style={S.btn()} onClick={addExtraField}>+ حقل جديد</button>
+        </div>
+        {(cfg.extra_fields||[]).length === 0 && <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>لا توجد حقول مضافة بعد.</p>}
+        {(cfg.extra_fields||[]).map((ef, i) => (
+          <div key={i} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '0.9rem', marginBottom: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+              <Field label="مفتاح الحقل (key - بالإنجليزية)">
+                <input value={ef.key} onChange={e => setField(i, 'key', e.target.value.replace(/\s/g,'_').toLowerCase())} style={S.inp} placeholder="work_field" />
+              </Field>
+              <Field label="التسمية العربية">
+                <input value={ef.label} onChange={e => setField(i, 'label', e.target.value)} style={S.inp} />
+              </Field>
+              <Field label="نوع الحقل">
+                <select value={ef.type} onChange={e => setField(i, 'type', e.target.value)} style={S.inp}>
+                  <option value="text">نص قصير</option>
+                  <option value="textarea">نص طويل</option>
+                  <option value="select">قائمة اختيار</option>
+                </select>
+              </Field>
+              <Field label="نص التوضيح (placeholder)">
+                <input value={ef.placeholder||''} onChange={e => setField(i, 'placeholder', e.target.value)} style={S.inp} />
+              </Field>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 10, flexWrap: 'wrap' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#e2e8f0', fontSize: '0.85rem', cursor: 'pointer' }}>
+                <input type="checkbox" checked={ef.required} onChange={e => setField(i, 'required', e.target.checked)} /> إلزامي
+              </label>
+              <span style={{ color: '#94a3b8', fontSize: '0.78rem' }}>يظهر في:</span>
+              {ALL_REG_TYPES.map(t => (
+                <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 4, color: ef.for_types.includes(t) ? 'white' : '#94a3b8', fontSize: '0.78rem', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={ef.for_types.includes(t)} onChange={() => toggleFieldType(i, t)} /> {TYPE_LABEL_DEFAULTS[t]}
+                </label>
+              ))}
+            </div>
+            {ef.type === 'select' && (
+              <div style={{ marginBottom: 8 }}>
+                <label style={S.label}>خيارات القائمة</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
+                  {(ef.options||[]).map(opt => (
+                    <span key={opt} style={{ background: 'rgba(108,99,255,0.2)', borderRadius: 5, padding: '0.2rem 0.5rem', fontSize: '0.8rem', color: 'white', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      {opt}
+                      <button onClick={() => removeFieldOption(i, opt)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>×</button>
+                    </span>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input value={newFieldOptions[i]||''} onChange={e => setNewFieldOptions(p => ({ ...p, [i]: e.target.value }))}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addFieldOption(i); } }}
+                    placeholder="أضف خياراً..." style={{ ...S.inp, flex: 1 }} />
+                  <button style={S.btn()} onClick={() => addFieldOption(i)}>إضافة</button>
+                </div>
+              </div>
+            )}
+            <button style={S.del} onClick={() => removeExtraField(i)}>حذف الحقل</button>
+          </div>
+        ))}
+      </div>
 
       <div style={{ paddingBottom: 8 }}>
         <SaveBtn loading={saving} onClick={saveAll} />
