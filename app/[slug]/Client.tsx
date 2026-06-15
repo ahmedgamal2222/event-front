@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { Event, Speaker, AgendaDay, Stats, Sponsor, Faq } from '../../lib/types';
+import { Event, Speaker, AgendaDay, Stats, Sponsor, Faq, FormConfig } from '../../lib/types';
 import { fetchEvent, fetchSpeakers, fetchAgenda, fetchStats, fetchSponsors, fetchFaqs, submitRegistration } from '../../lib/api';
 
 const API_EVENT_SLUG = process.env.NEXT_PUBLIC_EVENT_SLUG || 's3-summit-2026';
@@ -85,27 +85,32 @@ function StatCounter({ value, label }: { value: number; label: string }) {
   );
 }
 
-function RegistrationForm({ event, onClose }: { event: Event; onClose: () => void }) {
-  const [tab, setTab] = useState<'startup' | 'general'>('startup');
+function RegistrationForm({ event, onClose, cfg }: { event: Event; onClose: () => void; cfg: FormConfig }) {
+  const enabledTypes = cfg.enabled_types || ['startup', 'general'];
+  const [tab, setTab] = useState<string>(enabledTypes[0] || 'general');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({
-    full_name: '', email: '', phone: '', city: '',
+    full_name: '', email: '', phone: '', city: '', motivation: '',
     company_name: '', sector: '', stage: '', team_size: '', website: '', description: '',
     agreed: false,
   });
 
   const set = (k: string, v: string | boolean) => setForm(f => ({ ...f, [k]: v }));
+  const primaryColor = event.primary_color || '#6C63FF';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.agreed) { setError('يجب الموافقة على الشروط والأحكام'); return; }
+    if (!form.agreed) { setError('يجب الموافقة على ' + cfg.terms_text); return; }
     setLoading(true); setError('');
     try {
       await submitRegistration(event.id, {
         reg_type: tab,
-        full_name: form.full_name, email: form.email, phone: form.phone, city: form.city,
+        full_name: form.full_name, email: form.email,
+        ...(cfg.show_phone ? { phone: form.phone } : {}),
+        ...(cfg.show_city ? { city: form.city } : {}),
+        ...(cfg.show_motivation ? { motivation: form.motivation } : {}),
         ...(tab === 'startup' ? {
           company_name: form.company_name, sector: form.sector, stage: form.stage,
           team_size: form.team_size, website: form.website, description: form.description
@@ -129,16 +134,18 @@ function RegistrationForm({ event, onClose }: { event: Event; onClose: () => voi
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Tab switcher */}
-      <div className="flex gap-2 p-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.05)' }}>
-        {([['startup', '🚀 تسجيل شركة ناشئة'], ['general', '👤 مشاركة عامة']] as const).map(([t, l]) => (
-          <button key={t} type="button" onClick={() => setTab(t)}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-semibold transition-all ${tab === t ? 'text-white' : 'text-[var(--text-muted)]'}`}
-            style={{ background: tab === t ? 'var(--primary)' : 'transparent' }}>
-            {l}
-          </button>
-        ))}
-      </div>
+      {/* Tab switcher – only show if more than 1 enabled type */}
+      {enabledTypes.length > 1 && (
+        <div className="flex flex-wrap gap-2 p-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.05)' }}>
+          {enabledTypes.map(t => (
+            <button key={t} type="button" onClick={() => setTab(t)}
+              className={`flex-1 py-2 px-3 rounded-md text-sm font-semibold transition-all ${tab === t ? 'text-white' : 'text-[var(--text-muted)]'}`}
+              style={{ background: tab === t ? primaryColor : 'transparent', minWidth: 100 }}>
+              {cfg.type_labels?.[t] || t}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Personal info */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -150,74 +157,73 @@ function RegistrationForm({ event, onClose }: { event: Event; onClose: () => voi
           <label className="block text-sm text-[var(--text-muted)] mb-1">البريد الإلكتروني *</label>
           <input className="input-field" type="email" required value={form.email} onChange={e => set('email', e.target.value)} placeholder="example@email.com" />
         </div>
-        <div>
-          <label className="block text-sm text-[var(--text-muted)] mb-1">رقم الهاتف</label>
-          <input className="input-field" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+963..." />
-        </div>
-        <div>
-          <label className="block text-sm text-[var(--text-muted)] mb-1">المدينة</label>
-          <select className="input-field" value={form.city} onChange={e => set('city', e.target.value)}>
-            <option value="">اختر المدينة</option>
-            {['دمشق','حلب','حمص','اللاذقية','طرطوس','حماة','دير الزور','الرقة','القامشلي','إدلب','درعا'].map(c => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-            <option value="خارج سوريا">خارج سوريا</option>
-          </select>
-        </div>
+        {cfg.show_phone && (
+          <div>
+            <label className="block text-sm text-[var(--text-muted)] mb-1">رقم الهاتف {cfg.require_phone ? '*' : ''}</label>
+            <input className="input-field" required={cfg.require_phone} value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+963..." />
+          </div>
+        )}
+        {cfg.show_city && (
+          <div>
+            <label className="block text-sm text-[var(--text-muted)] mb-1">المدينة {cfg.require_city ? '*' : ''}</label>
+            <select className="input-field" required={cfg.require_city} value={form.city} onChange={e => set('city', e.target.value)}>
+              <option value="">اختر المدينة</option>
+              {(cfg.cities || []).map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+        )}
+        {cfg.show_motivation && (
+          <div className="md:col-span-2">
+            <label className="block text-sm text-[var(--text-muted)] mb-1">{cfg.motivation_label || 'الدوافع'}</label>
+            <textarea className="input-field" rows={3} value={form.motivation} onChange={e => set('motivation', e.target.value)} placeholder="اكتب إجابتك هنا..." />
+          </div>
+        )}
       </div>
 
       {/* Startup-specific */}
       {tab === 'startup' && (
-        <>
-          <div className="border-t border-[var(--border)] pt-4">
-            <h4 className="text-white font-semibold mb-3">معلومات الشركة</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-[var(--text-muted)] mb-1">اسم الشركة *</label>
-                <input className="input-field" required value={form.company_name} onChange={e => set('company_name', e.target.value)} placeholder="اسم شركتك الناشئة" />
-              </div>
-              <div>
-                <label className="block text-sm text-[var(--text-muted)] mb-1">قطاع العمل *</label>
-                <select className="input-field" required value={form.sector} onChange={e => set('sector', e.target.value)}>
-                  <option value="">اختر القطاع</option>
-                  {['تكنولوجيا المعلومات','التجارة الإلكترونية','التعليم','الصحة','التمويل والدفع','الزراعة','الطاقة','التصنيع','الخدمات اللوجستية','أخرى'].map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-[var(--text-muted)] mb-1">مرحلة الشركة *</label>
-                <select className="input-field" required value={form.stage} onChange={e => set('stage', e.target.value)}>
-                  <option value="">اختر المرحلة</option>
-                  <option value="idea">فكرة</option>
-                  <option value="mvp">نموذج أولي MVP</option>
-                  <option value="early">مرحلة مبكرة</option>
-                  <option value="growth">نمو</option>
-                  <option value="scaling">توسع</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-[var(--text-muted)] mb-1">حجم الفريق</label>
-                <select className="input-field" value={form.team_size} onChange={e => set('team_size', e.target.value)}>
-                  <option value="">اختر الحجم</option>
-                  <option value="1">مؤسس منفرد</option>
-                  <option value="2-5">٢ – ٥ أشخاص</option>
-                  <option value="6-10">٦ – ١٠ أشخاص</option>
-                  <option value="11-20">١١ – ٢٠ شخصاً</option>
-                  <option value="20+">أكثر من ٢٠</option>
-                </select>
-              </div>
+        <div className="border-t border-[var(--border)] pt-4">
+          <h4 className="text-white font-semibold mb-3">معلومات الشركة</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-[var(--text-muted)] mb-1">اسم الشركة *</label>
+              <input className="input-field" required value={form.company_name} onChange={e => set('company_name', e.target.value)} placeholder="اسم شركتك الناشئة" />
             </div>
-            <div className="mt-4">
-              <label className="block text-sm text-[var(--text-muted)] mb-1">الموقع الإلكتروني أو وسائل التواصل</label>
-              <input className="input-field" value={form.website} onChange={e => set('website', e.target.value)} placeholder="https://..." />
+            <div>
+              <label className="block text-sm text-[var(--text-muted)] mb-1">قطاع العمل *</label>
+              <select className="input-field" required value={form.sector} onChange={e => set('sector', e.target.value)}>
+                <option value="">اختر القطاع</option>
+                {(cfg.sectors || []).map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
             </div>
-            <div className="mt-4">
-              <label className="block text-sm text-[var(--text-muted)] mb-1">نبذة عن الشركة وفكرتها *</label>
-              <textarea className="input-field" required rows={4} value={form.description} onChange={e => set('description', e.target.value)} placeholder="اشرح فكرة شركتك، المشكلة التي تحلها، وما الذي يميزها..." />
+            <div>
+              <label className="block text-sm text-[var(--text-muted)] mb-1">مرحلة الشركة *</label>
+              <select className="input-field" required value={form.stage} onChange={e => set('stage', e.target.value)}>
+                <option value="">اختر المرحلة</option>
+                {(cfg.stages || []).map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-[var(--text-muted)] mb-1">حجم الفريق</label>
+              <select className="input-field" value={form.team_size} onChange={e => set('team_size', e.target.value)}>
+                <option value="">اختر الحجم</option>
+                <option value="1">مؤسس منفرد</option>
+                <option value="2-5">٢ – ٥ أشخاص</option>
+                <option value="6-10">٦ – ١٠ أشخاص</option>
+                <option value="11-20">١١ – ٢٠ شخصاً</option>
+                <option value="20+">أكثر من ٢٠</option>
+              </select>
             </div>
           </div>
-        </>
+          <div className="mt-4">
+            <label className="block text-sm text-[var(--text-muted)] mb-1">الموقع الإلكتروني أو وسائل التواصل</label>
+            <input className="input-field" value={form.website} onChange={e => set('website', e.target.value)} placeholder="https://..." />
+          </div>
+          <div className="mt-4">
+            <label className="block text-sm text-[var(--text-muted)] mb-1">نبذة عن الشركة وفكرتها *</label>
+            <textarea className="input-field" required rows={4} value={form.description} onChange={e => set('description', e.target.value)} placeholder="اشرح فكرة شركتك، المشكلة التي تحلها، وما الذي يميزها..." />
+          </div>
+        </div>
       )}
 
       {/* Terms */}
@@ -225,7 +231,7 @@ function RegistrationForm({ event, onClose }: { event: Event; onClose: () => voi
         <input type="checkbox" checked={form.agreed} onChange={e => set('agreed', e.target.checked)}
           className="mt-1 w-4 h-4 accent-[var(--primary)]" />
         <span className="text-sm text-[var(--text-muted)]">
-          أوافق على <a href="#" className="text-[var(--primary)] hover:underline">الشروط والأحكام</a> وسياسة الخصوصية
+          {cfg.terms_text || 'أوافق على الشروط والأحكام وسياسة الخصوصية'}
         </span>
       </label>
 
@@ -245,6 +251,19 @@ export default function EventLandingClient() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [faqs, setFaqs] = useState<Faq[]>([]);
+  const [cfg, setCfg] = useState<FormConfig>({
+    enabled_types: ['startup', 'general'],
+    form_title: 'سجّل في القمة',
+    form_subtitle: 'كن جزءاً من أكبر تجمع لريادة الأعمال',
+    show_phone: true, require_phone: false,
+    show_city: true, require_city: false,
+    show_motivation: false, motivation_label: 'لماذا تريد الحضور؟',
+    terms_text: 'أوافق على الشروط والأحكام وسياسة الخصوصية',
+    cities: ['دمشق','حلب','حمص','اللاذقية','طرطوس','حماة','دير الزور','الرقة','القامشلي','إدلب','درعا','خارج سوريا'],
+    sectors: ['تكنولوجيا المعلومات','التجارة الإلكترونية','التعليم','الصحة','التمويل والدفع','الزراعة','الطاقة','التصنيع','الخدمات اللوجستية','أخرى'],
+    stages: ['فكرة','نموذج أولي MVP','مرحلة مبكرة','نمو','توسع'],
+    type_labels: { startup: '🚀 شركة ناشئة', general: '👤 حضور عام', investor: '💼 مستثمر', speaker: '🎙️ متحدث', sponsor: '🏅 راعي', media: '📹 إعلام' },
+  });
   const [activeDay, setActiveDay] = useState(0);
   const [showRegModal, setShowRegModal] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -256,6 +275,12 @@ export default function EventLandingClient() {
         const eventRes = await fetchEvent(API_EVENT_SLUG);
         const ev: Event = eventRes.data;
         setEvent(ev);
+        // Parse form_config
+        if (ev.form_config) {
+          try { setCfg(JSON.parse(ev.form_config)); } catch {}
+        }
+        // Update browser title dynamically
+        document.title = `${ev.name_ar || ev.name} – ${ev.tagline_ar || ev.tagline || ''}`;
         const [spRes, agRes, stRes, spnRes, fqRes] = await Promise.all([
           fetchSpeakers(ev.id), fetchAgenda(ev.id), fetchStats(ev.id), fetchSponsors(ev.id), fetchFaqs(ev.id)
         ]);
@@ -310,7 +335,7 @@ export default function EventLandingClient() {
       <nav className="fixed top-0 w-full z-50 glass" style={{ borderBottom: '1px solid rgba(108,99,255,0.2)' }}>
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <a href="#" className="font-black text-xl text-white" style={{ letterSpacing: '-0.02em' }}>
-            <span style={{ color: primaryColor }}>S3</span> Summit
+            <span style={{ color: primaryColor }}>{event?.name?.split(' ')[0] || 'S3'}</span> {event?.name?.split(' ').slice(1).join(' ') || 'Summit'}
           </a>
           <div className="hidden md:flex items-center gap-6">
             {navLinks.map(l => (
@@ -521,11 +546,11 @@ export default function EventLandingClient() {
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
             <div className="section-badge">التسجيل</div>
-            <h2 className="section-title">انضم إلى القمة</h2>
-            <p className="text-[var(--text-muted)] mt-2">سجّل الآن وكن جزءاً من أكبر تجمع لريادة الأعمال</p>
+            <h2 className="section-title">{cfg.form_title || 'انضم إلى القمة'}</h2>
+            <p className="text-[var(--text-muted)] mt-2">{cfg.form_subtitle || 'سجّل الآن وكن جزءاً من أكبر تجمع لريادة الأعمال'}</p>
           </div>
           <div className="card" style={{ background: 'rgba(13,11,26,0.9)' }}>
-            {event ? <RegistrationForm event={event} onClose={() => {}} /> : (
+            {event ? <RegistrationForm event={event} onClose={() => {}} cfg={cfg} /> : (
               <p className="text-center text-[var(--text-muted)] py-8">لم يتم تحميل بيانات الفعالية.</p>
             )}
           </div>
@@ -588,7 +613,7 @@ export default function EventLandingClient() {
           </div>
         </div>
         <div className="max-w-6xl mx-auto mt-8 pt-6 text-center text-sm text-[var(--text-muted)]" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-          © {ed.year} S³ Summit · جميع الحقوق محفوظة
+          © {ed.year} {event?.name_ar || event?.name || 'S³ Summit'} · جميع الحقوق محفوظة
         </div>
       </footer>
 
@@ -601,7 +626,7 @@ export default function EventLandingClient() {
               <h3 className="text-xl font-bold text-white">التسجيل في القمة</h3>
               <button onClick={() => setShowRegModal(false)} className="text-[var(--text-muted)] hover:text-white text-2xl leading-none">×</button>
             </div>
-            {event && <RegistrationForm event={event} onClose={() => setShowRegModal(false)} />}
+            {event && <RegistrationForm event={event} onClose={() => setShowRegModal(false)} cfg={cfg} />}
           </div>
         </div>
       )}

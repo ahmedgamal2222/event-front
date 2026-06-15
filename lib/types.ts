@@ -1,4 +1,21 @@
 // lib/types.ts
+export interface FormConfig {
+  enabled_types: string[];
+  form_title: string;
+  form_subtitle: string;
+  show_phone: boolean;
+  require_phone: boolean;
+  show_city: boolean;
+  require_city: boolean;
+  show_motivation: boolean;
+  motivation_label: string;
+  terms_text: string;
+  cities: string[];
+  sectors: string[];
+  stages: string[];
+  type_labels: Record<string, string>;
+}
+
 export interface Event {
   id: number;
   slug: string;
@@ -22,6 +39,7 @@ export interface Event {
   twitter: string;
   instagram: string;
   linkedin: string;
+  form_config: string | null;
 }
 
 export interface Speaker {

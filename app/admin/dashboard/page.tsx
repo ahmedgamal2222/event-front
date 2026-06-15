@@ -10,6 +10,7 @@ import {
   fetchAgenda, createAgendaDay,
   createAgendaSession, updateAgendaSession, deleteAgendaSession,
 } from '../../../lib/api';
+import type { FormConfig } from '../../../lib/types';
 
 function getToken() { return typeof window !== 'undefined' ? localStorage.getItem('admin_token') || '' : ''; }
 
@@ -34,6 +35,7 @@ const TABS = [
   { key: 'agenda',         label: '📅 البرنامج' },
   { key: 'sponsors',       label: '🏅 الرعاة' },
   { key: 'faqs',           label: '❓ الأسئلة الشائعة' },
+  { key: 'formconfig',     label: '📝 فورم التسجيل' },
 ] as const;
 type Tab = typeof TABS[number]['key'];
 
@@ -111,6 +113,7 @@ export default function AdminDashboard() {
         {activeTab === 'agenda'        && <AgendaTab eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
         {activeTab === 'sponsors'      && <SponsorsTab eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
         {activeTab === 'faqs'          && <FaqsTab eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
+        {activeTab === 'formconfig'    && <FormConfigTab eventId={eventId} token={token} save={save} saving={saving} />}
       </div>
     </div>
   );
@@ -670,4 +673,157 @@ function FaqsTab({ eventId, token, save, saving, showToast }: any) {
   );
 }
 
+// ── Form Config ───────────────────────────────────────────────────────────────
+const ALL_REG_TYPES = ['startup','general','investor','speaker','sponsor','media'];
+const TYPE_LABEL_DEFAULTS: Record<string,string> = {
+  startup:'🚀 شركة ناشئة', general:'👤 حضور عام', investor:'💼 مستثمر',
+  speaker:'🎙️ متحدث', sponsor:'🏅 راعي', media:'📹 إعلام',
+};
+const DEFAULT_CFG: FormConfig = {
+  enabled_types: ['startup','general'],
+  form_title: 'سجّل في القمة', form_subtitle: 'كن جزءاً من أكبر تجمع لريادة الأعمال',
+  show_phone: true, require_phone: false, show_city: true, require_city: false,
+  show_motivation: false, motivation_label: 'لماذا تريد الحضور؟',
+  terms_text: 'أوافق على الشروط والأحكام وسياسة الخصوصية',
+  cities: ['دمشق','حلب','حمص','اللاذقية','طرطوس','حماة','دير الزور','الرقة','القامشلي','إدلب','درعا','خارج سوريا'],
+  sectors: ['تكنولوجيا المعلومات','التجارة الإلكترونية','التعليم','الصحة','التمويل والدفع','الزراعة','الطاقة','التصنيع','الخدمات اللوجستية','أخرى'],
+  stages: ['فكرة','نموذج أولي MVP','مرحلة مبكرة','نمو','توسع'],
+  type_labels: { ...TYPE_LABEL_DEFAULTS },
+};
 
+function FormConfigTab({ eventId, token, save, saving }: any) {
+  const [cfg, setCfg] = useState<FormConfig>({ ...DEFAULT_CFG });
+  const [loaded, setLoaded] = useState(false);
+  const [newCity, setNewCity] = useState('');
+  const [newSector, setNewSector] = useState('');
+  const [newStage, setNewStage] = useState('');
+
+  useEffect(() => {
+    if (!token) return;
+    fetchEvent('s3-summit-2026').then((r: any) => {
+      if (r.data?.form_config) {
+        try { setCfg({ ...DEFAULT_CFG, ...JSON.parse(r.data.form_config) }); } catch {}
+      }
+      setLoaded(true);
+    }).catch(() => setLoaded(true));
+  }, [token]);
+
+  const set = (k: keyof FormConfig, v: any) => setCfg(f => ({ ...f, [k]: v }));
+  const setLabel = (type: string, v: string) => setCfg(f => ({ ...f, type_labels: { ...f.type_labels, [type]: v } }));
+  const toggleType = (t: string) => {
+    const cur = cfg.enabled_types || [];
+    set('enabled_types', cur.includes(t) ? cur.filter((x: string) => x !== t) : [...cur, t]);
+  };
+  const removeItem = (key: 'cities'|'sectors'|'stages', val: string) =>
+    set(key, (cfg[key] as string[]).filter(x => x !== val));
+  const addItem = (key: 'cities'|'sectors'|'stages', val: string, clearFn: () => void) => {
+    if (!val.trim()) return;
+    set(key, [...(cfg[key] as string[]), val.trim()]);
+    clearFn();
+  };
+  const saveAll = () => save(async () => { await updateEvent(eventId, { form_config: cfg }, token); });
+
+  if (!loaded) return <p style={{ color: '#94a3b8' }}>جار التحميل...</p>;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'white' }}>📝 إعدادات فورم التسجيل</h1>
+        <SaveBtn loading={saving} onClick={saveAll} />
+      </div>
+
+      {/* نصوص عامة */}
+      <div style={{ ...S.card, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <h3 style={{ color: 'white', fontWeight: 700, gridColumn: '1/-1', marginBottom: 4 }}>النصوص العامة</h3>
+        <Field label="عنوان قسم التسجيل"><input value={cfg.form_title} onChange={e => set('form_title', e.target.value)} style={S.inp} /></Field>
+        <Field label="الوصف تحت العنوان"><input value={cfg.form_subtitle} onChange={e => set('form_subtitle', e.target.value)} style={S.inp} /></Field>
+        <div style={{ gridColumn: '1/-1' }}>
+          <Field label="نص الشروط والأحكام"><input value={cfg.terms_text} onChange={e => set('terms_text', e.target.value)} style={S.inp} /></Field>
+        </div>
+      </div>
+
+      {/* أنواع التسجيل */}
+      <div style={S.card}>
+        <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 12 }}>أنواع التسجيل المتاحة</h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
+          {ALL_REG_TYPES.map(t => {
+            const enabled = (cfg.enabled_types || []).includes(t);
+            return (
+              <button key={t} onClick={() => toggleType(t)}
+                style={{ padding: '0.4rem 1rem', borderRadius: 6, border: `1px solid ${enabled ? '#6C63FF' : 'rgba(255,255,255,0.15)'}`, background: enabled ? 'rgba(108,99,255,0.25)' : 'transparent', color: enabled ? 'white' : '#94a3b8', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
+                {TYPE_LABEL_DEFAULTS[t]}
+              </button>
+            );
+          })}
+        </div>
+        <h4 style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: 8 }}>تخصيص تسميات الأنواع</h4>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          {ALL_REG_TYPES.map(t => (
+            <Field key={t} label={TYPE_LABEL_DEFAULTS[t]}>
+              <input value={cfg.type_labels?.[t] || ''} onChange={e => setLabel(t, e.target.value)} style={S.inp} />
+            </Field>
+          ))}
+        </div>
+      </div>
+
+      {/* الحقول */}
+      <div style={{ ...S.card, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <h3 style={{ color: 'white', fontWeight: 700, gridColumn: '1/-1', marginBottom: 4 }}>الحقول وإعداداتها</h3>
+        {[
+          { key: 'show_phone' as const, reqKey: 'require_phone' as const, label: 'رقم الهاتف' },
+          { key: 'show_city' as const, reqKey: 'require_city' as const, label: 'المدينة' },
+        ].map(({ key, reqKey, label }) => (
+          <div key={key} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ color: 'white', fontSize: '0.9rem' }}>{label}</span>
+            <div style={{ display: 'flex', gap: 14 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#94a3b8', fontSize: '0.8rem', cursor: 'pointer' }}>
+                <input type="checkbox" checked={!!cfg[key]} onChange={e => set(key, e.target.checked)} /> إظهار
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#94a3b8', fontSize: '0.8rem', cursor: 'pointer' }}>
+                <input type="checkbox" checked={!!cfg[reqKey]} onChange={e => set(reqKey, e.target.checked)} /> إلزامي
+              </label>
+            </div>
+          </div>
+        ))}
+        <div style={{ gridColumn: '1/-1', background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '0.75rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: cfg.show_motivation ? 10 : 0 }}>
+            <span style={{ color: 'white', fontSize: '0.9rem' }}>سؤال إضافي (الدوافع)</span>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#94a3b8', fontSize: '0.8rem', cursor: 'pointer' }}>
+              <input type="checkbox" checked={!!cfg.show_motivation} onChange={e => set('show_motivation', e.target.checked)} /> إظهار
+            </label>
+          </div>
+          {cfg.show_motivation && <Field label="نص السؤال"><input value={cfg.motivation_label} onChange={e => set('motivation_label', e.target.value)} style={S.inp} /></Field>}
+        </div>
+      </div>
+
+      {/* القوائم */}
+      {([
+        { key: 'cities' as const, label: 'قائمة المدن', newVal: newCity, setNew: setNewCity },
+        { key: 'sectors' as const, label: 'قطاعات العمل (للشركات الناشئة)', newVal: newSector, setNew: setNewSector },
+        { key: 'stages' as const, label: 'مراحل الشركة', newVal: newStage, setNew: setNewStage },
+      ]).map(({ key, label, newVal, setNew }) => (
+        <div key={key} style={S.card}>
+          <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 10 }}>{label}</h3>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+            {(cfg[key] as string[]).map(item => (
+              <span key={item} style={{ background: 'rgba(108,99,255,0.15)', border: '1px solid rgba(108,99,255,0.25)', borderRadius: 6, padding: '0.25rem 0.6rem', fontSize: '0.82rem', color: 'white', display: 'flex', alignItems: 'center', gap: 5 }}>
+                {item}
+                <button onClick={() => removeItem(key, item)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', lineHeight: 1, padding: 0 }}>×</button>
+              </span>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input value={newVal} onChange={e => setNew(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addItem(key, newVal, () => setNew('')); } }}
+              placeholder="أضف عنصراً جديداً..." style={{ ...S.inp, flex: 1 }} />
+            <button style={S.btn()} onClick={() => addItem(key, newVal, () => setNew(''))}>إضافة</button>
+          </div>
+        </div>
+      ))}
+
+      <div style={{ paddingBottom: 8 }}>
+        <SaveBtn loading={saving} onClick={saveAll} />
+      </div>
+    </div>
+  );
+}
