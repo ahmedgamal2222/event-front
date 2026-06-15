@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { adminLogin } from '../../lib/api';
 
 function saveToken(t: string) { if (typeof window !== 'undefined') localStorage.setItem('admin_token', t); }
@@ -7,10 +8,17 @@ export function getToken() { return typeof window !== 'undefined' ? localStorage
 export function removeToken() { if (typeof window !== 'undefined') localStorage.removeItem('admin_token'); }
 
 export default function AdminLoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && localStorage.getItem('admin_token')) {
+      router.replace('/admin/dashboard');
+    }
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,7 +26,7 @@ export default function AdminLoginPage() {
     try {
       const res = await adminLogin(email, password);
       saveToken(res.data.token);
-      window.location.href = '/admin/dashboard';
+      router.push('/admin/dashboard');
     } catch (err: any) {
       setError(err.message || 'بيانات الدخول غير صحيحة');
     }

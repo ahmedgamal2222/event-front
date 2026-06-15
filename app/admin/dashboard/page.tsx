@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { fetchRegistrations, updateRegistration, fetchStats } from '../../../lib/api';
 import { Registration, Stats } from '../../../lib/types';
 
@@ -23,6 +24,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [token, setToken] = useState('');
   const [eventId, setEventId] = useState(1);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -39,7 +41,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const t = getToken();
-    if (!t) { window.location.href = '/admin'; return; }
+    if (!t) { router.replace('/admin'); return; }
     setToken(t);
   }, []);
 
@@ -66,7 +68,7 @@ export default function AdminDashboard() {
       setRegistrations(res.data || []);
       setTotal(res.total || 0);
     } catch (err: any) {
-      if (err.message?.includes('Unauthorized')) { window.location.href = '/admin'; }
+      if (err.message?.includes('Unauthorized')) { router.replace('/admin'); }
     }
     setLoading(false);
   }, [token, eventId, filterStatus, filterType, search, page]);
@@ -84,7 +86,7 @@ export default function AdminDashboard() {
 
   const logout = () => {
     localStorage.removeItem('admin_token');
-    window.location.href = '/admin';
+    router.replace('/admin');
   };
 
   return (
