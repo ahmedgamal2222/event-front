@@ -15,21 +15,32 @@ export function getAuthHeaders(token: string) {
   return { Authorization: `Bearer ${token}` };
 }
 
-// ── Event helpers ──────────────────────────────────────────────────────────────
-export const fetchEvent = (slug: string) => apiFetch<any>(`/api/events/${slug}`);
-export const fetchSpeakers = (eventId: number) => apiFetch<any>(`/api/events/${eventId}/speakers`);
-export const fetchAgenda = (eventId: number) => apiFetch<any>(`/api/events/${eventId}/agenda`);
-export const fetchStats = (eventId: number) => apiFetch<any>(`/api/events/${eventId}/stats`);
-export const fetchSponsors = (eventId: number) => apiFetch<any>(`/api/events/${eventId}/sponsors`);
-export const fetchFaqs = (eventId: number) => apiFetch<any>(`/api/events/${eventId}/faqs`);
+// ── Public helpers ─────────────────────────────────────────────────────────────
+export const fetchEvent     = (slug: string) => apiFetch<any>(`/api/events/${slug}`);
+export const fetchSpeakers  = (eventId: number) => apiFetch<any>(`/api/events/${eventId}/speakers`);
+export const fetchAgenda    = (eventId: number) => apiFetch<any>(`/api/events/${eventId}/agenda`);
+export const fetchStats     = (eventId: number) => apiFetch<any>(`/api/events/${eventId}/stats`);
+export const fetchSponsors  = (eventId: number) => apiFetch<any>(`/api/events/${eventId}/sponsors`);
+export const fetchFaqs      = (eventId: number) => apiFetch<any>(`/api/events/${eventId}/faqs`);
 
 export const submitRegistration = (eventId: number, body: any) =>
   apiFetch<any>(`/api/events/${eventId}/registrations`, { method: 'POST', body: JSON.stringify(body) });
 
-// ── Admin helpers ──────────────────────────────────────────────────────────────
+// ── Admin – Auth ───────────────────────────────────────────────────────────────
 export const adminLogin = (email: string, password: string) =>
   apiFetch<any>('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
 
+// ── Admin – Events ─────────────────────────────────────────────────────────────
+export const fetchAllEvents = (token: string) =>
+  apiFetch<any>('/api/events/all', { headers: getAuthHeaders(token) });
+
+export const updateEvent = (id: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${id}`, { method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+
+export const createEvent = (body: any, token: string) =>
+  apiFetch<any>('/api/events', { method: 'POST', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+
+// ── Admin – Registrations ──────────────────────────────────────────────────────
 export const fetchRegistrations = (eventId: number, token: string, params?: string) =>
   apiFetch<any>(`/api/events/${eventId}/registrations${params ? '?' + params : ''}`, {
     headers: getAuthHeaders(token)
@@ -39,3 +50,46 @@ export const updateRegistration = (eventId: number, id: number, body: any, token
   apiFetch<any>(`/api/events/${eventId}/registrations/${id}`, {
     method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token)
   });
+
+// ── Admin – Speakers ───────────────────────────────────────────────────────────
+export const createSpeaker = (eventId: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/speakers`, { method: 'POST', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+
+export const updateSpeaker = (eventId: number, id: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/speakers/${id}`, { method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+
+export const deleteSpeaker = (eventId: number, id: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/speakers/${id}`, { method: 'DELETE', headers: getAuthHeaders(token) });
+
+// ── Admin – Sponsors ───────────────────────────────────────────────────────────
+export const createSponsor = (eventId: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/sponsors`, { method: 'POST', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+
+export const updateSponsor = (eventId: number, id: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/sponsors/${id}`, { method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+
+export const deleteSponsor = (eventId: number, id: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/sponsors/${id}`, { method: 'DELETE', headers: getAuthHeaders(token) });
+
+// ── Admin – FAQs ───────────────────────────────────────────────────────────────
+export const createFaq = (eventId: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/faqs`, { method: 'POST', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+
+export const deleteFaq = (eventId: number, id: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/faqs/${id}`, { method: 'DELETE', headers: getAuthHeaders(token) });
+
+// ── Admin – Agenda ─────────────────────────────────────────────────────────────
+export const createAgendaDay = (eventId: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/agenda/days`, { method: 'POST', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+
+export const updateAgendaDay = (eventId: number, id: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/agenda/days/${id}`, { method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+
+export const createAgendaSession = (eventId: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/agenda/sessions`, { method: 'POST', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+
+export const updateAgendaSession = (eventId: number, id: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/agenda/sessions/${id}`, { method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+
+export const deleteAgendaSession = (eventId: number, id: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/agenda/sessions/${id}`, { method: 'DELETE', headers: getAuthHeaders(token) });

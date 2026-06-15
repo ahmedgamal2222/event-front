@@ -44,7 +44,7 @@ export default function AdminLoginPage() {
           <h2 className="text-lg font-bold text-white text-center">تسجيل الدخول</h2>
           <div>
             <label className="block text-sm text-[var(--text-muted)] mb-1">البريد الإلكتروني</label>
-            <input className="input-field" type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@event.local" />
+            <input className="input-field" type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@event.com" />
           </div>
           <div>
             <label className="block text-sm text-[var(--text-muted)] mb-1">كلمة المرور</label>

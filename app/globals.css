@@ -95,4 +95,14 @@
   }
   .input-field:focus { border-color: var(--primary); }
   .input-field::placeholder { color: var(--text-muted); }
+
+  /* Fix select dropdown options background */
+  select.input-field option,
+  select option {
+    background-color: #1a1730;
+    color: #e2e8f0;
+  }
+  select {
+    color-scheme: dark;
+  }
 }
