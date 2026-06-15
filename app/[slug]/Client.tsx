@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { Event, Speaker, AgendaDay, Stats, Sponsor, Faq, FormConfig } from '../../lib/types';
+import { Event, Speaker, AgendaDay, Stats, Sponsor, Faq, FormConfig, SiteConfig } from '../../lib/types';
 import { fetchEvent, fetchSpeakers, fetchAgenda, fetchStats, fetchSponsors, fetchFaqs, submitRegistration } from '../../lib/api';
 
 const API_EVENT_SLUG = process.env.NEXT_PUBLIC_EVENT_SLUG || 's3-summit-2026';
@@ -264,6 +264,25 @@ export default function EventLandingClient() {
     stages: ['فكرة','نموذج أولي MVP','مرحلة مبكرة','نمو','توسع'],
     type_labels: { startup: '🚀 شركة ناشئة', general: '👤 حضور عام', investor: '💼 مستثمر', speaker: '🎙️ متحدث', sponsor: '🏅 راعي', media: '📹 إعلام' },
   });
+  const [siteCfg, setSiteCfg] = useState<SiteConfig>({
+    hero_abbr: 'S3',
+    hero_btn_primary: '🚀 سجّل شركتك الناشئة',
+    hero_btn_secondary: 'حضور عام',
+    stats: [
+      { label: 'أيام من الإلهام', field: 'days_count', fallback: 3 },
+      { label: 'شركة ناشئة', field: 'startup_count', fallback: 50 },
+      { label: 'متحدث متميز', field: 'speaker_count', fallback: 20 },
+      { label: 'مشارك', field: 'total_registrations', fallback: 500 },
+    ],
+    about_badge: 'عن الفعالية',
+    about_title: 'لماذا S³ Summit؟',
+    about_cards: [
+      { emoji: '🚀', title: 'إطلاق الأفكار', desc: 'منصة لعرض شركاتك الناشئة أمام مستثمرين وشركاء من سوريا والمنطقة العربية' },
+      { emoji: '🤝', title: 'التواصل والشبكات', desc: 'فرصة ذهبية للتواصل مع رواد أعمال، مستثمرين، وخبراء في الاقتصاد الرقمي' },
+      { emoji: '💡', title: 'ورش عمل مكثفة', desc: 'جلسات تدريبية متخصصة في بناء المنتج، التسويق الرقمي، وجذب التمويل' },
+      { emoji: '🏆', title: 'مسابقة الشركات', desc: 'تنافس أفضل الشركات الناشئة السورية للفوز بجوائز وفرص تمويل حقيقية' },
+    ],
+  });
   const [activeDay, setActiveDay] = useState(0);
   const [showRegModal, setShowRegModal] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -278,6 +297,10 @@ export default function EventLandingClient() {
         // Parse form_config
         if (ev.form_config) {
           try { setCfg(JSON.parse(ev.form_config)); } catch {}
+        }
+        // Parse site_config
+        if (ev.site_config) {
+          try { setSiteCfg(JSON.parse(ev.site_config)); } catch {}
         }
         // Update browser title dynamically
         document.title = `${ev.name_ar || ev.name} – ${ev.tagline_ar || ev.tagline || ''}`;
@@ -365,7 +388,7 @@ export default function EventLandingClient() {
           </div>
 
           <h1 className="text-5xl md:text-7xl font-black text-white mb-4" style={{ letterSpacing: '-0.03em' }}>
-            <span style={{ color: primaryColor }}>S3</span>
+            <span style={{ color: primaryColor }}>{siteCfg.hero_abbr}</span>
           </h1>
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{eventName}</h2>
           <p className="text-lg text-[var(--text-muted)] mb-2">{eventTagline}</p>
@@ -387,8 +410,8 @@ export default function EventLandingClient() {
           <Countdown targetDate={startDate + 'T09:00:00'} />
 
           <div className="flex flex-wrap gap-3 justify-center">
-            <button onClick={() => setShowRegModal(true)} className="btn-primary">🚀 سجّل شركتك الناشئة</button>
-            <button onClick={() => setShowRegModal(true)} className="btn-outline">حضور عام</button>
+            <button onClick={() => setShowRegModal(true)} className="btn-primary">{siteCfg.hero_btn_primary}</button>
+            {siteCfg.hero_btn_secondary && <button onClick={() => setShowRegModal(true)} className="btn-outline">{siteCfg.hero_btn_secondary}</button>}
           </div>
         </div>
       </section>
@@ -397,10 +420,9 @@ export default function EventLandingClient() {
       <section className="py-16 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="card grid grid-cols-2 md:grid-cols-4 gap-8 py-8">
-            <StatCounter value={stats?.days_count || 3} label="أيام من الإلهام" />
-            <StatCounter value={stats?.startup_count || 50} label="شركة ناشئة" />
-            <StatCounter value={stats?.speaker_count || 20} label="متحدث متميز" />
-            <StatCounter value={stats?.total_registrations || 500} label="مشارك" />
+            {siteCfg.stats.map(s => (
+              <StatCounter key={s.label} value={(stats as any)?.[s.field] || s.fallback} label={s.label} />
+            ))}
           </div>
         </div>
       </section>
@@ -409,16 +431,11 @@ export default function EventLandingClient() {
       <section id="about" className="py-20 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <div className="section-badge">عن الفعالية</div>
-            <h2 className="section-title">لماذا S³ Summit؟</h2>
+            <div className="section-badge">{siteCfg.about_badge}</div>
+            <h2 className="section-title">{siteCfg.about_title}</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { emoji: '🚀', title: 'إطلاق الأفكار', desc: 'منصة لعرض شركاتك الناشئة أمام مستثمرين وشركاء من سوريا والمنطقة العربية' },
-              { emoji: '🤝', title: 'التواصل والشبكات', desc: 'فرصة ذهبية للتواصل مع رواد أعمال، مستثمرين، وخبراء في الاقتصاد الرقمي' },
-              { emoji: '💡', title: 'ورش عمل مكثفة', desc: 'جلسات تدريبية متخصصة في بناء المنتج، التسويق الرقمي، وجذب التمويل' },
-              { emoji: '🏆', title: 'مسابقة الشركات', desc: 'تنافس أفضل الشركات الناشئة السورية للفوز بجوائز وفرص تمويل حقيقية' },
-            ].map(({ emoji, title, desc }) => (
+            {siteCfg.about_cards.map(({ emoji, title, desc }) => (
               <div key={title} className="card hover:border-[var(--primary)] transition-all group">
                 <div className="text-4xl mb-4">{emoji}</div>
                 <h3 className="text-white font-bold text-lg mb-2 group-hover:text-[var(--primary)] transition-colors">{title}</h3>

@@ -1,4 +1,14 @@
 // lib/types.ts
+export interface SiteConfig {
+  hero_abbr: string;
+  hero_btn_primary: string;
+  hero_btn_secondary: string;
+  stats: Array<{ label: string; field: string; fallback: number }>;
+  about_badge: string;
+  about_title: string;
+  about_cards: Array<{ emoji: string; title: string; desc: string }>;
+}
+
 export interface FormConfig {
   enabled_types: string[];
   form_title: string;
@@ -40,6 +50,7 @@ export interface Event {
   instagram: string;
   linkedin: string;
   form_config: string | null;
+  site_config: string | null;
 }
 
 export interface Speaker {

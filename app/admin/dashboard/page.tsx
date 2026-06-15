@@ -10,7 +10,7 @@ import {
   fetchAgenda, createAgendaDay,
   createAgendaSession, updateAgendaSession, deleteAgendaSession,
 } from '../../../lib/api';
-import type { FormConfig } from '../../../lib/types';
+import type { FormConfig, SiteConfig } from '../../../lib/types';
 
 function getToken() { return typeof window !== 'undefined' ? localStorage.getItem('admin_token') || '' : ''; }
 
@@ -36,6 +36,7 @@ const TABS = [
   { key: 'sponsors',       label: '🏅 الرعاة' },
   { key: 'faqs',           label: '❓ الأسئلة الشائعة' },
   { key: 'formconfig',     label: '📝 فورم التسجيل' },
+  { key: 'siteconfig',     label: '🎨 محتوى الصفحة' },
 ] as const;
 type Tab = typeof TABS[number]['key'];
 
@@ -114,6 +115,7 @@ export default function AdminDashboard() {
         {activeTab === 'sponsors'      && <SponsorsTab eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
         {activeTab === 'faqs'          && <FaqsTab eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
         {activeTab === 'formconfig'    && <FormConfigTab eventId={eventId} token={token} save={save} saving={saving} />}
+        {activeTab === 'siteconfig'    && <SiteConfigTab eventId={eventId} token={token} save={save} saving={saving} />}
       </div>
     </div>
   );
@@ -824,6 +826,137 @@ function FormConfigTab({ eventId, token, save, saving }: any) {
       <div style={{ paddingBottom: 8 }}>
         <SaveBtn loading={saving} onClick={saveAll} />
       </div>
+    </div>
+  );
+}
+
+// ── Site Config ───────────────────────────────────────────────────────────────
+const DEFAULT_SITE_CFG: SiteConfig = {
+  hero_abbr: 'S3',
+  hero_btn_primary: '🚀 سجّل شركتك الناشئة',
+  hero_btn_secondary: 'حضور عام',
+  stats: [
+    { label: 'أيام من الإلهام', field: 'days_count', fallback: 3 },
+    { label: 'شركة ناشئة',      field: 'startup_count', fallback: 50 },
+    { label: 'متحدث متميز',     field: 'speaker_count', fallback: 20 },
+    { label: 'مشارك',           field: 'total_registrations', fallback: 500 },
+  ],
+  about_badge: 'عن الفعالية',
+  about_title: 'لماذا S³ Summit؟',
+  about_cards: [
+    { emoji: '🚀', title: 'إطلاق الأفكار',    desc: 'منصة لعرض شركاتك الناشئة أمام مستثمرين وشركاء من سوريا والمنطقة العربية' },
+    { emoji: '🤝', title: 'التواصل والشبكات', desc: 'فرصة ذهبية للتواصل مع رواد أعمال، مستثمرين، وخبراء في الاقتصاد الرقمي' },
+    { emoji: '💡', title: 'ورش عمل مكثفة',   desc: 'جلسات تدريبية متخصصة في بناء المنتج، التسويق الرقمي، وجذب التمويل' },
+    { emoji: '🏆', title: 'مسابقة الشركات',  desc: 'تنافس أفضل الشركات الناشئة السورية للفوز بجوائز وفرص تمويل حقيقية' },
+  ],
+};
+const STAT_FIELDS = ['days_count','startup_count','speaker_count','total_registrations','approved_count','investor_count'];
+
+function SiteConfigTab({ eventId, token, save, saving }: any) {
+  const [sc, setSc] = useState<SiteConfig>({ ...DEFAULT_SITE_CFG, stats: DEFAULT_SITE_CFG.stats.map(s => ({ ...s })), about_cards: DEFAULT_SITE_CFG.about_cards.map(c => ({ ...c })) });
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!token) return;
+    fetchEvent('s3-summit-2026').then((r: any) => {
+      if (r.data?.site_config) { try { setSc(JSON.parse(r.data.site_config)); } catch {} }
+      setLoaded(true);
+    }).catch(() => setLoaded(true));
+  }, [token]);
+
+  const set = (k: keyof SiteConfig, v: any) => setSc(f => ({ ...f, [k]: v }));
+  const setStat = (i: number, k: string, v: any) => setSc(f => ({ ...f, stats: f.stats.map((s, idx) => idx === i ? { ...s, [k]: v } : s) }));
+  const setCard = (i: number, k: string, v: string) => setSc(f => ({ ...f, about_cards: f.about_cards.map((c, idx) => idx === i ? { ...c, [k]: v } : c) }));
+  const addCard = () => setSc(f => ({ ...f, about_cards: [...f.about_cards, { emoji: '✨', title: 'عنوان جديد', desc: 'وصف البطاقة' }] }));
+  const removeCard = (i: number) => setSc(f => ({ ...f, about_cards: f.about_cards.filter((_, idx) => idx !== i) }));
+  const addStat = () => setSc(f => ({ ...f, stats: [...f.stats, { label: 'إحصاء جديد', field: 'total_registrations', fallback: 0 }] }));
+  const removeStat = (i: number) => setSc(f => ({ ...f, stats: f.stats.filter((_, idx) => idx !== i) }));
+  const saveAll = () => save(async () => { await updateEvent(eventId, { site_config: sc }, token); });
+
+  if (!loaded) return <p style={{ color: '#94a3b8' }}>جار التحميل...</p>;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'white' }}>🎨 محتوى الصفحة الرئيسية</h1>
+        <SaveBtn loading={saving} onClick={saveAll} />
+      </div>
+
+      {/* Hero */}
+      <div style={{ ...S.card, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <h3 style={{ color: 'white', fontWeight: 700, gridColumn: '1/-1', marginBottom: 4 }}>قسم الـ Hero (أعلى الصفحة)</h3>
+        <Field label="الاختصار الكبير (مثل S3)">
+          <input value={sc.hero_abbr} onChange={e => set('hero_abbr', e.target.value)} style={S.inp} />
+        </Field>
+        <div />
+        <Field label="نص الزر الرئيسي">
+          <input value={sc.hero_btn_primary} onChange={e => set('hero_btn_primary', e.target.value)} style={S.inp} />
+        </Field>
+        <Field label="نص الزر الثانوي (فارغ = مخفي)">
+          <input value={sc.hero_btn_secondary} onChange={e => set('hero_btn_secondary', e.target.value)} style={S.inp} placeholder="اتركه فارغاً للإخفاء" />
+        </Field>
+      </div>
+
+      {/* Stats */}
+      <div style={S.card}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <h3 style={{ color: 'white', fontWeight: 700 }}>الإحصائيات</h3>
+          <button style={S.btn()} onClick={addStat}>+ إضافة</button>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {sc.stats.map((s, i) => (
+            <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 100px auto', gap: 8, alignItems: 'end' }}>
+              <Field label="التسمية"><input value={s.label} onChange={e => setStat(i, 'label', e.target.value)} style={S.inp} /></Field>
+              <Field label="مصدر البيانات">
+                <select value={s.field} onChange={e => setStat(i, 'field', e.target.value)} style={S.inp}>
+                  {STAT_FIELDS.map(f => <option key={f} value={f}>{f}</option>)}
+                </select>
+              </Field>
+              <Field label="القيمة الافتراضية"><input type="number" value={s.fallback} onChange={e => setStat(i, 'fallback', +e.target.value)} style={S.inp} /></Field>
+              <button style={{ ...S.del, alignSelf: 'flex-end' }} onClick={() => removeStat(i)}>حذف</button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* About */}
+      <div style={S.card}>
+        <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 12 }}>قسم "عن الفعالية"</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+          <Field label="الشارة (النص الصغير فوق العنوان)">
+            <input value={sc.about_badge} onChange={e => set('about_badge', e.target.value)} style={S.inp} />
+          </Field>
+          <Field label="العنوان الكبير">
+            <input value={sc.about_title} onChange={e => set('about_title', e.target.value)} style={S.inp} />
+          </Field>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <h4 style={{ color: '#94a3b8', fontSize: '0.82rem' }}>البطاقات الأربع ({sc.about_cards.length})</h4>
+          <button style={S.btn()} onClick={addCard}>+ بطاقة جديدة</button>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 12 }}>
+          {sc.about_cards.map((card, i) => (
+            <div key={i} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '0.85rem', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ width: 58, flexShrink: 0 }}>
+                  <label style={S.label}>إيموجي</label>
+                  <input value={card.emoji} onChange={e => setCard(i, 'emoji', e.target.value)} style={{ ...S.inp, fontSize: '1.3rem', textAlign: 'center', padding: '0.3rem' }} maxLength={4} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={S.label}>العنوان</label>
+                  <input value={card.title} onChange={e => setCard(i, 'title', e.target.value)} style={S.inp} />
+                </div>
+              </div>
+              <Field label="الوصف">
+                <textarea value={card.desc} onChange={e => setCard(i, 'desc', e.target.value)} rows={2} style={{ ...S.inp, resize: 'vertical' }} />
+              </Field>
+              <button style={S.del} onClick={() => removeCard(i)}>حذف البطاقة</button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ paddingBottom: 8 }}><SaveBtn loading={saving} onClick={saveAll} /></div>
     </div>
   );
 }
