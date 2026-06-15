@@ -1,6 +1,10 @@
 import type { Metadata } from 'next';
 import EventLandingClient from './Client';
 
+export async function generateStaticParams() {
+  return [{ slug: 's3-summit-2026' }];
+}
+
 export const metadata: Metadata = {
   title: 'S3 Summit 2026 – قمة الشركات الناشئة السورية',
   description: 'ثلاثة أيام من الإلهام، التواصل، والابتكار — لبناء مستقبل ريادة الأعمال في سوريا. ٢٥–٢٧ ديسمبر ٢٠٢٦',

@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { adminLogin } from '../../../lib/api';
+import { adminLogin } from '../../lib/api';
 
 function saveToken(t: string) { if (typeof window !== 'undefined') localStorage.setItem('admin_token', t); }
 export function getToken() { return typeof window !== 'undefined' ? localStorage.getItem('admin_token') || '' : ''; }
