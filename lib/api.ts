@@ -97,3 +97,29 @@ export const updateAgendaSession = (eventId: number, id: number, body: any, toke
 
 export const deleteAgendaSession = (eventId: number, id: number, token: string) =>
   apiFetch<any>(`/api/events/${eventId}/agenda/sessions/${id}`, { method: 'DELETE', headers: getAuthHeaders(token) });
+
+// ── Admin – Uploads ────────────────────────────────────────────────────────────
+export async function uploadImage(file: File, token: string): Promise<{ url: string; filename: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const res = await fetch(`${API_BASE}/api/uploads/image`, {
+    method: 'POST',
+    body: formData,
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Upload failed');
+  return { url: data.url, filename: data.filename };
+}
+
+export async function deleteImage(filename: string, token: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/uploads/${filename}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(token),
+  });
+  
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Delete failed');
+}

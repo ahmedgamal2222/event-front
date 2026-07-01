@@ -9,6 +9,7 @@ import {
   fetchFaqs, createFaq, deleteFaq,
   fetchAgenda, createAgendaDay,
   createAgendaSession, updateAgendaSession, deleteAgendaSession,
+  uploadImage, deleteImage,
 } from '../../../lib/api';
 import type { FormConfig, SiteConfig } from '../../../lib/types';
 
@@ -55,16 +56,7 @@ function SaveBtn({ loading, onClick }: { loading: boolean; onClick: () => void }
   return <button style={S.btn()} onClick={onClick} disabled={loading}>{loading ? 'جار الحفظ...' : 'حفظ'}</button>;
 }
 
-async function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ''));
-    reader.onerror = () => reject(new Error('فشل في قراءة الملف'));
-    reader.readAsDataURL(file);
-  });
-}
-
-function ImageUploadField({ onUploaded, maxSizeMB = 3 }: { onUploaded: (value: string) => void; maxSizeMB?: number }) {
+function ImageUploadField({ onUploaded, maxSizeMB = 3, token }: { onUploaded: (value: string) => void; maxSizeMB?: number; token: string }) {
   const [uploading, setUploading] = useState(false);
 
   const onChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,10 +75,10 @@ function ImageUploadField({ onUploaded, maxSizeMB = 3 }: { onUploaded: (value: s
 
     setUploading(true);
     try {
-      const dataUrl = await fileToDataUrl(file);
-      onUploaded(dataUrl);
-    } catch {
-      alert('فشل رفع الصورة');
+      const { url } = await uploadImage(file, token);
+      onUploaded(url);
+    } catch (err: any) {
+      alert('فشل رفع الصورة: ' + (err.message || 'خطأ غير معروف'));
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -96,7 +88,7 @@ function ImageUploadField({ onUploaded, maxSizeMB = 3 }: { onUploaded: (value: s
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
       <label style={{ ...S.btn('#1a2744'), margin: 0, cursor: uploading ? 'wait' : 'pointer', opacity: uploading ? 0.7 : 1 }}>
-        {uploading ? 'جار المعالجة...' : 'رفع من الجهاز'}
+        {uploading ? 'جار الرفع على R2...' : 'رفع من الجهاز'}
         <input type="file" accept="image/*" onChange={onChange} disabled={uploading} style={{ display: 'none' }} />
       </label>
       <span style={{ color: '#94a3b8', fontSize: '0.72rem' }}>JPG/PNG/WebP حتى {maxSizeMB}MB</span>
@@ -268,13 +260,13 @@ function EventTab({ eventId, token, save, saving }: any) {
           <Field label="رابط صورة الغلاف">
             <input value={form.cover_image || ''} onChange={e => set('cover_image', e.target.value)} style={S.inp} />
           </Field>
-          <ImageUploadField onUploaded={(value) => set('cover_image', value)} maxSizeMB={4} />
+          <ImageUploadField onUploaded={(value) => set('cover_image', value)} maxSizeMB={4} token={token} />
         </div>
         <div>
           <Field label="رابط شعار الحدث">
             <input value={form.logo || ''} onChange={e => set('logo', e.target.value)} style={S.inp} />
           </Field>
-          <ImageUploadField onUploaded={(value) => set('logo', value)} maxSizeMB={3} />
+          <ImageUploadField onUploaded={(value) => set('logo', value)} maxSizeMB={3} token={token} />
         </div>
       </div>
     </div>
@@ -461,7 +453,7 @@ function SpeakersTab({ eventId, token, save, saving, showToast }: any) {
                   {form.photo_url && <button style={{ ...S.del, whiteSpace: 'nowrap' }} onClick={() => set('photo_url', '')}>✕ حذف</button>}
                 </div>
               </Field>
-              <ImageUploadField onUploaded={(value) => set('photo_url', value)} maxSizeMB={3} />
+              <ImageUploadField onUploaded={(value) => set('photo_url', value)} maxSizeMB={3} token={token} />
             </div>
             <Field label="الترتيب"><input type="number" value={form.sort_order||0} onChange={e => set('sort_order', +e.target.value)} style={S.inp} /></Field>
             <div style={{ gridColumn: '1/-1' }}>
@@ -673,7 +665,7 @@ function SponsorsTab({ eventId, token, save, saving, showToast }: any) {
             </Field>
             <div>
               <Field label="رابط الشعار"><input value={form.logo_url||''} onChange={e => set('logo_url', e.target.value)} style={S.inp} /></Field>
-              <ImageUploadField onUploaded={(value) => set('logo_url', value)} maxSizeMB={3} />
+              <ImageUploadField onUploaded={(value) => set('logo_url', value)} maxSizeMB={3} token={token} />
             </div>
             <Field label="الموقع الإلكتروني"><input value={form.website||''} onChange={e => set('website', e.target.value)} style={S.inp} /></Field>
             <Field label="الترتيب"><input type="number" value={form.sort_order||0} onChange={e => set('sort_order', +e.target.value)} style={S.inp} /></Field>
@@ -1168,7 +1160,7 @@ function SiteConfigTab({ eventId, token, save, saving }: any) {
             <Field label="رابط الشعار">
               <input value={sc.logo_url || ''} onChange={e => set('logo_url', e.target.value)} style={S.inp} />
             </Field>
-            <ImageUploadField onUploaded={(value) => set('logo_url', value)} maxSizeMB={3} />
+            <ImageUploadField onUploaded={(value) => set('logo_url', value)} maxSizeMB={3} token={token} />
           </div>
           <Field label="مكان الشعار">
             <select value={sc.logo_position || 'navbar'} onChange={e => set('logo_position', e.target.value as any)} style={S.inp}>
