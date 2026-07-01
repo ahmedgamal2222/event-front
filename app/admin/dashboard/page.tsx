@@ -150,7 +150,7 @@ export default function AdminDashboard() {
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '2rem 1.5rem' }}>
         {activeTab === 'overview'      && <OverviewTab eventId={eventId} token={token} />}
         {activeTab === 'event'         && <EventTab eventId={eventId} token={token} save={save} saving={saving} />}
-        {activeTab === 'registrations' && <RegistrationsTab eventId={eventId} token={token} router={router} />}
+        {activeTab === 'registrations' && <RegistrationsTab eventId={eventId} token={token} router={router} event={event} cfg={cfg} />}
         {activeTab === 'speakers'      && <SpeakersTab eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
         {activeTab === 'agenda'        && <AgendaTab eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
         {activeTab === 'sponsors'      && <SponsorsTab eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
@@ -257,13 +257,25 @@ function EventTab({ eventId, token, save, saving }: any) {
           </div>
         ))}
         <div>
-          <Field label="رابط صورة الغلاف">
+          <Field label="صورة الغلاف">
+            {form.cover_image && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <img src={form.cover_image} alt="cover" style={{ height: 60, borderRadius: 4, objectFit: 'cover' }} />
+                <button style={{ ...S.del, whiteSpace: 'nowrap' }} onClick={() => set('cover_image', '')}>✕ حذف</button>
+              </div>
+            )}
             <input value={form.cover_image || ''} onChange={e => set('cover_image', e.target.value)} style={S.inp} />
           </Field>
           <ImageUploadField onUploaded={(value) => set('cover_image', value)} maxSizeMB={4} token={token} />
         </div>
         <div>
-          <Field label="رابط شعار الحدث">
+          <Field label="شعار الحدث">
+            {form.logo && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <img src={form.logo} alt="logo" style={{ height: 60, borderRadius: 4, objectFit: 'contain', background: 'rgba(255,255,255,0.05)', padding: 4 }} />
+                <button style={{ ...S.del, whiteSpace: 'nowrap' }} onClick={() => set('logo', '')}>✕ حذف</button>
+              </div>
+            )}
             <input value={form.logo || ''} onChange={e => set('logo', e.target.value)} style={S.inp} />
           </Field>
           <ImageUploadField onUploaded={(value) => set('logo', value)} maxSizeMB={3} token={token} />
@@ -274,7 +286,7 @@ function EventTab({ eventId, token, save, saving }: any) {
 }
 
 // ── Registrations ─────────────────────────────────────────────────────────────
-function RegistrationsTab({ eventId, token, router }: any) {
+function RegistrationsTab({ eventId, token, router, event, cfg }: any) {
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -284,6 +296,10 @@ function RegistrationsTab({ eventId, token, router }: any) {
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<any>(null);
   const limit = 20;
+
+  // Get available types from form config
+  const availableTypes = cfg?.enabled_types || ['startup', 'general'];
+  const typeLabels = cfg?.type_labels || TYPE_LABELS;
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -323,9 +339,11 @@ function RegistrationsTab({ eventId, token, router }: any) {
             <option value="">كل الحالات</option>
             {Object.entries(STATUS_STYLES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
           </select>
-          <select value={filterType} onChange={e => { setFilterType(e.target.value); setPage(0); }} style={{ ...S.inp, width: 140 }}>
+          <select value={filterType} onChange={e => { setFilterType(e.target.value); setPage(0); }} style={{ ...S.inp, width: 160 }}>
             <option value="">كل الأنواع</option>
-            {Object.entries(TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            {availableTypes.map((t: string) => (
+              <option key={t} value={t}>{typeLabels[t as keyof typeof typeLabels] || t}</option>
+            ))}
           </select>
         </div>
         <div style={{ ...S.card, padding: 0, overflow: 'hidden' }}>
@@ -333,7 +351,7 @@ function RegistrationsTab({ eventId, token, router }: any) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.83rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-                  {['الاسم','البريد','النوع','المدينة','الحالة','التاريخ','تغيير الحالة'].map(h => (
+                  {['الاسم','البريد','النوع','الوصف','المدينة','الحالة','التاريخ','تغيير الحالة'].map(h => (
                     <th key={h} style={{ textAlign: 'right', padding: '0.65rem 0.85rem', color: '#94a3b8', fontWeight: 600, fontSize: '0.72rem', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
@@ -345,15 +363,21 @@ function RegistrationsTab({ eventId, token, router }: any) {
                   <tr><td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>لا توجد تسجيلات</td></tr>
                 ) : registrations.map(reg => {
                   const st = STATUS_STYLES[reg.status] || STATUS_STYLES.pending;
+                  const typeLabel = typeLabels[reg.type as keyof typeof typeLabels] || reg.type;
                   return (
                     <tr key={reg.id} onClick={() => setSelected(reg)}
                       style={{ borderTop: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer', background: selected?.id === reg.id ? 'rgba(108,99,255,0.1)' : 'transparent' }}>
-                      <td style={{ padding: '0.6rem 0.85rem', color: 'white', fontWeight: 500, whiteSpace: 'nowrap' }}>{reg.full_name}</td>
-                      <td style={{ padding: '0.6rem 0.85rem', color: '#94a3b8', fontSize: '0.78rem' }}>{reg.email}</td>
-                      <td style={{ padding: '0.6rem 0.85rem', fontSize: '0.75rem' }}>{TYPE_LABELS[reg.reg_type] || reg.reg_type}</td>
-                      <td style={{ padding: '0.6rem 0.85rem', color: '#94a3b8', fontSize: '0.72rem' }}>{reg.city || '—'}</td>
-                      <td style={{ padding: '0.6rem 0.85rem' }}>
-                        <span style={{ background: st.bg + '25', color: st.bg, padding: '0.15rem 0.5rem', borderRadius: 999, fontSize: '0.7rem', fontWeight: 600 }}>{st.label}</span>
+                      <td style={{ padding: '0.7rem 0.85rem', borderRight: '1px solid rgba(255,255,255,0.03)' }}>{reg.name}</td>
+                      <td style={{ padding: '0.7rem 0.85rem', borderRight: '1px solid rgba(255,255,255,0.03)', fontSize: '0.78rem' }}>{reg.email}</td>
+                      <td style={{ padding: '0.7rem 0.85rem', borderRight: '1px solid rgba(255,255,255,0.03)' }}>
+                        <span style={{ display: 'inline-block', background: `${reg.type === 'startup' ? '#6C63FF' : reg.type === 'investor' ? '#10b981' : '#f59e0b'}20`, color: reg.type === 'startup' ? '#6C63FF' : reg.type === 'investor' ? '#10b981' : '#f59e0b', padding: '0.2rem 0.5rem', borderRadius: 4, fontSize: '0.75rem' }}>
+                          {typeLabel}
+                        </span>
+                      </td>
+                      <td style={{ padding: '0.7rem 0.85rem', borderRight: '1px solid rgba(255,255,255,0.03)', fontSize: '0.78rem', color: '#94a3b8' }}>{reg.work_field || reg.participation_reason?.substring(0, 30) || '—'}</td>
+                      <td style={{ padding: '0.7rem 0.85rem', borderRight: '1px solid rgba(255,255,255,0.03)' }}>{reg.city}</td>
+                      <td style={{ padding: '0.7rem 0.85rem', borderRight: '1px solid rgba(255,255,255,0.03)' }}>
+                        <span style={{ background: st.bg, color: 'white', padding: '0.2rem 0.5rem', borderRadius: 3, fontSize: '0.72rem' }}>{st.label}</span>
                       </td>
                       <td style={{ padding: '0.6rem 0.85rem', color: '#94a3b8', fontSize: '0.72rem', whiteSpace: 'nowrap' }}>{new Date(reg.created_at).toLocaleDateString('ar')}</td>
                       <td style={{ padding: '0.6rem 0.85rem' }} onClick={e => e.stopPropagation()}>
@@ -385,7 +409,7 @@ function RegistrationsTab({ eventId, token, router }: any) {
             <span style={{ fontWeight: 700, color: 'white', fontSize: '0.95rem' }}>التفاصيل</span>
             <button onClick={() => setSelected(null)} style={{ color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
           </div>
-          {([['الاسم',selected.full_name],['البريد',selected.email],['الهاتف',selected.phone||'—'],['المدينة',selected.city||'—'],['المنظمة',selected.organization||'—'],['المسمى',selected.job_title||'—'],['الدوافع',selected.motivation||'—'],['مجال العمل',selected.work_field||'—'],['سبب المشاركة',selected.participation_reason||'—']] as [string,string][]).map(([k,v]) => (
+          {([['الاسم',selected.name],['البريد',selected.email],['النوع',typeLabels[selected.type as keyof typeof typeLabels] || selected.type],['الهاتف',selected.phone||'—'],['المدينة',selected.city||'—'],['مجال العمل',selected.work_field||'—'],['سبب المشاركة',selected.participation_reason||'—'],['التاريخ',new Date(selected.created_at).toLocaleDateString('ar')]] as [string,string][]).map(([k,v]) => (
             <div key={k} style={{ marginBottom: 6 }}>
               <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{k}: </span>
               <span style={{ fontSize: '0.82rem', color: 'white' }}>{v}</span>
@@ -1154,10 +1178,16 @@ function SiteConfigTab({ eventId, token, save, saving }: any) {
 
       {/* Logo */}
       <div style={S.card}>
-        <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 12 }}>الشعار</h3>
+        <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 12 }}>الشعار (للصفحة الرئيسية)</h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
             <Field label="رابط الشعار">
+              {sc.logo_url && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <img src={sc.logo_url} alt="logo" style={{ height: 60, borderRadius: 4, objectFit: 'contain', background: 'rgba(255,255,255,0.05)', padding: 4 }} />
+                  <button style={{ ...S.del, whiteSpace: 'nowrap' }} onClick={() => set('logo_url', '')}>✕ حذف</button>
+                </div>
+              )}
               <input value={sc.logo_url || ''} onChange={e => set('logo_url', e.target.value)} style={S.inp} />
             </Field>
             <ImageUploadField onUploaded={(value) => set('logo_url', value)} maxSizeMB={3} token={token} />
