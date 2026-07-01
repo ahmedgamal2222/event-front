@@ -306,6 +306,47 @@ export default function EventLandingClient() {
       { emoji: '🏆', title: 'مسابقة الشركات', desc: 'تنافس أفضل الشركات الناشئة السورية للفوز بجوائز وفرص تمويل حقيقية' },
     ],
   });
+  const normalizeSiteConfig = (raw: any): SiteConfig => {
+    const fallback = {
+      hero_abbr: 'S3',
+      hero_btn_primary: '🚀 سجّل شركتك الناشئة',
+      hero_btn_secondary: 'حضور عام',
+      stats: [
+        { label: 'أيام من الإلهام', field: 'days_count', fallback: 3 },
+        { label: 'شركة ناشئة', field: 'startup_count', fallback: 50 },
+        { label: 'متحدث متميز', field: 'speaker_count', fallback: 20 },
+        { label: 'مشارك', field: 'total_registrations', fallback: 500 },
+      ],
+      about_badge: 'عن الفعالية',
+      about_title: 'لماذا S³ Summit؟',
+      about_cards: [
+        { emoji: '🚀', title: 'إطلاق الأفكار', desc: 'منصة لعرض شركاتك الناشئة أمام مستثمرين وشركاء من سوريا والمنطقة العربية' },
+        { emoji: '🤝', title: 'التواصل والشبكات', desc: 'فرصة ذهبية للتواصل مع رواد أعمال، مستثمرين، وخبراء في الاقتصاد الرقمي' },
+        { emoji: '💡', title: 'ورش عمل مكثفة', desc: 'جلسات تدريبية متخصصة في بناء المنتج، التسويق الرقمي، وجذب التمويل' },
+        { emoji: '🏆', title: 'مسابقة الشركات', desc: 'تنافس أفضل الشركات الناشئة السورية للفوز بجوائز وفرص تمويل حقيقية' },
+      ],
+    } as SiteConfig;
+    if (!raw || typeof raw !== 'object') return fallback;
+
+    return {
+      ...fallback,
+      ...raw,
+      stats: Array.isArray(raw.stats)
+        ? raw.stats
+            .filter((s: any) => s && typeof s.label === 'string' && typeof s.field === 'string')
+            .map((s: any) => ({
+              label: s.label,
+              field: s.field,
+              fallback: Number.isFinite(Number(s.fallback)) ? Number(s.fallback) : 0,
+            }))
+        : fallback.stats,
+      about_cards: Array.isArray(raw.about_cards)
+        ? raw.about_cards
+            .filter((c: any) => c && typeof c.title === 'string')
+            .map((c: any) => ({ emoji: c.emoji || '✨', title: c.title, desc: c.desc || '' }))
+        : fallback.about_cards,
+    };
+  };
   const [activeDay, setActiveDay] = useState(0);
   const [showRegModal, setShowRegModal] = useState(false);
   const [regInitialTab, setRegInitialTab] = useState<string | undefined>(undefined);
@@ -325,7 +366,7 @@ export default function EventLandingClient() {
         }
         // Parse site_config
         if (ev.site_config) {
-          try { setSiteCfg(JSON.parse(ev.site_config)); } catch {}
+          try { setSiteCfg(normalizeSiteConfig(JSON.parse(ev.site_config))); } catch {}
         }
         // Update browser title dynamically
         document.title = `${ev.name_ar || ev.name} – ${ev.tagline_ar || ev.tagline || ''}`;
@@ -445,7 +486,7 @@ export default function EventLandingClient() {
       <section className="py-16 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="card grid grid-cols-2 md:grid-cols-4 gap-8 py-8">
-            {siteCfg.stats.map(s => (
+            {(siteCfg.stats || []).map(s => (
               <StatCounter key={s.label} value={(stats as any)?.[s.field] || s.fallback} label={s.label} />
             ))}
           </div>
@@ -460,7 +501,7 @@ export default function EventLandingClient() {
             <h2 className="section-title">{siteCfg.about_title}</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {siteCfg.about_cards.map(({ emoji, title, desc }) => (
+            {(siteCfg.about_cards || []).map(({ emoji, title, desc }) => (
               <div key={title} className="card hover:border-[var(--primary)] transition-all group">
                 <div className="text-4xl mb-4">{emoji}</div>
                 <h3 className="text-white font-bold text-lg mb-2 group-hover:text-[var(--primary)] transition-colors">{title}</h3>

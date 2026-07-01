@@ -55,6 +55,55 @@ function SaveBtn({ loading, onClick }: { loading: boolean; onClick: () => void }
   return <button style={S.btn()} onClick={onClick} disabled={loading}>{loading ? 'جار الحفظ...' : 'حفظ'}</button>;
 }
 
+async function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('فشل في قراءة الملف'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function ImageUploadField({ onUploaded, maxSizeMB = 3 }: { onUploaded: (value: string) => void; maxSizeMB?: number }) {
+  const [uploading, setUploading] = useState(false);
+
+  const onChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('الملف يجب أن يكون صورة');
+      e.target.value = '';
+      return;
+    }
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      alert(`حجم الصورة يجب ألا يتجاوز ${maxSizeMB}MB`);
+      e.target.value = '';
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      onUploaded(dataUrl);
+    } catch {
+      alert('فشل رفع الصورة');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+      <label style={{ ...S.btn('#1a2744'), margin: 0, cursor: uploading ? 'wait' : 'pointer', opacity: uploading ? 0.7 : 1 }}>
+        {uploading ? 'جار المعالجة...' : 'رفع من الجهاز'}
+        <input type="file" accept="image/*" onChange={onChange} disabled={uploading} style={{ display: 'none' }} />
+      </label>
+      <span style={{ color: '#94a3b8', fontSize: '0.72rem' }}>JPG/PNG/WebP حتى {maxSizeMB}MB</span>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [token, setToken] = useState('');
@@ -215,6 +264,18 @@ function EventTab({ eventId, token, save, saving }: any) {
             </Field>
           </div>
         ))}
+        <div>
+          <Field label="رابط صورة الغلاف">
+            <input value={form.cover_image || ''} onChange={e => set('cover_image', e.target.value)} style={S.inp} />
+          </Field>
+          <ImageUploadField onUploaded={(value) => set('cover_image', value)} maxSizeMB={4} />
+        </div>
+        <div>
+          <Field label="رابط شعار الحدث">
+            <input value={form.logo || ''} onChange={e => set('logo', e.target.value)} style={S.inp} />
+          </Field>
+          <ImageUploadField onUploaded={(value) => set('logo', value)} maxSizeMB={3} />
+        </div>
       </div>
     </div>
   );
@@ -393,7 +454,10 @@ function SpeakersTab({ eventId, token, save, saving, showToast }: any) {
             <Field label="الاسم (AR)"><input value={form.name_ar||''} onChange={e => set('name_ar', e.target.value)} style={S.inp} /></Field>
             <Field label="المسمى (AR)"><input value={form.title_ar||''} onChange={e => set('title_ar', e.target.value)} style={S.inp} /></Field>
             <Field label="الشركة"><input value={form.company||''} onChange={e => set('company', e.target.value)} style={S.inp} /></Field>
-            <Field label="رابط الصورة"><input value={form.photo_url||''} onChange={e => set('photo_url', e.target.value)} style={S.inp} /></Field>
+            <div>
+              <Field label="رابط الصورة"><input value={form.photo_url||''} onChange={e => set('photo_url', e.target.value)} style={S.inp} /></Field>
+              <ImageUploadField onUploaded={(value) => set('photo_url', value)} maxSizeMB={3} />
+            </div>
             <Field label="الترتيب"><input type="number" value={form.sort_order||0} onChange={e => set('sort_order', +e.target.value)} style={S.inp} /></Field>
             <div style={{ gridColumn: '1/-1' }}>
               <Field label="النبذة (AR)"><textarea value={form.bio_ar||''} onChange={e => set('bio_ar', e.target.value)} rows={2} style={{ ...S.inp, resize: 'vertical' }} /></Field>
@@ -458,7 +522,11 @@ function AgendaTab({ eventId, token, save, saving, showToast }: any) {
   const set = (k: string, v: any) => setSessionForm((f: any) => ({ ...f, [k]: v }));
 
   const saveSession = () => save(async () => {
-    const body = { ...sessionForm, speaker_id: sessionForm.speaker_id ? Number(sessionForm.speaker_id) : null };
+    const body = {
+      ...sessionForm,
+      day_id: Number(sessionForm.day_id),
+      speaker_id: sessionForm.speaker_id ? Number(sessionForm.speaker_id) : null,
+    };
     if (sessionState.editing) await updateAgendaSession(eventId, sessionState.editing.id, body, token);
     else                       await createAgendaSession(eventId, body, token);
     setSessionState({ dayId: null, editing: null }); load();
@@ -508,6 +576,12 @@ function AgendaTab({ eventId, token, save, saving, showToast }: any) {
           {sessionState.dayId === day.id && (
             <div style={{ background: 'rgba(108,99,255,0.07)', border: '1px solid rgba(108,99,255,0.2)', borderRadius: 8, padding: 12, marginBottom: 10 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <Field label="اليوم">
+                  <select value={sessionForm.day_id||day.id} onChange={e => set('day_id', Number(e.target.value))} style={S.inp}>
+                    {agenda.map((d: any) => <option key={d.id} value={d.id}>{d.label || `اليوم ${d.day_number}`}</option>)}
+                  </select>
+                </Field>
+                <div />
                 <Field label="وقت البداية"><input type="time" value={sessionForm.time_start||''} onChange={e => set('time_start', e.target.value)} style={S.inp} /></Field>
                 <Field label="وقت النهاية"><input type="time" value={sessionForm.time_end||''} onChange={e => set('time_end', e.target.value)} style={S.inp} /></Field>
                 <Field label="العنوان (AR)"><input value={sessionForm.title_ar||''} onChange={e => set('title_ar', e.target.value)} style={S.inp} /></Field>
@@ -592,7 +666,10 @@ function SponsorsTab({ eventId, token, save, saving, showToast }: any) {
                 {SPONSOR_TIERS.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </Field>
-            <Field label="رابط الشعار"><input value={form.logo_url||''} onChange={e => set('logo_url', e.target.value)} style={S.inp} /></Field>
+            <div>
+              <Field label="رابط الشعار"><input value={form.logo_url||''} onChange={e => set('logo_url', e.target.value)} style={S.inp} /></Field>
+              <ImageUploadField onUploaded={(value) => set('logo_url', value)} maxSizeMB={3} />
+            </div>
             <Field label="الموقع الإلكتروني"><input value={form.website||''} onChange={e => set('website', e.target.value)} style={S.inp} /></Field>
             <Field label="الترتيب"><input type="number" value={form.sort_order||0} onChange={e => set('sort_order', +e.target.value)} style={S.inp} /></Field>
           </div>
@@ -936,14 +1013,48 @@ const DEFAULT_SITE_CFG: SiteConfig = {
 };
 const STAT_FIELDS = ['days_count','startup_count','speaker_count','total_registrations','approved_count','investor_count'];
 
+function cloneDefaultSiteConfig(): SiteConfig {
+  return {
+    ...DEFAULT_SITE_CFG,
+    stats: DEFAULT_SITE_CFG.stats.map(s => ({ ...s })),
+    about_cards: DEFAULT_SITE_CFG.about_cards.map(c => ({ ...c })),
+  };
+}
+
+function normalizeSiteConfig(raw: any): SiteConfig {
+  const base = cloneDefaultSiteConfig();
+  if (!raw || typeof raw !== 'object') return base;
+  return {
+    ...base,
+    ...raw,
+    stats: Array.isArray(raw.stats)
+      ? raw.stats.filter((s: any) => s && typeof s.label === 'string' && typeof s.field === 'string').map((s: any) => ({
+          label: s.label,
+          field: s.field,
+          fallback: Number.isFinite(Number(s.fallback)) ? Number(s.fallback) : 0,
+        }))
+      : base.stats,
+    about_cards: Array.isArray(raw.about_cards)
+      ? raw.about_cards.filter((c: any) => c && typeof c.title === 'string').map((c: any) => ({
+          emoji: c.emoji || '✨',
+          title: c.title,
+          desc: c.desc || '',
+        }))
+      : base.about_cards,
+  };
+}
+
 function SiteConfigTab({ eventId, token, save, saving }: any) {
-  const [sc, setSc] = useState<SiteConfig>({ ...DEFAULT_SITE_CFG, stats: DEFAULT_SITE_CFG.stats.map(s => ({ ...s })), about_cards: DEFAULT_SITE_CFG.about_cards.map(c => ({ ...c })) });
+  const [sc, setSc] = useState<SiteConfig>(cloneDefaultSiteConfig());
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     if (!token) return;
     fetchEvent('s3-summit-2026').then((r: any) => {
-      if (r.data?.site_config) { try { setSc(JSON.parse(r.data.site_config)); } catch {} }
+      if (r.data?.site_config) {
+        try { setSc(normalizeSiteConfig(JSON.parse(r.data.site_config))); }
+        catch {}
+      }
       setLoaded(true);
     }).catch(() => setLoaded(true));
   }, [token]);
