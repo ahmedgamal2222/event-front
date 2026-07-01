@@ -305,6 +305,8 @@ export default function EventLandingClient() {
       { emoji: '💡', title: 'ورش عمل مكثفة', desc: 'جلسات تدريبية متخصصة في بناء المنتج، التسويق الرقمي، وجذب التمويل' },
       { emoji: '🏆', title: 'مسابقة الشركات', desc: 'تنافس أفضل الشركات الناشئة السورية للفوز بجوائز وفرص تمويل حقيقية' },
     ],
+    logo_url: '',
+    logo_position: 'navbar',
   });
   const normalizeSiteConfig = (raw: any): SiteConfig => {
     const fallback = {
@@ -325,6 +327,8 @@ export default function EventLandingClient() {
         { emoji: '💡', title: 'ورش عمل مكثفة', desc: 'جلسات تدريبية متخصصة في بناء المنتج، التسويق الرقمي، وجذب التمويل' },
         { emoji: '🏆', title: 'مسابقة الشركات', desc: 'تنافس أفضل الشركات الناشئة السورية للفوز بجوائز وفرص تمويل حقيقية' },
       ],
+      logo_url: '',
+      logo_position: 'navbar',
     } as SiteConfig;
     if (!raw || typeof raw !== 'object') return fallback;
 
@@ -345,6 +349,8 @@ export default function EventLandingClient() {
             .filter((c: any) => c && typeof c.title === 'string')
             .map((c: any) => ({ emoji: c.emoji || '✨', title: c.title, desc: c.desc || '' }))
         : fallback.about_cards,
+      logo_url: typeof raw.logo_url === 'string' ? raw.logo_url : fallback.logo_url,
+      logo_position: ['navbar', 'footer', 'both'].includes(raw.logo_position) ? raw.logo_position : fallback.logo_position,
     };
   };
   const [activeDay, setActiveDay] = useState(0);
@@ -423,9 +429,14 @@ export default function EventLandingClient() {
       {/* ── Navbar ───────────────────────────────────────────────────────────── */}
       <nav className="fixed top-0 w-full z-50 glass" style={{ borderBottom: '1px solid rgba(108,99,255,0.2)' }}>
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <a href="#" className="font-black text-xl text-white" style={{ letterSpacing: '-0.02em' }}>
-            <span style={{ color: primaryColor }}>{event?.name?.split(' ')[0] || 'S3'}</span> {event?.name?.split(' ').slice(1).join(' ') || 'Summit'}
-          </a>
+          <div className="flex items-center gap-4">
+            {(siteCfg.logo_position === 'navbar' || siteCfg.logo_position === 'both') && siteCfg.logo_url && (
+              <img src={siteCfg.logo_url} alt="logo" className="h-10 object-contain" />
+            )}
+            <a href="#" className="font-black text-xl text-white" style={{ letterSpacing: '-0.02em' }}>
+              <span style={{ color: primaryColor }}>{event?.name?.split(' ')[0] || 'S3'}</span> {event?.name?.split(' ').slice(1).join(' ') || 'Summit'}
+            </a>
+          </div>
           <div className="hidden md:flex items-center gap-6">
             {navLinks.map(l => (
               <a key={l.href} href={l.href} className="text-sm text-[var(--text-muted)] hover:text-white transition-colors">
@@ -695,7 +706,12 @@ export default function EventLandingClient() {
             </div>
           </div>
         </div>
-        <div className="max-w-6xl mx-auto mt-8 pt-6 text-center text-sm text-[var(--text-muted)]" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        {(siteCfg.logo_position === 'footer' || siteCfg.logo_position === 'both') && siteCfg.logo_url && (
+          <div className="max-w-6xl mx-auto mt-8 pt-6 pb-6 text-center" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            <img src={siteCfg.logo_url} alt="logo" className="h-12 object-contain mx-auto mb-4" />
+          </div>
+        )}
+        <div className="max-w-6xl mx-auto pt-6 text-center text-sm text-[var(--text-muted)]" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
           © {ed.year} {event?.name_ar || event?.name || 'S³ Summit'} · جميع الحقوق محفوظة
         </div>
       </footer>

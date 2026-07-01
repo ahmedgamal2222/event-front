@@ -455,7 +455,12 @@ function SpeakersTab({ eventId, token, save, saving, showToast }: any) {
             <Field label="المسمى (AR)"><input value={form.title_ar||''} onChange={e => set('title_ar', e.target.value)} style={S.inp} /></Field>
             <Field label="الشركة"><input value={form.company||''} onChange={e => set('company', e.target.value)} style={S.inp} /></Field>
             <div>
-              <Field label="رابط الصورة"><input value={form.photo_url||''} onChange={e => set('photo_url', e.target.value)} style={S.inp} /></Field>
+              <Field label="رابط الصورة">
+                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                  <input value={form.photo_url||''} onChange={e => set('photo_url', e.target.value)} style={{ ...S.inp, flex: 1 }} />
+                  {form.photo_url && <button style={{ ...S.del, whiteSpace: 'nowrap' }} onClick={() => set('photo_url', '')}>✕ حذف</button>}
+                </div>
+              </Field>
               <ImageUploadField onUploaded={(value) => set('photo_url', value)} maxSizeMB={3} />
             </div>
             <Field label="الترتيب"><input type="number" value={form.sort_order||0} onChange={e => set('sort_order', +e.target.value)} style={S.inp} /></Field>
@@ -1010,6 +1015,8 @@ const DEFAULT_SITE_CFG: SiteConfig = {
     { emoji: '💡', title: 'ورش عمل مكثفة',   desc: 'جلسات تدريبية متخصصة في بناء المنتج، التسويق الرقمي، وجذب التمويل' },
     { emoji: '🏆', title: 'مسابقة الشركات',  desc: 'تنافس أفضل الشركات الناشئة السورية للفوز بجوائز وفرص تمويل حقيقية' },
   ],
+  logo_url: '',
+  logo_position: 'navbar',
 };
 const STAT_FIELDS = ['days_count','startup_count','speaker_count','total_registrations','approved_count','investor_count'];
 
@@ -1041,6 +1048,8 @@ function normalizeSiteConfig(raw: any): SiteConfig {
           desc: c.desc || '',
         }))
       : base.about_cards,
+    logo_url: typeof raw.logo_url === 'string' ? raw.logo_url : base.logo_url,
+    logo_position: ['navbar', 'footer', 'both'].includes(raw.logo_position) ? raw.logo_position : base.logo_position,
   };
 }
 
@@ -1148,6 +1157,26 @@ function SiteConfigTab({ eventId, token, save, saving }: any) {
               <button style={S.del} onClick={() => removeCard(i)}>حذف البطاقة</button>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Logo */}
+      <div style={S.card}>
+        <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 12 }}>الشعار</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div>
+            <Field label="رابط الشعار">
+              <input value={sc.logo_url || ''} onChange={e => set('logo_url', e.target.value)} style={S.inp} />
+            </Field>
+            <ImageUploadField onUploaded={(value) => set('logo_url', value)} maxSizeMB={3} />
+          </div>
+          <Field label="مكان الشعار">
+            <select value={sc.logo_position || 'navbar'} onChange={e => set('logo_position', e.target.value as any)} style={S.inp}>
+              <option value="navbar">🔝 في الـ Navbar فقط</option>
+              <option value="footer">🔙 في الـ Footer فقط</option>
+              <option value="both">↕️ في الاثنين</option>
+            </select>
+          </Field>
         </div>
       </div>
 

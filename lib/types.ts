@@ -7,6 +7,8 @@ export interface SiteConfig {
   about_badge: string;
   about_title: string;
   about_cards: Array<{ emoji: string; title: string; desc: string }>;
+  logo_url?: string;
+  logo_position?: 'navbar' | 'footer' | 'both';
 }
 
 export interface ExtraField {
