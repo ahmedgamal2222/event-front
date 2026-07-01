@@ -7,7 +7,7 @@ import {
   fetchSpeakers, createSpeaker, updateSpeaker, deleteSpeaker,
   fetchSponsors, createSponsor, updateSponsor, deleteSponsor,
   fetchFaqs, createFaq, deleteFaq,
-  fetchAgenda, createAgendaDay,
+  fetchAgenda, createAgendaDay, updateAgendaDay,
   createAgendaSession, updateAgendaSession, deleteAgendaSession,
   uploadImage, deleteImage,
 } from '../../../lib/api';
@@ -609,6 +609,8 @@ function AgendaTab({ eventId, token, save, saving, showToast }: any) {
   const [speakers, setSpeakers] = useState<any[]>([]);
   const [addingDay, setAddingDay] = useState(false);
   const [dayForm, setDayForm] = useState({ day_number: 1, date: '', label: '', label_en: '' });
+  const [editingDay, setEditingDay] = useState<any>(null);
+  const [dayEditForm, setDayEditForm] = useState<any>({});
   const [sessionState, setSessionState] = useState<{ dayId: number | null; editing: any }>({ dayId: null, editing: null });
   const [sessionForm, setSessionForm] = useState<any>({});
 
@@ -642,6 +644,11 @@ function AgendaTab({ eventId, token, save, saving, showToast }: any) {
   const saveDay = () => save(async () => {
     await createAgendaDay(eventId, dayForm, token);
     setAddingDay(false); setDayForm({ day_number: 1, date: '', label: '', label_en: '' }); load();
+  });
+
+  const saveDayEdit = () => save(async () => {
+    await updateAgendaDay(eventId, editingDay.id, dayEditForm, token);
+    setEditingDay(null); load();
   });
 
   return (
@@ -692,8 +699,27 @@ function AgendaTab({ eventId, token, save, saving, showToast }: any) {
         <div key={day.id} style={{ ...S.card, marginBottom: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <span style={{ color: 'white', fontWeight: 700 }}>{day.label} — {day.date}</span>
-            <button style={S.btn()} onClick={() => { setSessionState({ dayId: day.id, editing: null }); setSessionForm(blankSession(day.id)); }}>+ جلسة</button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button style={S.btn()} onClick={() => { setEditingDay(day); setDayEditForm({ date: day.date, label: day.label, label_en: day.label_en, day_number: day.day_number }); }}>📅 تعديل التاريخ</button>
+              <button style={S.btn()} onClick={() => { setSessionState({ dayId: day.id, editing: null }); setSessionForm(blankSession(day.id)); }}>+ جلسة</button>
+            </div>
           </div>
+
+          {editingDay?.id === day.id && (
+            <div style={{ background: 'rgba(108,99,255,0.07)', border: '1px solid rgba(108,99,255,0.2)', borderRadius: 8, padding: 12, marginBottom: 10 }}>
+              <h3 style={{ color: 'white', marginBottom: 12 }}>تعديل تاريخ اليوم</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <Field label="التاريخ"><input type="date" value={dayEditForm.date||''} onChange={e => setDayEditForm((f: any) => ({ ...f, date: e.target.value }))} style={S.inp} /></Field>
+                <Field label="رقم اليوم"><input type="number" value={dayEditForm.day_number||0} onChange={e => setDayEditForm((f: any) => ({ ...f, day_number: +e.target.value }))} style={S.inp} /></Field>
+                <Field label="التسمية (AR)"><input value={dayEditForm.label||''} onChange={e => setDayEditForm((f: any) => ({ ...f, label: e.target.value }))} style={S.inp} /></Field>
+                <Field label="التسمية (EN)"><input value={dayEditForm.label_en||''} onChange={e => setDayEditForm((f: any) => ({ ...f, label_en: e.target.value }))} style={S.inp} /></Field>
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                <SaveBtn loading={saving} onClick={saveDayEdit} />
+                <button style={S.del} onClick={() => setEditingDay(null)}>إلغاء</button>
+              </div>
+            </div>
+          )}
 
           {sessionState.dayId === day.id && (
             <div style={{ background: 'rgba(108,99,255,0.07)', border: '1px solid rgba(108,99,255,0.2)', borderRadius: 8, padding: 12, marginBottom: 10 }}>
