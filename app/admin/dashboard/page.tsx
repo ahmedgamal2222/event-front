@@ -193,7 +193,7 @@ export default function AdminDashboard() {
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '2rem 1.5rem' }}>
         {activeTab === 'overview'      && <OverviewTab eventId={eventId} token={token} />}
         {activeTab === 'event'         && <EventTab eventId={eventId} token={token} save={save} saving={saving} />}
-        {activeTab === 'registrations' && <RegistrationsTab eventId={eventId} token={token} router={router} event={event} cfg={cfg} />}
+        {activeTab === 'registrations' && <RegistrationsTab eventId={eventId} token={token} router={router} />}
         {activeTab === 'speakers'      && <SpeakersTab eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
         {activeTab === 'agenda'        && <AgendaTab eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
         {activeTab === 'sponsors'      && <SponsorsTab eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
@@ -344,7 +344,8 @@ function EventTab({ eventId, token, save, saving }: any) {
 }
 
 // ── Registrations ─────────────────────────────────────────────────────────────
-function RegistrationsTab({ eventId, token, router, event, cfg }: any) {
+// ── Registrations ─────────────────────────────────────────────────────────────
+function RegistrationsTab({ eventId, token, router }: any) {
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -353,7 +354,18 @@ function RegistrationsTab({ eventId, token, router, event, cfg }: any) {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<any>(null);
+  const [cfg, setCfg] = useState<any>(null);
   const limit = 20;
+
+  // Load form config on mount
+  useEffect(() => {
+    if (!token) return;
+    fetchEvent('s3-summit-2026').then((r: any) => {
+      if (r.data?.form_config) {
+        try { setCfg(JSON.parse(r.data.form_config)); } catch { setCfg(null); }
+      }
+    }).catch(() => {});
+  }, [token]);
 
   // Get available types from form config
   const availableTypes = cfg?.enabled_types || ['startup', 'general'];
