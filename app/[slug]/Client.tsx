@@ -464,6 +464,12 @@ export default function EventLandingClient() {
             {location} · {ed.month} {ed.year}
           </div>
 
+          {event?.logo && (
+            <div className="mb-6 flex justify-center">
+              <img src={event.logo} alt="شعار الحدث" style={{ maxHeight: 100, objectFit: 'contain' }} />
+            </div>
+          )}
+
           <h1 className="text-5xl md:text-7xl font-black text-white mb-4" style={{ letterSpacing: '-0.03em' }}>
             <span style={{ color: primaryColor }}>{siteCfg.hero_abbr}</span>
           </h1>

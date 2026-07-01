@@ -357,14 +357,18 @@ function RegistrationsTab({ eventId, token, router }: any) {
   const [cfg, setCfg] = useState<any>(null);
   const limit = 20;
 
-  // Load form config on mount
-  useEffect(() => {
+  // Load form config - reload every time registrations tab is opened
+  const loadCfg = () => {
     if (!token) return;
     fetchEvent('s3-summit-2026').then((r: any) => {
       if (r.data?.form_config) {
         try { setCfg(JSON.parse(r.data.form_config)); } catch { setCfg(null); }
       }
     }).catch(() => {});
+  };
+
+  useEffect(() => {
+    loadCfg();
   }, [token]);
 
   // Get available types from form config
