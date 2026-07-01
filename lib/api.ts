@@ -128,3 +128,57 @@ export async function deleteImage(filename: string, token: string): Promise<void
   const data = await res.json();
   if (!data.success) throw new Error(data.error || 'Delete failed');
 }
+
+// ── Public – Tickets ───────────────────────────────────────────────────────────
+export const fetchTickets = (eventId: number) =>
+  apiFetch<any>(`/api/events/${eventId}/tickets`);
+
+export const fetchTicketAvailability = (eventId: number, ticketTypeId: number) =>
+  apiFetch<any>(`/api/events/${eventId}/tickets/available/${ticketTypeId}`);
+
+// ── Admin – Tickets ────────────────────────────────────────────────────────────
+export const createTicketType = (eventId: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/tickets`, { 
+    method: 'POST', body: JSON.stringify(body), headers: getAuthHeaders(token) 
+  });
+
+export const updateTicketType = (eventId: number, id: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/tickets/${id}`, { 
+    method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token) 
+  });
+
+export const deleteTicketType = (eventId: number, id: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/tickets/${id}`, { 
+    method: 'DELETE', headers: getAuthHeaders(token) 
+  });
+
+// ── Public – Support Messages ──────────────────────────────────────────────────
+export const submitSupportMessage = (eventId: number, body: any) =>
+  apiFetch<any>(`/api/events/${eventId}/support/messages`, { 
+    method: 'POST', body: JSON.stringify(body) 
+  });
+
+export const fetchPixelCodes = (eventId: number) =>
+  apiFetch<any>(`/api/events/${eventId}/support/pixels`);
+
+// ── Admin – Support Messages ───────────────────────────────────────────────────
+export const fetchSupportMessages = (eventId: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/support/messages`, { 
+    headers: getAuthHeaders(token) 
+  });
+
+export const fetchSupportMessage = (eventId: number, id: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/support/messages/${id}`, { 
+    headers: getAuthHeaders(token) 
+  });
+
+export const respondToSupportMessage = (eventId: number, id: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/support/messages/${id}`, { 
+    method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token) 
+  });
+
+// ── Admin – Pixel Tracking ─────────────────────────────────────────────────────
+export const updatePixelCodes = (eventId: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/support/pixels`, { 
+    method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token) 
+  });
