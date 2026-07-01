@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  fetchStats, fetchRegistrations, updateRegistration,
+  fetchStats, fetchRegistrations, updateRegistration, deleteRegistration,
   fetchEvent, updateEvent,
   fetchSpeakers, createSpeaker, updateSpeaker, deleteSpeaker,
   fetchSponsors, createSponsor, updateSponsor, deleteSponsor,
@@ -397,6 +397,29 @@ function RegistrationsTab({ eventId, token, router }: any) {
     if (selected?.id === id) setSelected((s: any) => s ? { ...s, status } : null);
   };
 
+  const deleteReg = async (id: number) => {
+    if (!confirm('هل تريد حذف هذا التسجيل؟')) return;
+    try {
+      await deleteRegistration(eventId, id, token);
+      load();
+      if (selected?.id === id) setSelected(null);
+    } catch (e: any) {
+      alert('❌ خطأ: ' + e.message);
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    const colors: Record<string, { bg: string; color: string }> = {
+      startup:   { bg: '#6C63FF', color: '#C7D2FE' },
+      investor:  { bg: '#10b981', color: '#86EFAC' },
+      speaker:   { bg: '#ec4899', color: '#F472B6' },
+      sponsor:   { bg: '#0ea5e9', color: '#7DD3FC' },
+      general:   { bg: '#8b5cf6', color: '#D8B4FE' },
+      media:     { bg: '#f59e0b', color: '#FED7AA' },
+    };
+    return colors[type] || { bg: '#6b7280', color: '#E5E7EB' };
+  };
+
   return (
     <div style={{ display: 'flex', gap: 16 }}>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -456,13 +479,14 @@ function RegistrationsTab({ eventId, token, router }: any) {
                 ) : registrations.map(reg => {
                   const st = STATUS_STYLES[reg.status] || STATUS_STYLES.pending;
                   const typeLabel = typeLabels[reg.type as keyof typeof typeLabels] || reg.type;
+                  const typeColor = getTypeColor(reg.type);
                   return (
                     <tr key={reg.id} onClick={() => setSelected(reg)}
                       style={{ borderTop: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer', background: selected?.id === reg.id ? 'rgba(108,99,255,0.1)' : 'transparent' }}>
                       <td style={{ padding: '0.7rem 0.85rem', borderRight: '1px solid rgba(255,255,255,0.03)' }}>{reg.name}</td>
                       <td style={{ padding: '0.7rem 0.85rem', borderRight: '1px solid rgba(255,255,255,0.03)', fontSize: '0.78rem' }}>{reg.email}</td>
                       <td style={{ padding: '0.7rem 0.85rem', borderRight: '1px solid rgba(255,255,255,0.03)' }}>
-                        <span style={{ display: 'inline-block', background: `${reg.type === 'startup' ? '#6C63FF' : reg.type === 'investor' ? '#10b981' : '#f59e0b'}20`, color: reg.type === 'startup' ? '#6C63FF' : reg.type === 'investor' ? '#10b981' : '#f59e0b', padding: '0.2rem 0.5rem', borderRadius: 4, fontSize: '0.75rem' }}>
+                        <span style={{ display: 'inline-block', background: `${typeColor.bg}20`, color: typeColor.color, padding: '0.2rem 0.5rem', borderRadius: 4, fontSize: '0.75rem', fontWeight: 500 }}>
                           {typeLabel}
                         </span>
                       </td>
@@ -516,6 +540,9 @@ function RegistrationsTab({ eventId, token, router }: any) {
           <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
             <button onClick={() => changeStatus(selected.id, 'approved')} style={{ flex: 1, ...S.btn('#10b98130'), color: '#10b981', border: '1px solid #10b98140' }}>✅ قبول</button>
             <button onClick={() => changeStatus(selected.id, 'rejected')} style={{ flex: 1, ...S.btn('#ef444420'), color: '#ef4444', border: '1px solid #ef444440' }}>❌ رفض</button>
+          </div>
+          <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+            <button onClick={() => deleteReg(selected.id)} style={{ ...S.del, width: '100%', textAlign: 'center', justifyContent: 'center' }}>🗑️ حذف</button>
           </div>
         </div>
       )}

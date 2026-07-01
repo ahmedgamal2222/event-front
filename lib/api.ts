@@ -55,6 +55,11 @@ export const updateRegistration = (eventId: number, id: number, body: any, token
     method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token)
   });
 
+export const deleteRegistration = (eventId: number, id: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/registrations/${id}`, {
+    method: 'DELETE', headers: getAuthHeaders(token)
+  });
+
 // ── Admin – Speakers ───────────────────────────────────────────────────────────
 export const createSpeaker = (eventId: number, body: any, token: string) =>
   apiFetch<any>(`/api/events/${eventId}/speakers`, { method: 'POST', body: JSON.stringify(body), headers: getAuthHeaders(token) });
