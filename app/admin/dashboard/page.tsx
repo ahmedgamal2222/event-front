@@ -56,6 +56,49 @@ function SaveBtn({ loading, onClick }: { loading: boolean; onClick: () => void }
   return <button style={S.btn()} onClick={onClick} disabled={loading}>{loading ? 'جار الحفظ...' : 'حفظ'}</button>;
 }
 
+function HelpBox({ title, children, icon = 'ℹ️' }: { title: string; children: React.ReactNode; icon?: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <button
+        onClick={() => setShow(!show)}
+        style={{
+          background: 'rgba(59,130,246,0.1)',
+          border: '1px solid rgba(59,130,246,0.3)',
+          borderRadius: '0.5rem',
+          padding: '0.7rem 1rem',
+          color: '#3b82f6',
+          cursor: 'pointer',
+          width: '100%',
+          textAlign: 'right',
+          fontSize: '0.9rem',
+          fontWeight: 500,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <span>{icon} {title}</span>
+        <span style={{ transform: show ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
+      </button>
+      {show && (
+        <div style={{
+          background: 'rgba(59,130,246,0.05)',
+          border: '1px solid rgba(59,130,246,0.15)',
+          borderTop: 'none',
+          borderRadius: '0 0 0.5rem 0.5rem',
+          padding: '1rem',
+          fontSize: '0.85rem',
+          color: '#e0e7ff',
+          lineHeight: 1.6,
+        }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ImageUploadField({ onUploaded, maxSizeMB = 3, token }: { onUploaded: (value: string) => void; maxSizeMB?: number; token: string }) {
   const [uploading, setUploading] = useState(false);
 
@@ -256,6 +299,21 @@ function EventTab({ eventId, token, save, saving }: any) {
             </Field>
           </div>
         ))}
+        
+        <HelpBox title="شرح الشعارات والصور" icon="🖼️">
+          <div style={{ display: 'grid', gap: 10 }}>
+            <div>
+              <strong style={{ color: '#fff' }}>📸 صورة الغلاف:</strong> صورة خلفية الحدث الرئيسية (تظهر في البريد والتطبيق)
+            </div>
+            <div>
+              <strong style={{ color: '#fff' }}>🏢 شعار الحدث:</strong> شعار الحدث الرسمي (يظهر في النماذج والرسائل البريدية والإشعارات)
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '4px', marginTop: '8px' }}>
+              <strong style={{ color: '#60a5fa' }}>ملاحظة:</strong> هناك أيضاً شعار منفصل لمحتوى الصفحة الرئيسية في قسم "محتوى الصفحة" يظهر فقط للزوار
+            </div>
+          </div>
+        </HelpBox>
+
         <div>
           <Field label="صورة الغلاف">
             {form.cover_image && (
@@ -333,6 +391,28 @@ function RegistrationsTab({ eventId, token, router, event, cfg }: any) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'white' }}>التسجيلات <span style={{ color: '#94a3b8', fontSize: '1rem' }}>({total})</span></h1>
         </div>
+        
+        <HelpBox title="ما هي التسجيلات؟" icon="📋">
+          <div style={{ display: 'grid', gap: 10 }}>
+            <div>
+              <strong style={{ color: '#fff' }}>التسجيلات:</strong> هي الأشخاص الذين تسجلوا للحضور في الحدث من خلال النموذج
+            </div>
+            <div>
+              <strong style={{ color: '#fff' }}>🔍 البحث:</strong> ابحث بالاسم أو البريد الإلكتروني
+            </div>
+            <div>
+              <strong style={{ color: '#fff' }}>📊 الفلاتر:</strong>
+              <ul style={{ margin: '6px 0 0 20px', color: '#e0e7ff' }}>
+                <li><strong>الحالة:</strong> قيد الانتظار / مقبول / مرفوض / في قائمة الانتظار / ملغى</li>
+                <li><strong>النوع:</strong> شركة ناشئة / حضور عام / مستثمر / متحدث / راعي / إعلام</li>
+              </ul>
+            </div>
+            <div>
+              <strong style={{ color: '#fff' }}>✏️ تغيير الحالة:</strong> اختر الحالة من القائمة لكل تسجيل
+            </div>
+          </div>
+        </HelpBox>
+
         <div style={{ ...S.card, display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
           <input placeholder="بحث..." value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} style={{ ...S.inp, width: 180 }} />
           <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(0); }} style={{ ...S.inp, width: 140 }}>
@@ -570,6 +650,27 @@ function AgendaTab({ eventId, token, save, saving, showToast }: any) {
         <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'white' }}>البرنامج</h1>
         <button style={S.btn()} onClick={() => setAddingDay(true)}>+ يوم جديد</button>
       </div>
+
+      <HelpBox title="إدارة البرنامج والتواريخ" icon="📅">
+        <div style={{ display: 'grid', gap: 10 }}>
+          <div>
+            <strong style={{ color: '#fff' }}>الخطوة 1: إضافة أيام</strong>
+            <p style={{ margin: '4px 0 0 0' }}>اضغط "يوم جديد" وأدخل التاريخ (مثال: 2026-12-25) والتسمية (مثال: اليوم الأول)</p>
+          </div>
+          <div>
+            <strong style={{ color: '#fff' }}>الخطوة 2: إضافة جلسات</strong>
+            <p style={{ margin: '4px 0 0 0' }}>اضغط "جلسة جديدة" تحت كل يوم وأدخل: الوقت (09:00)، العنوان، النوع (محاضرة/ورشة/...)، والمتحدث</p>
+          </div>
+          <div>
+            <strong style={{ color: '#fff' }}>✏️ تعديل التاريخ:</strong>
+            <p style={{ margin: '4px 0 0 0' }}>لتعديل تاريخ اليوم: اضغط على اليوم واعدل حقل التاريخ، ثم اضغط حفظ</p>
+          </div>
+          <div>
+            <strong style={{ color: '#fff' }}>🔄 تحريك الجلسات:</strong>
+            <p style={{ margin: '4px 0 0 0' }}>لنقل جلسة من يوم لآخر: اضغط "تعديل" وغير "اليوم" من القائمة المنسدلة</p>
+          </div>
+        </div>
+      </HelpBox>
 
       {addingDay && (
         <div style={{ ...S.card, marginBottom: 16 }}>
@@ -1101,6 +1202,31 @@ function SiteConfigTab({ eventId, token, save, saving }: any) {
         <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'white' }}>🎨 محتوى الصفحة الرئيسية</h1>
         <SaveBtn loading={saving} onClick={saveAll} />
       </div>
+
+      <HelpBox title="شرح محتوى الصفحة الرئيسية" icon="📖">
+        <div style={{ display: 'grid', gap: 12 }}>
+          <div>
+            <strong style={{ color: '#fff' }}>📌 هذا القسم يتحكم بما يراه الزوار على الصفحة الرئيسية للحدث</strong>
+          </div>
+          <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '4px' }}>
+            <strong style={{ color: '#60a5fa' }}>الشعارات الثلاثة:</strong>
+            <ul style={{ margin: '6px 0 0 20px', color: '#e0e7ff' }}>
+              <li><strong>شعار الحدث:</strong> في "معلومات الحدث" - يظهر في النماذس والبريد</li>
+              <li><strong>شعار الصفحة:</strong> هنا - يظهر في الـ Navbar/Footer للزوار فقط</li>
+              <li><strong>صورة الغلاف:</strong> في "معلومات الحدث" - خلفية الحدث الرئيسية</li>
+            </ul>
+          </div>
+          <div>
+            <strong style={{ color: '#fff' }}>🎯 أقسام الصفحة الرئيسية:</strong>
+            <ul style={{ margin: '6px 0 0 20px', color: '#e0e7ff' }}>
+              <li><strong>Hero:</strong> القسم الأول مع اسم الحدث والأزرار</li>
+              <li><strong>الإحصائيات:</strong> أرقام (عدد الحضور، الشركات، إلخ)</li>
+              <li><strong>عن الحدث:</strong> بطاقات توضح فوائد الحدث</li>
+              <li><strong>الشعار:</strong> شعار الحدث (الـ Logo) في الـ navbar و/أو footer</li>
+            </ul>
+          </div>
+        </div>
+      </HelpBox>
 
       {/* Hero */}
       <div style={{ ...S.card, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
