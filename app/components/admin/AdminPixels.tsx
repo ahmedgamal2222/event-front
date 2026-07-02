@@ -8,6 +8,22 @@ interface AdminPixelsProps {
   token: string;
 }
 
+const S = {
+  inp: { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(108,99,255,0.2)', borderRadius: '0.5rem', padding: '0.55rem 0.85rem', color: 'white', outline: 'none', width: '100%', fontSize: '0.9rem', colorScheme: 'dark' } as React.CSSProperties,
+  btn: (color = '#6C63FF') => ({ background: color, color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.45rem 1rem', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 } as React.CSSProperties),
+  card: { background: '#13102a', border: '1px solid rgba(108,99,255,0.15)', borderRadius: '0.8rem', padding: '1.25rem' } as React.CSSProperties,
+  label: { fontSize: '0.78rem', color: '#94a3b8', marginBottom: '0.3rem', display: 'block', fontWeight: 600 } as React.CSSProperties,
+  section: { background: '#13102a', border: '1px solid rgba(108,99,255,0.1)', borderRadius: '0.8rem', padding: '1rem', marginBottom: '1rem' } as React.CSSProperties,
+};
+
+const PIXEL_SECTIONS = [
+  { id: 'facebook', label: 'Facebook Pixel', icon: '📘', color: '#1877F2' },
+  { id: 'linkedin', label: 'LinkedIn Insight Tag', icon: '🔵', color: '#0A66C2' },
+  { id: 'twitter', label: 'Twitter Conversion', icon: '𝕏', color: '#000000' },
+  { id: 'gtag', label: 'Google Analytics', icon: '📊', color: '#E37400' },
+  { id: 'custom', label: 'كود مخصص', icon: '⚙️', color: '#6366F1' },
+];
+
 export default function AdminPixels({ eventId, token }: AdminPixelsProps) {
   const [form, setForm] = useState({
     facebook_pixel_id: '',
@@ -23,7 +39,7 @@ export default function AdminPixels({ eventId, token }: AdminPixelsProps) {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess] = useState('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -34,14 +50,14 @@ export default function AdminPixels({ eventId, token }: AdminPixelsProps) {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    setSuccess(false);
+    setSuccess('');
 
     try {
       await updatePixelCodes(eventId, form, token);
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
+      setSuccess('✅ تم حفظ الأكواد بنجاح');
+      setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save pixels');
+      setError(err instanceof Error ? err.message : 'فشل حفظ الأكواد');
     } finally {
       setLoading(false);
     }
@@ -53,214 +69,75 @@ export default function AdminPixels({ eventId, token }: AdminPixelsProps) {
       const res = await fetchPixelCodes(eventId);
       if (res.data) {
         setForm(prev => ({ ...prev, ...res.data }));
+        setSuccess('✅ تم تحميل الأكواد الموجودة');
+        setTimeout(() => setSuccess(''), 3000);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load pixels');
+      setError(err instanceof Error ? err.message : 'فشل تحميل الأكواد');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h3 className="text-2xl font-bold">أكواد التتبع والبكسل</h3>
-        <button
-          onClick={handleLoadExisting}
-          disabled={loading}
-          className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 disabled:bg-gray-400"
-        >
-          تحميل الموجود
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+        <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'white', margin: 0 }}>📊 البكسل والتتبع</h1>
+        <button onClick={handleLoadExisting} disabled={loading} style={{ ...S.btn('#3b82f6'), opacity: loading ? 0.5 : 1 }} onMouseEnter={(e) => (e.currentTarget.style.background = '#1d4ed8')} onMouseLeave={(e) => (e.currentTarget.style.background = '#3b82f6')}>
+          ⬇️ تحميل الموجود
         </button>
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
-      )}
+      {error && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '0.5rem', padding: '0.75rem 1rem', color: '#fca5a5', fontSize: '0.9rem' }}>❌ {error}</div>}
+      {success && <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '0.5rem', padding: '0.75rem 1rem', color: '#86efac', fontSize: '0.9rem' }}>{success}</div>}
 
-      {success && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
-          تم الحفظ بنجاح!
-        </div>
-      )}
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {PIXEL_SECTIONS.map(section => (
+          <div key={section.id} style={S.section}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+              <span style={{ fontSize: '1.5rem' }}>{section.icon}</span>
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'white', margin: 0 }}>{section.label}</h3>
+            </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Facebook Pixel */}
-        <div className="bg-white p-6 rounded-lg border border-gray-200 space-y-3">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-2xl">📘</span>
-            <h4 className="text-xl font-bold">Facebook Pixel</h4>
+            {section.id === 'custom' ? (
+              <div>
+                <label style={S.label}>HTML/JavaScript مخصص</label>
+                <textarea name="custom_pixel_code" value={form.custom_pixel_code} onChange={handleInputChange} placeholder="أضف أي كود تتبع مخصص هنا..." style={{ ...S.inp, minHeight: '120px' }} />
+                <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.5rem' }}>أضف أي كود HTML أو JavaScript إضافي</p>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <label style={S.label}>{section.id === 'gtag' ? 'Measurement ID' : section.id === 'facebook' ? 'Pixel ID' : section.id === 'linkedin' ? 'Partner ID' : 'Tracking ID'}</label>
+                  <input type="text" name={`${section.id}_pixel_id`} value={(form as any)[`${section.id}_pixel_id`]} onChange={handleInputChange} placeholder={section.id === 'gtag' ? 'G-XXXXXXXXXX' : section.id === 'facebook' ? '123456789' : section.id === 'linkedin' ? '123456' : 'abc123'} style={S.inp} />
+                  <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.5rem' }}>معرّف {section.label} الخاص بك</p>
+                </div>
+
+                <div>
+                  <label style={S.label}>الكود الكامل</label>
+                  <textarea name={`${section.id}_pixel_code`} value={(form as any)[`${section.id}_pixel_code`]} onChange={handleInputChange} placeholder={`<script>...</script>`} style={{ ...S.inp, minHeight: '100px', fontFamily: 'monospace', fontSize: '0.8rem' }} />
+                  <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.5rem' }}>الكود الكامل من {section.label}</p>
+                </div>
+              </>
+            )}
           </div>
+        ))}
 
-          <div>
-            <label className="block font-bold text-gray-700 mb-2">Pixel ID</label>
-            <input
-              type="text"
-              name="facebook_pixel_id"
-              value={form.facebook_pixel_id}
-              onChange={handleInputChange}
-              placeholder="123456789"
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <p className="text-xs text-gray-500 mt-1">معرّف البكسل الخاص بك من Facebook Business</p>
-          </div>
-
-          <div>
-            <label className="block font-bold text-gray-700 mb-2">كود البكسل الكامل</label>
-            <textarea
-              name="facebook_pixel_code"
-              value={form.facebook_pixel_code}
-              onChange={handleInputChange}
-              rows={4}
-              placeholder="<script>!function(f){...}</script>"
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-            />
-            <p className="text-xs text-gray-500 mt-1">الكود الكامل من Facebook - يمكنك لصق كود البكسل الكامل هنا</p>
-          </div>
-        </div>
-
-        {/* LinkedIn Pixel */}
-        <div className="bg-white p-6 rounded-lg border border-gray-200 space-y-3">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-2xl">in</span>
-            <h4 className="text-xl font-bold">LinkedIn Insight Tag</h4>
-          </div>
-
-          <div>
-            <label className="block font-bold text-gray-700 mb-2">Partner ID</label>
-            <input
-              type="text"
-              name="linkedin_pixel_id"
-              value={form.linkedin_pixel_id}
-              onChange={handleInputChange}
-              placeholder="123456"
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <p className="text-xs text-gray-500 mt-1">معرّف الشريك من LinkedIn</p>
-          </div>
-
-          <div>
-            <label className="block font-bold text-gray-700 mb-2">كود LinkedIn</label>
-            <textarea
-              name="linkedin_pixel_code"
-              value={form.linkedin_pixel_code}
-              onChange={handleInputChange}
-              rows={4}
-              placeholder="<script>_linkedin_partner_id = ...</script>"
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-            />
-          </div>
-        </div>
-
-        {/* Twitter Pixel */}
-        <div className="bg-white p-6 rounded-lg border border-gray-200 space-y-3">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-2xl">𝕏</span>
-            <h4 className="text-xl font-bold">Twitter Conversion Tracking</h4>
-          </div>
-
-          <div>
-            <label className="block font-bold text-gray-700 mb-2">Tracking ID</label>
-            <input
-              type="text"
-              name="twitter_pixel_id"
-              value={form.twitter_pixel_id}
-              onChange={handleInputChange}
-              placeholder="abc123"
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <p className="text-xs text-gray-500 mt-1">معرّف التتبع من Twitter</p>
-          </div>
-
-          <div>
-            <label className="block font-bold text-gray-700 mb-2">كود Twitter</label>
-            <textarea
-              name="twitter_pixel_code"
-              value={form.twitter_pixel_code}
-              onChange={handleInputChange}
-              rows={4}
-              placeholder="<script>!function(e,t,n,...){...}</script>"
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-            />
-          </div>
-        </div>
-
-        {/* Google Analytics */}
-        <div className="bg-white p-6 rounded-lg border border-gray-200 space-y-3">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-2xl">📊</span>
-            <h4 className="text-xl font-bold">Google Analytics (gtag)</h4>
-          </div>
-
-          <div>
-            <label className="block font-bold text-gray-700 mb-2">Measurement ID</label>
-            <input
-              type="text"
-              name="gtag_id"
-              value={form.gtag_id}
-              onChange={handleInputChange}
-              placeholder="G-XXXXXXXXXX"
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <p className="text-xs text-gray-500 mt-1">معرّف القياس من Google Analytics 4</p>
-          </div>
-
-          <div>
-            <label className="block font-bold text-gray-700 mb-2">كود gtag</label>
-            <textarea
-              name="gtag_code"
-              value={form.gtag_code}
-              onChange={handleInputChange}
-              rows={4}
-              placeholder="<script async src='https://www.googletagmanager.com/...></script>"
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-            />
-          </div>
-        </div>
-
-        {/* Custom Pixel Code */}
-        <div className="bg-white p-6 rounded-lg border border-gray-200 space-y-3">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-2xl">⚙️</span>
-            <h4 className="text-xl font-bold">كود مخصص (اختياري)</h4>
-          </div>
-
-          <div>
-            <label className="block font-bold text-gray-700 mb-2">HTML/JavaScript مخصص</label>
-            <textarea
-              name="custom_pixel_code"
-              value={form.custom_pixel_code}
-              onChange={handleInputChange}
-              rows={5}
-              placeholder="أكود أي بكسل أو تتبع مخصص..."
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-            />
-            <p className="text-xs text-gray-500 mt-1">أضف أي أكواد تتبع إضافية هنا</p>
-          </div>
-        </div>
-
-        {/* Submit */}
-        <div className="flex gap-4">
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 disabled:bg-gray-400 font-bold"
-          >
-            {loading ? 'جاري الحفظ...' : 'حفظ الأكواد'}
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button type="submit" disabled={loading} style={{ ...S.btn('#10b981'), opacity: loading ? 0.5 : 1 }} onMouseEnter={(e) => (e.currentTarget.style.background = '#059669')} onMouseLeave={(e) => (e.currentTarget.style.background = '#10b981')}>
+            {loading ? '💾 جاري الحفظ...' : '💾 حفظ الأكواد'}
           </button>
         </div>
       </form>
 
-      {/* Info Box */}
-      <div className="bg-blue-50 border border-blue-200 p-4 rounded">
-        <h4 className="font-bold text-blue-900 mb-2">ملاحظات مهمة:</h4>
-        <ul className="text-sm text-blue-800 space-y-1">
-          <li>• يمكنك لصق الكود الكامل من كل منصة تتبع</li>
-          <li>• ستُدرج جميع الأكواد تلقائياً في رأس الصفحة (HTML Head)</li>
-          <li>• لا تنسَ التحقق من أن أكوادك تعمل بعد الحفظ</li>
-          <li>• يمكنك استخدام أكثر من بكسل واحد في نفس الوقت</li>
+      <div style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '0.8rem', padding: '1rem' }}>
+        <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#93c5fd', margin: '0 0 0.75rem 0' }}>📝 ملاحظات مهمة:</h4>
+        <ul style={{ fontSize: '0.85rem', color: '#e2e8f0', lineHeight: 1.8, margin: 0, paddingLeft: '1.5rem' }}>
+          <li>✓ يمكنك لصق الكود الكامل من كل منصة</li>
+          <li>✓ ستُدرج جميع الأكواد تلقائياً في رأس الصفحة</li>
+          <li>✓ يمكنك استخدام أكثر من بكسل واحد معاً</li>
+          <li>✓ تحقق من أن الأكواد تعمل بعد الحفظ</li>
+          <li>✓ استخدم الكود المخصص لأي تتبعات إضافية</li>
         </ul>
       </div>
     </div>

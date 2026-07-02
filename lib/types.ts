@@ -64,6 +64,9 @@ export interface Event {
   linkedin: string;
   form_config: string | null;
   site_config: string | null;
+  intro_video_url: string | null;
+  intro_video_thumbnail: string | null;
+  show_intro_video: number | null;
 }
 
 export interface Speaker {
@@ -72,11 +75,25 @@ export interface Speaker {
   name_ar: string;
   title_ar: string;
   company: string;
+  bio: string;
   bio_ar: string;
+  bio_extended: string | null;
+  achievements: string | null;
+  linkedin_url: string | null;
+  twitter_url: string | null;
   photo_url: string | null;
   sort_order: number;
   is_featured: number;
   is_surprise: number;
+}
+
+export interface VenueMedia {
+  id: number;
+  media_url: string;
+  media_type: 'image' | 'video';
+  title: string | null;
+  description: string | null;
+  sort_order: number;
 }
 
 export interface AgendaSession {

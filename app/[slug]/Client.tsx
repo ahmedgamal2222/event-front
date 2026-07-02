@@ -1,7 +1,12 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { Event, Speaker, AgendaDay, Stats, Sponsor, Faq, FormConfig, SiteConfig } from '../../lib/types';
-import { fetchEvent, fetchSpeakers, fetchAgenda, fetchStats, fetchSponsors, fetchFaqs, submitRegistration } from '../../lib/api';
+import { fetchEvent, fetchSpeakers, fetchAgenda, fetchStats, fetchSponsors, fetchFaqs, submitRegistration, fetchVenueGallery } from '../../lib/api';
+import { VenueMedia } from '../../lib/types';
+import PixelInjector from '../components/PixelInjector';
+import TicketsSection from '../components/TicketsSection';
+import SupportWidget from '../components/SupportWidget';
+import RegistrationSuccessMessage from '../components/RegistrationSuccessMessage';
 
 const API_EVENT_SLUG = process.env.NEXT_PUBLIC_EVENT_SLUG || 's3-summit-2026';
 
@@ -129,12 +134,12 @@ function RegistrationForm({ event, onClose, cfg, initialTab }: { event: Event; o
   };
 
   if (success) return (
-    <div className="text-center py-16">
-      <div className="text-6xl mb-4">🎉</div>
-      <h3 className="text-2xl font-bold text-white mb-2">تم التسجيل بنجاح!</h3>
-      <p className="text-[var(--text-muted)] mb-6">سيصلك بريد إلكتروني بتأكيد التسجيل وكود التذكرة.</p>
-      <button onClick={onClose} className="btn-primary">إغلاق</button>
-    </div>
+    <RegistrationSuccessMessage
+      registrationType={tab as any}
+      fullName={form.full_name}
+      companyName={tab === 'startup' ? form.company_name : undefined}
+      onClose={onClose}
+    />
   );
 
   return (
@@ -359,6 +364,9 @@ export default function EventLandingClient() {
   const openModal = (tab?: string) => { setRegInitialTab(tab); setShowRegModal(true); };
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedSpeaker, setSelectedSpeaker] = useState<any | null>(null);
+  const [venueGallery, setVenueGallery] = useState<VenueMedia[]>([]);
+  const [activeGalleryIndex, setActiveGalleryIndex] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -376,14 +384,15 @@ export default function EventLandingClient() {
         }
         // Update browser title dynamically
         document.title = `${ev.name_ar || ev.name} – ${ev.tagline_ar || ev.tagline || ''}`;
-        const [spRes, agRes, stRes, spnRes, fqRes] = await Promise.all([
-          fetchSpeakers(ev.id), fetchAgenda(ev.id), fetchStats(ev.id), fetchSponsors(ev.id), fetchFaqs(ev.id)
+        const [spRes, agRes, stRes, spnRes, fqRes, venueRes] = await Promise.all([
+          fetchSpeakers(ev.id), fetchAgenda(ev.id), fetchStats(ev.id), fetchSponsors(ev.id), fetchFaqs(ev.id), fetchVenueGallery(ev.id)
         ]);
         setSpeakers(spRes.data || []);
         setAgenda(agRes.data || []);
         setStats(stRes.data || null);
         setSponsors(spnRes.data || []);
         setFaqs(fqRes.data || []);
+        setVenueGallery(venueRes.data || []);
       } catch { /* use default demo data */ }
       setLoading(false);
     })();
@@ -426,6 +435,8 @@ export default function EventLandingClient() {
 
   return (
     <div className="min-h-screen" style={{ background: '#0d0b1a' }}>
+      {/* Pixel Tracking */}
+      <PixelInjector eventId={event?.id || 1} />
       {/* ── Navbar ───────────────────────────────────────────────────────────── */}
       <nav className="fixed top-0 w-full z-50 glass" style={{ borderBottom: '1px solid rgba(108,99,255,0.2)' }}>
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -498,6 +509,52 @@ export default function EventLandingClient() {
           </div>
         </div>
       </section>
+
+      {/* ── Intro Video ───────────────────────────────────────────────────────── */}
+      {event?.show_intro_video && event?.intro_video_url && (
+        <section className="py-16 px-6" style={{ background: 'rgba(108,99,255,0.04)' }}>
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-8">
+              <div className="section-badge">مقدمة بالفيديو</div>
+              <h2 className="section-title">تعرف على الحدث</h2>
+            </div>
+            <div
+              className="relative rounded-2xl overflow-hidden"
+              style={{
+                aspectRatio: '16/9',
+                background: '#0d0b1a',
+                boxShadow: `0 20px 60px rgba(108,99,255,0.25)`,
+                border: `1px solid rgba(108,99,255,0.3)`
+              }}
+            >
+              {event.intro_video_url.includes('youtube.com') || event.intro_video_url.includes('youtu.be') ? (
+                // YouTube embed
+                <iframe
+                  src={event.intro_video_url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                  className="w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : event.intro_video_url.includes('vimeo.com') ? (
+                // Vimeo embed
+                <iframe
+                  src={`https://player.vimeo.com/video/${event.intro_video_url.split('/').pop()}`}
+                  className="w-full h-full"
+                  allowFullScreen
+                />
+              ) : (
+                // Direct video
+                <video
+                  src={event.intro_video_url}
+                  poster={event.intro_video_thumbnail || undefined}
+                  controls
+                  className="w-full h-full object-cover"
+                />
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── Stats ─────────────────────────────────────────────────────────────── */}
       <section className="py-16 px-6">
@@ -593,11 +650,14 @@ export default function EventLandingClient() {
           <div className="text-center mb-12">
             <div className="section-badge">المتحدثون</div>
             <h2 className="section-title">قيادات ملهمة</h2>
-            <p className="text-[var(--text-muted)] mt-2">نخبة من رواد الأعمال والمستثمرين والخبراء</p>
+            <p className="text-[var(--text-muted)] mt-2">نخبة من رواد الأعمال والمستثمرين والخبراء · اضغط لقراءة السيرة الذاتية</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {speakers.map(speaker => (
-              <div key={speaker.id} className="card text-center hover:border-[var(--primary)] transition-all group">
+              <div key={speaker.id}
+                className="card text-center hover:border-[var(--primary)] transition-all group cursor-pointer"
+                onClick={() => !speaker.is_surprise && setSelectedSpeaker(speaker)}
+              >
                 {speaker.photo_url ? (
                   <img src={speaker.photo_url} alt={speaker.name_ar}
                     className="w-20 h-20 rounded-full mx-auto mb-4 object-cover border-2 group-hover:border-[var(--primary)] transition-all"
@@ -605,7 +665,7 @@ export default function EventLandingClient() {
                 ) : (
                   <div className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center text-xl font-black text-white"
                        style={{ background: speaker.is_surprise ? 'rgba(255,255,255,0.1)' : `linear-gradient(135deg, ${primaryColor}, #4f46e5)` }}>
-                    {speaker.is_surprise ? '?' : (speaker.name_ar?.split(' ').map(w => w[0]).slice(0,2).join('') || speaker.name[0])}
+                    {speaker.is_surprise ? '?' : (speaker.name_ar?.split(' ').map((w: string) => w[0]).slice(0,2).join('') || speaker.name[0])}
                   </div>
                 )}
                 <h3 className="text-white font-bold text-sm">{speaker.name_ar || speaker.name}</h3>
@@ -614,11 +674,92 @@ export default function EventLandingClient() {
                 {speaker.is_featured === 1 && (
                   <span className="tag mt-2 text-xs" style={{ background: '#f59e0b20', color: '#f59e0b' }}>✦ مميز</span>
                 )}
+                {!speaker.is_surprise && (
+                  <p className="text-xs text-[var(--text-muted)] mt-2 opacity-0 group-hover:opacity-100 transition-opacity">اضغط للمزيد ←</p>
+                )}
               </div>
             ))}
           </div>
         </div>
       </section>
+
+      {/* ── Venue Gallery ──────────────────────────────────────────────────────── */}
+      {venueGallery.length > 0 && (
+        <section id="venue" className="py-20 px-6" style={{ background: 'rgba(0,0,0,0.3)' }}>
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-12">
+              <div className="section-badge">مكان الحدث</div>
+              <h2 className="section-title">قاعة المؤتمر</h2>
+              <p className="text-[var(--text-muted)] mt-2">استعرض مكان انعقاد القمة</p>
+            </div>
+            {/* Main viewer */}
+            <div className="relative rounded-2xl overflow-hidden mb-4" style={{ aspectRatio: '16/9', background: '#0d0b1a' }}>
+              {venueGallery[activeGalleryIndex]?.media_type === 'video' ? (
+                <video
+                  key={venueGallery[activeGalleryIndex].media_url}
+                  src={venueGallery[activeGalleryIndex].media_url}
+                  controls
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <img
+                  src={venueGallery[activeGalleryIndex]?.media_url}
+                  alt={venueGallery[activeGalleryIndex]?.title || 'Venue'}
+                  className="w-full h-full object-cover"
+                />
+              )}
+              {/* Navigation arrows */}
+              {venueGallery.length > 1 && (
+                <>
+                  <button
+                    onClick={() => setActiveGalleryIndex(i => (i - 1 + venueGallery.length) % venueGallery.length)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-white transition-all"
+                    style={{ background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.2)' }}
+                  >←</button>
+                  <button
+                    onClick={() => setActiveGalleryIndex(i => (i + 1) % venueGallery.length)}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-white transition-all"
+                    style={{ background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.2)' }}
+                  >→</button>
+                </>
+              )}
+              {venueGallery[activeGalleryIndex]?.title && (
+                <div className="absolute bottom-0 inset-x-0 p-4" style={{ background: 'linear-gradient(transparent, rgba(0,0,0,0.8))' }}>
+                  <p className="text-white font-semibold">{venueGallery[activeGalleryIndex].title}</p>
+                </div>
+              )}
+            </div>
+            {/* Thumbnails */}
+            {venueGallery.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {venueGallery.map((item, idx) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveGalleryIndex(idx)}
+                    className="flex-shrink-0 rounded-lg overflow-hidden transition-all"
+                    style={{
+                      width: 80, height: 60,
+                      border: idx === activeGalleryIndex ? `2px solid ${primaryColor}` : '2px solid transparent',
+                      opacity: idx === activeGalleryIndex ? 1 : 0.6
+                    }}
+                  >
+                    {item.media_type === 'video' ? (
+                      <div className="w-full h-full flex items-center justify-center" style={{ background: '#1a1730' }}>
+                        <span className="text-white text-lg">▶</span>
+                      </div>
+                    ) : (
+                      <img src={item.media_url} alt="" className="w-full h-full object-cover" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ── Tickets ───────────────────────────────────────────────────────────── */}
+      {event && <TicketsSection eventId={event.id} />}
 
       {/* ── Sponsors ──────────────────────────────────────────────────────────── */}
       {sponsors.length > 0 && (
@@ -721,6 +862,104 @@ export default function EventLandingClient() {
           © {ed.year} {event?.name_ar || event?.name || 'S³ Summit'} · جميع الحقوق محفوظة
         </div>
       </footer>
+
+      {/* ── Support Widget ─────────────────────────────────────────────────────── */}
+      {event && <SupportWidget eventId={event.id} primaryColor={event.primary_color || '#6C63FF'} />}
+
+      {/* ── Speaker Bio Modal ──────────────────────────────────────────────────── */}
+      {selectedSpeaker && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}
+          onClick={() => setSelectedSpeaker(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl p-8 relative"
+            style={{ background: '#13102a', border: '1px solid rgba(108,99,255,0.3)', maxHeight: '90vh', overflowY: 'auto' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setSelectedSpeaker(null)}
+              className="absolute top-4 left-4 text-[var(--text-muted)] hover:text-white text-2xl leading-none"
+            >×</button>
+
+            {/* Speaker photo + name */}
+            <div className="flex items-start gap-5 mb-6">
+              {selectedSpeaker.photo_url ? (
+                <img src={selectedSpeaker.photo_url} alt={selectedSpeaker.name_ar}
+                  className="w-20 h-20 rounded-full object-cover flex-shrink-0"
+                  style={{ border: `2px solid ${primaryColor}` }} />
+              ) : (
+                <div className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-black text-white flex-shrink-0"
+                     style={{ background: `linear-gradient(135deg, ${primaryColor}, #4f46e5)` }}>
+                  {selectedSpeaker.name_ar?.split(' ').map((w: string) => w[0]).slice(0,2).join('')}
+                </div>
+              )}
+              <div>
+                <h3 className="text-xl font-bold text-white mb-1">{selectedSpeaker.name_ar || selectedSpeaker.name}</h3>
+                <p className="text-sm font-semibold" style={{ color: primaryColor }}>{selectedSpeaker.title_ar}</p>
+                <p className="text-sm text-[var(--text-muted)]">{selectedSpeaker.company}</p>
+                {selectedSpeaker.is_featured === 1 && (
+                  <span className="tag text-xs mt-2 inline-block" style={{ background: '#f59e0b20', color: '#f59e0b' }}>✦ متحدث مميز</span>
+                )}
+              </div>
+            </div>
+
+            {/* Bio */}
+            {(selectedSpeaker.bio_ar || selectedSpeaker.bio) && (
+              <div className="mb-4">
+                <h4 className="text-white font-semibold mb-2 text-sm">نبذة تعريفية</h4>
+                <p className="text-[var(--text-muted)] text-sm leading-relaxed">
+                  {selectedSpeaker.bio_ar || selectedSpeaker.bio}
+                </p>
+              </div>
+            )}
+
+            {/* Extended bio */}
+            {selectedSpeaker.bio_extended && (
+              <div className="mb-4">
+                <h4 className="text-white font-semibold mb-2 text-sm">التفاصيل</h4>
+                <p className="text-[var(--text-muted)] text-sm leading-relaxed">{selectedSpeaker.bio_extended}</p>
+              </div>
+            )}
+
+            {/* Achievements */}
+            {selectedSpeaker.achievements && (
+              <div className="mb-4 p-4 rounded-lg" style={{ background: 'rgba(108,99,255,0.08)', border: '1px solid rgba(108,99,255,0.2)' }}>
+                <h4 className="text-white font-semibold mb-3 text-sm">🏆 الإنجازات</h4>
+                <ul className="space-y-2">
+                  {selectedSpeaker.achievements.split('\n').filter(Boolean).map((a: string, i: number) => (
+                    <li key={i} className="text-[var(--text-muted)] text-sm flex items-start gap-2">
+                      <span style={{ color: primaryColor }}>◆</span>
+                      <span>{a}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Social links */}
+            {(selectedSpeaker.linkedin_url || selectedSpeaker.twitter_url) && (
+              <div className="flex gap-3 pt-4 border-t border-[var(--border)]">
+                {selectedSpeaker.linkedin_url && (
+                  <a href={selectedSpeaker.linkedin_url} target="_blank" rel="noopener noreferrer"
+                    className="px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:opacity-80"
+                    style={{ background: '#0077B5', color: 'white' }}>
+                    LinkedIn
+                  </a>
+                )}
+                {selectedSpeaker.twitter_url && (
+                  <a href={selectedSpeaker.twitter_url} target="_blank" rel="noopener noreferrer"
+                    className="px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:opacity-80"
+                    style={{ background: '#000', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}>
+                    𝕏 Twitter
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Registration Modal ─────────────────────────────────────────────────── */}
       {showRegModal && (

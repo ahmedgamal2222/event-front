@@ -68,7 +68,7 @@ export default function SupportWidget({ eventId, primaryColor = '#2563eb' }: Sup
   };
 
   return (
-    <div ref={widgetRef} className="fixed bottom-6 right-6 z-50 font-arabic">
+    <div ref={widgetRef} className="fixed bottom-6 left-6 z-40 font-arabic md:left-auto md:right-6 md:z-40">
       {/* Support Button */}
       <button
         onClick={() => {
@@ -93,7 +93,7 @@ export default function SupportWidget({ eventId, primaryColor = '#2563eb' }: Sup
       {/* Chat Widget */}
       {isOpen && (
         <div
-          className="absolute bottom-24 right-0 w-96 bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300"
+          className="absolute bottom-24 right-0 w-80 md:w-96 bg-white rounded-2xl shadow-2xl overflow-hidden"
           style={{ borderTop: `4px solid ${primaryColor}` }}
         >
           {/* Header */}
@@ -141,7 +141,7 @@ export default function SupportWidget({ eventId, primaryColor = '#2563eb' }: Sup
                     value={formData.name}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900"
                     placeholder="اسمك الكامل"
                   />
                 </div>
@@ -157,7 +157,7 @@ export default function SupportWidget({ eventId, primaryColor = '#2563eb' }: Sup
                     value={formData.email}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900"
                     placeholder="your@email.com"
                   />
                 </div>
@@ -172,7 +172,7 @@ export default function SupportWidget({ eventId, primaryColor = '#2563eb' }: Sup
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900"
                     placeholder="+966 5x xxxx xxxx"
                   />
                 </div>
@@ -186,7 +186,7 @@ export default function SupportWidget({ eventId, primaryColor = '#2563eb' }: Sup
                     name="category"
                     value={formData.category}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900"
                   >
                     <option value="general">عام</option>
                     <option value="technical">تقني</option>
@@ -207,7 +207,7 @@ export default function SupportWidget({ eventId, primaryColor = '#2563eb' }: Sup
                     value={formData.subject}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900"
                     placeholder="موضوع الرسالة"
                   />
                 </div>
@@ -223,7 +223,7 @@ export default function SupportWidget({ eventId, primaryColor = '#2563eb' }: Sup
                     onChange={handleInputChange}
                     required
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none text-gray-900"
                     placeholder="اكتب رسالتك هنا..."
                   />
                 </div>

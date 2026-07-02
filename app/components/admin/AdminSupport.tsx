@@ -9,6 +9,13 @@ interface AdminSupportProps {
   token: string;
 }
 
+const S = {
+  inp: { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(108,99,255,0.2)', borderRadius: '0.5rem', padding: '0.55rem 0.85rem', color: 'white', outline: 'none', width: '100%', fontSize: '0.9rem', colorScheme: 'dark' } as React.CSSProperties,
+  btn: (color = '#6C63FF') => ({ background: color, color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.45rem 1rem', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 } as React.CSSProperties),
+  card: { background: '#13102a', border: '1px solid rgba(108,99,255,0.15)', borderRadius: '0.8rem', padding: '1.25rem' } as React.CSSProperties,
+  label: { fontSize: '0.78rem', color: '#94a3b8', marginBottom: '0.3rem', display: 'block', fontWeight: 600 } as React.CSSProperties,
+};
+
 export default function AdminSupport({ eventId, token }: AdminSupportProps) {
   const [messages, setMessages] = useState<SupportMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,10 +32,13 @@ export default function AdminSupport({ eventId, token }: AdminSupportProps) {
   const loadMessages = async () => {
     try {
       setLoading(true);
+      setError(null);
       const res = await fetchSupportMessages(eventId, token);
       setMessages(res.data || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load messages');
+      const errorMsg = err instanceof Error ? err.message : 'فشل تحميل الرسائل';
+      setError(errorMsg);
+      console.error('Error loading messages:', err);
     } finally {
       setLoading(false);
     }
@@ -39,81 +49,59 @@ export default function AdminSupport({ eventId, token }: AdminSupportProps) {
       const res = await fetchSupportMessage(eventId, message.id, token);
       setSelectedMessage(res.data);
       setResponseText('');
+      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load message');
+      const errorMsg = err instanceof Error ? err.message : 'فشل تحميل الرسالة';
+      setError(errorMsg);
+      console.error('Error loading message:', err);
     }
   };
 
   const handleRespond = async () => {
     if (!selectedMessage || !responseText.trim()) return;
-
     try {
       setIsResponding(true);
-      await respondToSupportMessage(
-        eventId,
-        selectedMessage.id,
-        {
-          admin_response: responseText,
-          admin_name: 'Admin',
-          status: 'resolved',
-          priority: selectedMessage.priority,
-        },
-        token
-      );
-
+      setError(null);
+      await respondToSupportMessage(eventId, selectedMessage.id, { admin_response: responseText, admin_name: 'Admin', status: 'resolved', priority: selectedMessage.priority }, token);
       await loadMessages();
       setSelectedMessage(null);
       setResponseText('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send response');
+      const errorMsg = err instanceof Error ? err.message : 'فشل إرسال الرد';
+      setError(errorMsg);
+      console.error('Error responding to message:', err);
     } finally {
       setIsResponding(false);
     }
   };
 
-  const filteredMessages = statusFilter === 'all' 
-    ? messages 
-    : messages.filter(m => m.status === statusFilter);
+  const filteredMessages = statusFilter === 'all' ? messages : messages.filter(m => m.status === statusFilter);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'new':
-        return 'bg-red-100 text-red-800';
-      case 'open':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'in_progress':
-        return 'bg-blue-100 text-blue-800';
-      case 'resolved':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+      case 'new': return { bg: 'rgba(239,68,68,0.15)', text: '#fca5a5', label: 'جديدة' };
+      case 'open': return { bg: 'rgba(234,179,8,0.15)', text: '#fcd34d', label: 'مفتوحة' };
+      case 'in_progress': return { bg: 'rgba(59,130,246,0.15)', text: '#93c5fd', label: 'قيد المعالجة' };
+      case 'resolved': return { bg: 'rgba(16,185,129,0.15)', text: '#86efac', label: 'تم حلها' };
+      default: return { bg: 'rgba(107,114,128,0.15)', text: '#d1d5db', label: 'أخرى' };
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent':
-        return 'text-red-600 font-bold';
-      case 'high':
-        return 'text-orange-600';
-      case 'medium':
-        return 'text-yellow-600';
-      default:
-        return 'text-gray-600';
+      case 'urgent': return { text: '#fca5a5', label: '⚡ عاجل' };
+      case 'high': return { text: '#fdba74', label: '! مهم' };
+      case 'medium': return { text: '#fcd34d', label: '- عادي' };
+      default: return { text: '#d1d5db', label: '↓ منخفض' };
     }
   };
 
   return (
-    <div className="grid grid-cols-3 gap-6">
-      {/* Messages List */}
-      <div className="col-span-1 bg-white rounded-lg border border-gray-200 overflow-hidden flex flex-col">
-        <div className="p-4 border-b bg-gray-50">
-          <h3 className="font-bold text-lg mb-3">الرسائل</h3>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
-          >
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem' }}>
+      <div style={{ ...S.card, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ padding: '1rem', borderBottom: '1px solid rgba(108,99,255,0.15)' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: '0 0 0.75rem 0', color: 'white' }}>💬 الرسائل</h3>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={S.inp}>
             <option value="all">جميع الرسائل</option>
             <option value="new">جديدة</option>
             <option value="open">مفتوحة</option>
@@ -121,126 +109,71 @@ export default function AdminSupport({ eventId, token }: AdminSupportProps) {
             <option value="resolved">تم حلها</option>
           </select>
         </div>
-
-        <div className="flex-1 overflow-y-auto">
+        <div style={{ flex: 1, overflowY: 'auto' }}>
           {loading ? (
-            <div className="p-4 text-center text-gray-500">جاري التحميل...</div>
+            <div style={{ padding: '1rem', textAlign: 'center', color: '#94a3b8' }}>⏳ جاري التحميل...</div>
           ) : filteredMessages.length === 0 ? (
-            <div className="p-4 text-center text-gray-500">لا توجد رسائل</div>
+            <div style={{ padding: '1rem', textAlign: 'center', color: '#94a3b8' }}>📭 لا توجد رسائل</div>
           ) : (
-            filteredMessages.map((msg) => (
-              <button
-                key={msg.id}
-                onClick={() => handleSelectMessage(msg)}
-                className={`w-full text-right p-3 border-b hover:bg-gray-50 transition ${
-                  selectedMessage?.id === msg.id ? 'bg-blue-50 border-l-4 border-l-blue-600' : ''
-                }`}
-              >
-                <div className="flex justify-between items-start gap-2 mb-1">
-                  <span className="font-bold text-sm">{msg.name}</span>
-                  <span className={`text-xs px-2 py-1 rounded ${getStatusColor(msg.status)}`}>
-                    {msg.status === 'new' && 'جديدة'}
-                    {msg.status === 'open' && 'مفتوحة'}
-                    {msg.status === 'in_progress' && 'قيد المعالجة'}
-                    {msg.status === 'resolved' && 'تم حلها'}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-600 truncate">{msg.subject}</p>
-                <p className={`text-xs mt-1 ${getPriorityColor(msg.priority)}`}>
-                  {msg.priority === 'urgent' && '⚡ عاجل'}
-                  {msg.priority === 'high' && '! مهم'}
-                  {msg.priority === 'medium' && '- عادي'}
-                  {msg.priority === 'low' && 'منخفض'}
-                </p>
-              </button>
-            ))
+            filteredMessages.map((msg) => {
+              const statusColor = getStatusColor(msg.status);
+              return (
+                <button key={msg.id} onClick={() => handleSelectMessage(msg)} style={{
+                  width: '100%', padding: '0.75rem 1rem', borderBottom: '1px solid rgba(108,99,255,0.1)', background: selectedMessage?.id === msg.id ? 'rgba(108,99,255,0.2)' : 'transparent',
+                  borderLeft: selectedMessage?.id === msg.id ? '3px solid #6C63FF' : '3px solid transparent', color: '#e2e8f0', cursor: 'pointer', textAlign: 'right', transition: 'all 0.2s'
+                }} onMouseEnter={(e) => { if (selectedMessage?.id !== msg.id) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(108,99,255,0.1)'; }} onMouseLeave={(e) => { if (selectedMessage?.id !== msg.id) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <strong style={{ fontSize: '0.9rem' }}>{msg.name}</strong>
+                    <span style={{ fontSize: '0.7rem', padding: '0.25rem 0.5rem', borderRadius: '0.3rem', background: statusColor.bg, color: statusColor.text }}>{statusColor.label}</span>
+                  </div>
+                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{msg.subject}</p>
+                  <p style={{ fontSize: '0.75rem', margin: '0.25rem 0 0 0', color: getPriorityColor(msg.priority).text }}>{getPriorityColor(msg.priority).label}</p>
+                </button>
+              );
+            })
           )}
         </div>
       </div>
 
-      {/* Message Detail */}
-      <div className="col-span-2 bg-white rounded-lg border border-gray-200 p-6">
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
-          </div>
-        )}
-
+      <div style={{ ...S.card, display: 'flex', flexDirection: 'column' }}>
+        {error && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '0.5rem', padding: '0.75rem 1rem', color: '#fca5a5', fontSize: '0.9rem', marginBottom: '1rem' }}>❌ {error}</div>}
         {selectedMessage ? (
-          <div className="space-y-4">
-            {/* Header */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1, overflowY: 'auto' }}>
             <div>
-              <h3 className="text-2xl font-bold mb-2">{selectedMessage.subject}</h3>
-              <div className="flex gap-4 text-sm text-gray-600">
-                <span>من: <strong>{selectedMessage.name}</strong></span>
-                <span>البريد: <strong>{selectedMessage.email}</strong></span>
-                {selectedMessage.phone && <span>الهاتف: <strong>{selectedMessage.phone}</strong></span>}
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '0 0 0.75rem 0', color: 'white' }}>{selectedMessage.subject}</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.9rem', color: '#94a3b8' }}>
+                <span>من: <strong style={{ color: '#e2e8f0' }}>{selectedMessage.name}</strong></span>
+                <span>البريد: <strong style={{ color: '#e2e8f0' }}>{selectedMessage.email}</strong></span>
+                {selectedMessage.phone && <span>الهاتف: <strong style={{ color: '#e2e8f0' }}>{selectedMessage.phone}</strong></span>}
+                <span style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(108,99,255,0.15)', color: '#94a3b8', fontSize: '0.8rem' }}>📧 ملاحظة: الرسائل محفوظة في قاعدة البيانات. يمكن إضافة نظام بريء لاحقاً</span>
               </div>
             </div>
-
-            {/* Meta info */}
-            <div className="flex gap-2 text-sm">
-              <span className={`px-2 py-1 rounded ${getStatusColor(selectedMessage.status)}`}>
-                {selectedMessage.status === 'new' && 'جديدة'}
-                {selectedMessage.status === 'open' && 'مفتوحة'}
-                {selectedMessage.status === 'in_progress' && 'قيد المعالجة'}
-                {selectedMessage.status === 'resolved' && 'تم حلها'}
-              </span>
-              <span className={`px-2 py-1 rounded border ${getPriorityColor(selectedMessage.priority)}`}>
-                {selectedMessage.priority === 'urgent' && '⚡ عاجل'}
-                {selectedMessage.priority === 'high' && '! مهم'}
-                {selectedMessage.priority === 'medium' && '- عادي'}
-                {selectedMessage.priority === 'low' && 'منخفض'}
-              </span>
-              <span className="px-2 py-1 rounded bg-gray-100 text-gray-700 text-xs">
-                {selectedMessage.category === 'general' && 'عام'}
-                {selectedMessage.category === 'technical' && 'تقني'}
-                {selectedMessage.category === 'registration' && 'التسجيل'}
-                {selectedMessage.category === 'ticketing' && 'التذاكر'}
-                {selectedMessage.category === 'other' && 'أخرى'}
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.85rem' }}>
+              {(() => { const statusColor = getStatusColor(selectedMessage.status); return <span style={{ padding: '0.4rem 0.75rem', borderRadius: '0.4rem', background: statusColor.bg, color: statusColor.text }}>{statusColor.label}</span>; })()}
+              <span style={{ padding: '0.4rem 0.75rem', borderRadius: '0.4rem', background: 'rgba(108,99,255,0.1)', color: getPriorityColor(selectedMessage.priority).text }}>{getPriorityColor(selectedMessage.priority).label}</span>
+              <span style={{ padding: '0.4rem 0.75rem', borderRadius: '0.4rem', background: 'rgba(108,99,255,0.1)', color: '#94a3b8', fontSize: '0.75rem' }}>
+                {selectedMessage.category === 'general' && '📋 عام'} {selectedMessage.category === 'technical' && '🔧 تقني'} {selectedMessage.category === 'registration' && '📝 التسجيل'} {selectedMessage.category === 'ticketing' && '🎫 التذاكر'} {selectedMessage.category === 'other' && '⚙️ أخرى'}
               </span>
             </div>
-
-            {/* Message */}
-            <div className="bg-gray-50 p-4 rounded border border-gray-200">
-              <p className="text-gray-800 whitespace-pre-wrap">{selectedMessage.message}</p>
-            </div>
-
-            {/* Previous Response */}
+            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '0.5rem', border: '1px solid rgba(108,99,255,0.1)', color: '#e2e8f0', whiteSpace: 'pre-wrap', lineHeight: 1.6, flex: 1, overflowY: 'auto' }}>{selectedMessage.message}</div>
             {selectedMessage.admin_response && (
-              <div className="bg-green-50 p-4 rounded border border-green-200">
-                <p className="text-sm text-gray-600 mb-2">
-                  الرد من: <strong>{selectedMessage.admin_name}</strong>
-                </p>
-                <p className="text-gray-800 whitespace-pre-wrap">{selectedMessage.admin_response}</p>
+              <div style={{ background: 'rgba(16,185,129,0.1)', padding: '1rem', borderRadius: '0.5rem', border: '1px solid rgba(16,185,129,0.3)' }}>
+                <p style={{ fontSize: '0.85rem', color: '#86efac', margin: '0 0 0.5rem 0' }}>✓ الرد من: <strong>{selectedMessage.admin_name}</strong></p>
+                <p style={{ color: '#e2e8f0', whiteSpace: 'pre-wrap', lineHeight: 1.6, margin: 0 }}>{selectedMessage.admin_response}</p>
               </div>
             )}
-
-            {/* Response Form */}
             {selectedMessage.status !== 'resolved' && (
-              <div className="space-y-3 border-t pt-4">
-                <h4 className="font-bold">إرسال رد</h4>
-                <textarea
-                  value={responseText}
-                  onChange={(e) => setResponseText(e.target.value)}
-                  rows={4}
-                  placeholder="اكتب ردك هنا..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <button
-                  onClick={handleRespond}
-                  disabled={isResponding || !responseText.trim()}
-                  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:bg-gray-400"
-                >
-                  {isResponding ? 'جاري الإرسال...' : 'إرسال الرد'}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', borderTop: '1px solid rgba(108,99,255,0.15)', paddingTop: '1rem' }}>
+                <label style={S.label}>إرسال رد</label>
+                <textarea value={responseText} onChange={(e) => setResponseText(e.target.value)} placeholder="اكتب ردك هنا..." style={{ ...S.inp, minHeight: '100px' }} />
+                <button onClick={handleRespond} disabled={isResponding || !responseText.trim()} style={{ ...S.btn('#10b981'), opacity: isResponding || !responseText.trim() ? 0.5 : 1 }} onMouseEnter={(e) => (e.currentTarget.style.background = '#059669')} onMouseLeave={(e) => (e.currentTarget.style.background = '#10b981')}>
+                  {isResponding ? '⏳ جاري الإرسال...' : '✓ إرسال الرد'}
                 </button>
               </div>
             )}
           </div>
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-500">
-            <p>اختر رسالة لعرضها</p>
-          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, color: '#94a3b8', fontSize: '1rem' }}>اختر رسالة لعرض تفاصيلها</div>
         )}
       </div>
     </div>

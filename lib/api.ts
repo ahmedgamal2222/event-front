@@ -1,18 +1,64 @@
 // lib/api.ts – API client
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
 
+// Simple in-memory cache
+const cache = new Map<string, { data: any; time: number }>();
+const CACHE_TTL = 60000; // 60 seconds
+
 if (typeof window !== 'undefined' && !process.env.NEXT_PUBLIC_API_URL) {
   console.warn('⚠️ NEXT_PUBLIC_API_URL not set, using default API endpoint');
 }
 
-export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+export async function apiFetch<T>(path: string, options?: RequestInit, bypassCache = false): Promise<T> {
+  const isGet = !options?.method || options.method === 'GET';
+
+  // Check in-memory cache for GET requests (unless bypassed)
+  if (isGet && !bypassCache) {
+    const cached = cache.get(path);
+    if (cached && Date.now() - cached.time < CACHE_TTL) {
+      return cached.data;
+    }
+  }
+
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      ...options?.headers,
+    },
+    // Always bypass browser/CDN cache for API calls
+    cache: 'no-store',
   });
+  
+  // Check if response is JSON
+  const contentType = res.headers.get('content-type');
+  if (!contentType?.includes('application/json')) {
+    const text = await res.text();
+    console.error('❌ Non-JSON response:', text);
+    throw new Error(`Server error (${res.status}): Invalid response format`);
+  }
+  
   const data = await res.json();
-  if (!data.success) throw new Error(data.error || 'API error');
+  if (!data.success) {
+    console.error('❌ API Error:', data.error);
+    throw new Error(data.error || 'API error');
+  }
+  
+  // Store in in-memory cache for GET responses
+  if (isGet) {
+    cache.set(path, { data, time: Date.now() });
+  }
+  
   return data;
+}
+
+// Clear cache function
+export function clearApiCache() {
+  cache.clear();
+}
+
+export function clearApiCacheFor(path: string) {
+  cache.delete(path);
 }
 
 export function getAuthHeaders(token: string) {
@@ -130,8 +176,8 @@ export async function deleteImage(filename: string, token: string): Promise<void
 }
 
 // ── Public – Tickets ───────────────────────────────────────────────────────────
-export const fetchTickets = (eventId: number) =>
-  apiFetch<any>(`/api/events/${eventId}/tickets`);
+export const fetchTickets = (eventId: number, bypass = false) =>
+  apiFetch<any>(`/api/events/${eventId}/tickets`, undefined, bypass);
 
 export const fetchTicketAvailability = (eventId: number, ticketTypeId: number) =>
   apiFetch<any>(`/api/events/${eventId}/tickets/available/${ticketTypeId}`);
@@ -181,4 +227,52 @@ export const respondToSupportMessage = (eventId: number, id: number, body: any, 
 export const updatePixelCodes = (eventId: number, body: any, token: string) =>
   apiFetch<any>(`/api/events/${eventId}/support/pixels`, { 
     method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token) 
+  });
+
+// ── Public – Tickets Config ───────────────────────────────────────────────────
+export const fetchTicketsConfig = (eventId: number) =>
+  apiFetch<any>(`/api/events/${eventId}/tickets-config`);
+
+// ── Admin – Tickets Config ────────────────────────────────────────────────────
+export const updateTicketsConfig = (eventId: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/tickets-config`, { 
+    method: 'POST', body: JSON.stringify(body), headers: getAuthHeaders(token) 
+  });
+// ── Admin – Email Settings ────────────────────────────────────────────────
+export const fetchEmailSettings = (eventId: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/email-settings`, { 
+    headers: getAuthHeaders(token) 
+  });
+
+export const createEmailSettings = (eventId: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/email-settings`, { 
+    method: 'POST', body: JSON.stringify(body), headers: getAuthHeaders(token) 
+  });
+
+export const updateEmailSettings = (eventId: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/email-settings`, { 
+    method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token) 
+  });
+
+// ── Public – Venue Gallery ────────────────────────────────────────────────
+export const fetchVenueGallery = (eventId: number) =>
+  apiFetch<any>(`/api/events/${eventId}/venue`);
+
+// ── Admin – Venue Gallery ─────────────────────────────────────────────────
+export const fetchVenueGalleryAdmin = (eventId: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/venue/all`, { headers: getAuthHeaders(token) });
+
+export const createVenueMedia = (eventId: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/venue`, { 
+    method: 'POST', body: JSON.stringify(body), headers: getAuthHeaders(token) 
+  });
+
+export const updateVenueMedia = (eventId: number, id: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/venue/${id}`, { 
+    method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token) 
+  });
+
+export const deleteVenueMedia = (eventId: number, id: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/venue/${id}`, { 
+    method: 'DELETE', headers: getAuthHeaders(token) 
   });

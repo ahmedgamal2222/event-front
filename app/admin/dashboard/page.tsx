@@ -10,7 +10,12 @@ import {
   fetchAgenda, createAgendaDay, updateAgendaDay,
   createAgendaSession, updateAgendaSession, deleteAgendaSession,
   uploadImage, deleteImage,
+  fetchVenueGalleryAdmin, createVenueMedia, updateVenueMedia, deleteVenueMedia,
 } from '../../../lib/api';
+import AdminTickets from '../../../app/components/admin/AdminTickets';
+import AdminSupport from '../../../app/components/admin/AdminSupport';
+import AdminPixels from '../../../app/components/admin/AdminPixels';
+import AdminEmailSettings from '../../../app/components/admin/AdminEmailSettings';
 import type { FormConfig, SiteConfig } from '../../../lib/types';
 
 function getToken() { return typeof window !== 'undefined' ? localStorage.getItem('admin_token') || '' : ''; }
@@ -29,15 +34,26 @@ const TYPE_LABELS: Record<string, string> = {
 const SESSION_TYPES = ['keynote','talk','workshop','panel','networking','break','competition'];
 const SPONSOR_TIERS = ['platinum','gold','silver','bronze','media'];
 const TABS = [
-  { key: 'overview',       label: '📊 نظرة عامة' },
-  { key: 'event',          label: '⚙️ معلومات الحدث' },
-  { key: 'registrations',  label: '📋 التسجيلات' },
-  { key: 'speakers',       label: '🎙️ المتحدثون' },
-  { key: 'agenda',         label: '📅 البرنامج' },
-  { key: 'sponsors',       label: '🏅 الرعاة' },
-  { key: 'faqs',           label: '❓ الأسئلة الشائعة' },
-  { key: 'formconfig',     label: '📝 فورم التسجيل' },
-  { key: 'siteconfig',     label: '🎨 محتوى الصفحة' },
+  // القسم الرئيسي
+  { key: 'overview',       label: '📊 نظرة عامة',       group: 'رئيسي' },
+  // إدارة الحدث
+  { key: 'event',          label: '⚙️ معلومات الحدث',   group: 'الحدث' },
+  { key: 'video',          label: '🎬 الفيديو التعريفي', group: 'الحدث' },
+  { key: 'siteconfig',     label: '🎨 محتوى الصفحة',    group: 'الحدث' },
+  { key: 'formconfig',     label: '📝 فورم التسجيل',    group: 'الحدث' },
+  // إدارة المحتوى
+  { key: 'agenda',         label: '📅 البرنامج',        group: 'المحتوى' },
+  { key: 'speakers',       label: '🎙️ المتحدثون',       group: 'المحتوى' },
+  { key: 'venue',          label: '📸 معرض الصور',       group: 'المحتوى' },
+  { key: 'sponsors',       label: '🏅 الرعاة',          group: 'المحتوى' },
+  { key: 'faqs',           label: '❓ الأسئلة الشائعة',  group: 'المحتوى' },
+  // إدارة التسجيلات والمبيعات
+  { key: 'registrations',  label: '📋 التسجيلات',      group: 'المبيعات' },
+  { key: 'tickets',        label: '🎫 التذاكر',         group: 'المبيعات' },
+  // الدعم والتتبع
+  { key: 'support',        label: '💬 الدعم الفني',     group: 'الدعم' },
+  { key: 'pixels',         label: '📊 البكسل والتتبع',  group: 'الدعم' },
+  { key: 'email',          label: '📧 إعدادات البريد',  group: 'الدعم' },
 ] as const;
 type Tab = typeof TABS[number]['key'];
 
@@ -172,43 +188,131 @@ export default function AdminDashboard() {
 
   const logout = () => { localStorage.removeItem('admin_token'); router.replace('/admin'); };
 
+  // Group tabs by category
+  const groupedTabs = TABS.reduce((acc, tab) => {
+    const group = (tab as any).group || 'أخرى';
+    if (!acc[group]) acc[group] = [];
+    acc[group].push(tab);
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  const tabGroups = ['رئيسي', 'الحدث', 'المحتوى', 'المبيعات', 'الدعم'] as const;
+
   return (
-    <div style={{ minHeight: '100vh', background: '#0d0b1a', color: '#e2e8f0', fontFamily: 'Cairo,sans-serif', direction: 'rtl' }}>
-      <nav style={{ background: 'rgba(19,16,42,0.9)', borderBottom: '1px solid rgba(108,99,255,0.2)', position: 'sticky', top: 0, zIndex: 40, backdropFilter: 'blur(12px)' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 1.5rem', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-          <span style={{ fontWeight: 900, fontSize: '1.1rem', flexShrink: 0 }}><span style={{ color: '#6C63FF' }}>S3</span> Admin</span>
-          <div style={{ display: 'flex', gap: 4, overflowX: 'auto', flexWrap: 'nowrap' }}>
-            {TABS.map(t => (
-              <button key={t.key} onClick={() => setActiveTab(t.key)}
-                style={{ padding: '0.3rem 0.7rem', borderRadius: 6, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', fontSize: '0.78rem', fontWeight: 600, background: activeTab === t.key ? 'rgba(108,99,255,0.35)' : 'transparent', color: activeTab === t.key ? 'white' : '#94a3b8' }}>
-                {t.label}
-              </button>
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexShrink: 0 }}>
-            <a href="/s3-summit-2026" target="_blank" style={{ fontSize: '0.75rem', color: '#94a3b8', textDecoration: 'none' }}>عرض ↗</a>
-            <button onClick={logout} style={{ fontSize: '0.75rem', color: '#f87171', background: 'none', border: 'none', cursor: 'pointer' }}>خروج</button>
-          </div>
+    <div style={{ minHeight: '100vh', background: '#0d0b1a', color: '#e2e8f0', fontFamily: 'Cairo,sans-serif', direction: 'rtl', display: 'flex', flexDirection: 'row' }}>
+      {/* Sidebar */}
+      <aside style={{ width: '280px', background: 'rgba(19,16,42,0.95)', borderLeft: '1px solid rgba(108,99,255,0.15)', height: '100vh', position: 'sticky', top: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+        {/* Sidebar Header */}
+        <div style={{ padding: '1.25rem', borderBottom: '1px solid rgba(108,99,255,0.15)' }}>
+          <h2 style={{ fontWeight: 900, fontSize: '1.1rem', margin: 0 }}>
+            <span style={{ color: '#6C63FF' }}>S3</span> Admin
+          </h2>
+          <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: '0.5rem 0 0 0' }}>S3 Summit 2026</p>
         </div>
-      </nav>
 
-      {toast && (
-        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: '#1a1730', border: '1px solid rgba(108,99,255,0.4)', borderRadius: 8, padding: '0.75rem 1.5rem', zIndex: 999, fontSize: '0.9rem', color: 'white' }}>
-          {toast}
+        {/* Menu Groups */}
+        <nav style={{ flex: 1, padding: '1rem 0', overflowY: 'auto' }}>
+          {tabGroups.map(groupName => {
+            const tabs = groupedTabs[groupName];
+            if (!tabs) return null;
+            return (
+              <div key={groupName} style={{ marginBottom: '0.5rem' }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#6C63FF', padding: '0.75rem 1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  {groupName}
+                </div>
+                {tabs.map(t => (
+                  <button
+                    key={t.key}
+                    onClick={() => setActiveTab(t.key as Tab)}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem 1rem',
+                      border: 'none',
+                      background: activeTab === t.key ? 'rgba(108,99,255,0.25)' : 'transparent',
+                      color: activeTab === t.key ? 'white' : '#94a3b8',
+                      textAlign: 'right',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      transition: 'all 0.2s',
+                      borderRight: activeTab === t.key ? '3px solid #6C63FF' : '3px solid transparent',
+                      fontWeight: activeTab === t.key ? 600 : 400,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (activeTab !== t.key) {
+                        (e.target as HTMLButtonElement).style.background = 'rgba(108,99,255,0.1)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (activeTab !== t.key) {
+                        (e.target as HTMLButtonElement).style.background = 'transparent';
+                      }
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            );
+          })}
+        </nav>
+
+        {/* Sidebar Footer */}
+        <div style={{ padding: '1rem', borderTop: '1px solid rgba(108,99,255,0.15)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <a href="/s3-summit-2026" target="_blank" rel="noopener noreferrer"
+            style={{ fontSize: '0.85rem', color: '#3b82f6', textDecoration: 'none', padding: '0.5rem', textAlign: 'center', background: 'rgba(59,130,246,0.1)', borderRadius: '0.4rem', border: '1px solid rgba(59,130,246,0.2)', cursor: 'pointer', transition: 'all 0.2s' }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(59,130,246,0.2)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(59,130,246,0.1)')}
+          >
+            👁️ عرض الحدث
+          </a>
+          <button onClick={logout}
+            style={{ fontSize: '0.85rem', color: '#f87171', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', padding: '0.5rem', borderRadius: '0.4rem', cursor: 'pointer', transition: 'all 0.2s' }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.2)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.1)')}
+          >
+            🚪 خروج
+          </button>
         </div>
-      )}
+      </aside>
 
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '2rem 1.5rem' }}>
-        {activeTab === 'overview'      && <OverviewTab eventId={eventId} token={token} />}
-        {activeTab === 'event'         && <EventTab eventId={eventId} token={token} save={save} saving={saving} />}
-        {activeTab === 'registrations' && <RegistrationsTab eventId={eventId} token={token} router={router} />}
-        {activeTab === 'speakers'      && <SpeakersTab eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
-        {activeTab === 'agenda'        && <AgendaTab eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
-        {activeTab === 'sponsors'      && <SponsorsTab eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
-        {activeTab === 'faqs'          && <FaqsTab eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
-        {activeTab === 'formconfig'    && <FormConfigTab eventId={eventId} token={token} save={save} saving={saving} />}
-        {activeTab === 'siteconfig'    && <SiteConfigTab eventId={eventId} token={token} save={save} saving={saving} />}
-      </div>
+      {/* Main Content */}
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        {/* Top Header */}
+        <header style={{ background: 'rgba(19,16,42,0.9)', borderBottom: '1px solid rgba(108,99,255,0.15)', padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 30 }}>
+          <h1 style={{ fontSize: '1.3rem', fontWeight: 700, margin: 0, color: 'white' }}>
+            {TABS.find(t => t.key === activeTab)?.label || 'Dashboard'}
+          </h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <a href="/s3-summit-2026" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.85rem', color: '#94a3b8', textDecoration: 'none' }}>عرض ↗</a>
+          </div>
+        </header>
+
+        {/* Content Area */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '2rem' }}>
+          {activeTab === 'overview'      && <OverviewTab eventId={eventId} token={token} />}
+          {activeTab === 'event'         && <EventTab eventId={eventId} token={token} save={save} saving={saving} />}
+          {activeTab === 'video'         && <VideoTab eventId={eventId} token={token} save={save} saving={saving} />}
+          {activeTab === 'registrations' && <RegistrationsTab eventId={eventId} token={token} router={router} />}
+          {activeTab === 'speakers'      && <SpeakersTab eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
+          {activeTab === 'venue'         && <VenueGalleryTab eventId={eventId} token={token} showToast={showToast} />}
+          {activeTab === 'agenda'        && <AgendaTab eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
+          {activeTab === 'sponsors'      && <SponsorsTab eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
+          {activeTab === 'faqs'          && <FaqsTab eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
+          {activeTab === 'formconfig'    && <FormConfigTab eventId={eventId} token={token} save={save} saving={saving} />}
+          {activeTab === 'siteconfig'    && <SiteConfigTab eventId={eventId} token={token} save={save} saving={saving} />}
+          {activeTab === 'tickets'       && <AdminTickets eventId={eventId} token={token} />}
+          {activeTab === 'support'       && <AdminSupport eventId={eventId} token={token} />}
+          {activeTab === 'pixels'        && <AdminPixels eventId={eventId} token={token} />}
+          {activeTab === 'email'         && <AdminEmailSettings eventId={eventId} />}
+        </div>
+
+        {/* Toast Notification */}
+        {toast && (
+          <div style={{ position: 'fixed', bottom: 24, left: 24, background: '#1a1730', border: '1px solid rgba(108,99,255,0.4)', borderRadius: 8, padding: '0.75rem 1.5rem', zIndex: 999, fontSize: '0.9rem', color: 'white', maxWidth: '300px' }}>
+            {toast}
+          </div>
+        )}
+      </main>
     </div>
   );
 }
@@ -567,7 +671,7 @@ function SpeakersTab({ eventId, token, save, saving, showToast }: any) {
   const [speakers, setSpeakers] = useState<any[]>([]);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<any>(null);
-  const blank = { name: '', name_ar: '', title_ar: '', company: '', bio_ar: '', photo_url: '', is_featured: false, is_surprise: false, sort_order: 0 };
+  const blank = { name: '', name_ar: '', title_ar: '', company: '', bio_ar: '', bio_extended: '', achievements: '', linkedin_url: '', twitter_url: '', photo_url: '', is_featured: false, is_surprise: false, sort_order: 0 };
   const [form, setForm] = useState<any>(blank);
 
   const load = () => { if (token) fetchSpeakers(eventId).then((r: any) => setSpeakers(r.data || [])).catch(() => {}); };
@@ -614,6 +718,14 @@ function SpeakersTab({ eventId, token, save, saving, showToast }: any) {
             <div style={{ gridColumn: '1/-1' }}>
               <Field label="النبذة (AR)"><textarea value={form.bio_ar||''} onChange={e => set('bio_ar', e.target.value)} rows={2} style={{ ...S.inp, resize: 'vertical' }} /></Field>
             </div>
+            <div style={{ gridColumn: '1/-1' }}>
+              <Field label="السيرة التفصيلية (تظهر عند الضغط على المتحدث)"><textarea value={form.bio_extended||''} onChange={e => set('bio_extended', e.target.value)} rows={3} style={{ ...S.inp, resize: 'vertical' }} placeholder="تفاصيل إضافية عن المتحدث..." /></Field>
+            </div>
+            <div style={{ gridColumn: '1/-1' }}>
+              <Field label="الإنجازات (كل إنجاز في سطر)"><textarea value={form.achievements||''} onChange={e => set('achievements', e.target.value)} rows={3} style={{ ...S.inp, resize: 'vertical' }} placeholder="إنجاز 1&#10;إنجاز 2&#10;إنجاز 3" /></Field>
+            </div>
+            <Field label="رابط LinkedIn"><input value={form.linkedin_url||''} onChange={e => set('linkedin_url', e.target.value)} style={S.inp} placeholder="https://linkedin.com/in/..." /></Field>
+            <Field label="رابط Twitter/X"><input value={form.twitter_url||''} onChange={e => set('twitter_url', e.target.value)} style={S.inp} placeholder="https://twitter.com/..." /></Field>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#e2e8f0', cursor: 'pointer', fontSize: '0.88rem' }}>
               <input type="checkbox" checked={!!form.is_featured} onChange={e => set('is_featured', e.target.checked)} /> متحدث مميز
             </label>
@@ -821,6 +933,206 @@ function AgendaTab({ eventId, token, save, saving, showToast }: any) {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+// ── Video Tab ─────────────────────────────────────────────────────────────────
+function VideoTab({ eventId, token, save, saving }: any) {
+  const [form, setForm] = useState({ intro_video_url: '', intro_video_thumbnail: '', show_intro_video: false });
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!token) return;
+    fetchEvent('s3-summit-2026').then((r: any) => {
+      const ev = r.data;
+      setForm({
+        intro_video_url: ev.intro_video_url || '',
+        intro_video_thumbnail: ev.intro_video_thumbnail || '',
+        show_intro_video: !!ev.show_intro_video,
+      });
+      setLoaded(true);
+    }).catch(() => setLoaded(true));
+  }, [token]);
+
+  const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }));
+
+  const saveVideo = () => save(async () => {
+    await updateEvent(eventId, form, token);
+  });
+
+  if (!loaded) return <div style={{ color: '#94a3b8', padding: 20 }}>جار التحميل...</div>;
+
+  return (
+    <div style={{ maxWidth: 600 }}>
+      <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'white', marginBottom: '1.5rem' }}>🎬 الفيديو التعريفي</h1>
+      <div style={{ ...S.card, marginBottom: 16 }}>
+        <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: 16, lineHeight: 1.6 }}>
+          أضف فيديو تعريفي يظهر في الصفحة الرئيسية. يدعم روابط YouTube أو Vimeo أو رابط مباشر للفيديو.
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <Field label="رابط الفيديو (YouTube/Vimeo/Direct)">
+            <input
+              value={form.intro_video_url}
+              onChange={e => set('intro_video_url', e.target.value)}
+              style={S.inp}
+              placeholder="https://youtube.com/watch?v=... أو https://vimeo.com/..."
+            />
+          </Field>
+          <Field label="صورة المعاينة (Thumbnail) - اختياري">
+            <input
+              value={form.intro_video_thumbnail}
+              onChange={e => set('intro_video_thumbnail', e.target.value)}
+              style={S.inp}
+              placeholder="https://..."
+            />
+          </Field>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#e2e8f0', cursor: 'pointer', fontSize: '0.9rem' }}>
+            <input
+              type="checkbox"
+              checked={form.show_intro_video}
+              onChange={e => set('show_intro_video', e.target.checked)}
+              style={{ width: 16, height: 16, accentColor: '#6C63FF' }}
+            />
+            <span>عرض الفيديو في الصفحة الرئيسية</span>
+          </label>
+        </div>
+        {form.intro_video_url && (
+          <div style={{ marginTop: 16, padding: 12, background: 'rgba(108,99,255,0.08)', borderRadius: 8, border: '1px solid rgba(108,99,255,0.2)' }}>
+            <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: 8 }}>معاينة:</p>
+            <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, borderRadius: 8, overflow: 'hidden' }}>
+              {form.intro_video_url.includes('youtube.com') || form.intro_video_url.includes('youtu.be') ? (
+                <iframe
+                  src={form.intro_video_url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                  allowFullScreen
+                />
+              ) : (
+                <video src={form.intro_video_url} controls style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }} />
+              )}
+            </div>
+          </div>
+        )}
+        <div style={{ marginTop: 16 }}>
+          <SaveBtn loading={saving} onClick={saveVideo} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Venue Gallery Tab ─────────────────────────────────────────────────────────
+function VenueGalleryTab({ eventId, token, showToast }: any) {
+  const [gallery, setGallery] = useState<any[]>([]);
+  const [adding, setAdding] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const blank = { media_url: '', media_type: 'image', title: '', description: '', sort_order: 0 };
+  const [form, setForm] = useState<any>(blank);
+
+  const load = () => {
+    if (token) fetchVenueGalleryAdmin(eventId, token).then((r: any) => setGallery(r.data || [])).catch(() => {});
+  };
+  useEffect(() => { load(); }, [token]);
+  const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
+
+  const saveItem = async () => {
+    if (!form.media_url) { showToast('❌ الرابط مطلوب'); return; }
+    setSaving(true);
+    try {
+      await createVenueMedia(eventId, form, token);
+      showToast('✅ تم الإضافة');
+      setAdding(false);
+      setForm(blank);
+      load();
+    } catch (e: any) {
+      showToast('❌ ' + e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const del = async (id: number) => {
+    if (!confirm('حذف هذا العنصر من المعرض؟')) return;
+    try {
+      await deleteVenueMedia(eventId, id, token);
+      showToast('✅ تم الحذف');
+      load();
+    } catch (e: any) { showToast('❌ ' + e.message); }
+  };
+
+  const toggleActive = async (item: any) => {
+    try {
+      await updateVenueMedia(eventId, item.id, { is_active: !item.is_active }, token);
+      showToast(item.is_active ? 'تم الإخفاء' : 'تم الإظهار');
+      load();
+    } catch (e: any) { showToast('❌ ' + e.message); }
+  };
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'white' }}>📸 معرض صور المؤتمر ({gallery.filter((g:any) => g.is_active).length} نشط)</h1>
+        {!adding && <button style={S.btn()} onClick={() => { setAdding(true); setForm(blank); }}>+ إضافة صورة/فيديو</button>}
+      </div>
+
+      {adding && (
+        <div style={{ ...S.card, marginBottom: 16 }}>
+          <h3 style={{ color: 'white', marginBottom: 12 }}>إضافة عنصر للمعرض</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div style={{ gridColumn: '1/-1' }}>
+              <Field label="نوع الوسيط">
+                <select value={form.media_type} onChange={e => set('media_type', e.target.value)} style={{ ...S.inp }}>
+                  <option value="image">🖼️ صورة</option>
+                  <option value="video">🎬 فيديو</option>
+                </select>
+              </Field>
+            </div>
+            <div style={{ gridColumn: '1/-1' }}>
+              <Field label="رابط الصورة/الفيديو *">
+                <input value={form.media_url} onChange={e => set('media_url', e.target.value)} style={S.inp} placeholder="https://..." />
+              </Field>
+              <div style={{ marginTop: 6 }}>
+                <ImageUploadField onUploaded={(v) => set('media_url', v)} maxSizeMB={5} token={token} />
+              </div>
+            </div>
+            <Field label="العنوان (اختياري)"><input value={form.title||''} onChange={e => set('title', e.target.value)} style={S.inp} placeholder="القاعة الرئيسية..." /></Field>
+            <Field label="الترتيب"><input type="number" value={form.sort_order||0} onChange={e => set('sort_order', +e.target.value)} style={S.inp} /></Field>
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            <button style={S.btn()} onClick={saveItem} disabled={saving}>{saving ? 'جار الحفظ...' : 'حفظ'}</button>
+            <button style={S.del} onClick={() => { setAdding(false); setForm(blank); }}>إلغاء</button>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 12 }}>
+        {gallery.map(item => (
+          <div key={item.id} style={{ ...S.card, padding: '0.75rem', opacity: item.is_active ? 1 : 0.5 }}>
+            <div style={{ position: 'relative', aspectRatio: '16/9', background: '#0d0b1a', borderRadius: 8, overflow: 'hidden', marginBottom: 8 }}>
+              {item.media_type === 'video' ? (
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1a1730', color: 'white', fontSize: '2rem' }}>▶</div>
+              ) : (
+                <img src={item.media_url} alt={item.title||''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              )}
+              <div style={{ position: 'absolute', top: 4, right: 4, background: '#6C63FF', color: 'white', fontSize: '0.65rem', padding: '2px 6px', borderRadius: 4 }}>
+                {item.media_type === 'video' ? '🎬' : '🖼️'}
+              </div>
+            </div>
+            {item.title && <p style={{ color: '#e2e8f0', fontSize: '0.8rem', marginBottom: 6, fontWeight: 500 }}>{item.title}</p>}
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button style={{ ...S.btn(item.is_active ? '#374151' : '#10b981'), fontSize: '0.75rem', padding: '0.3rem 0.6rem' }} onClick={() => toggleActive(item)}>
+                {item.is_active ? 'إخفاء' : 'إظهار'}
+              </button>
+              <button style={{ ...S.del, fontSize: '0.75rem' }} onClick={() => del(item.id)}>حذف</button>
+            </div>
+          </div>
+        ))}
+        {gallery.length === 0 && (
+          <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+            لا توجد صور أو فيديوهات بعد. أضف أول عنصر للمعرض.
+          </div>
+        )}
+      </div>
     </div>
   );
 }
