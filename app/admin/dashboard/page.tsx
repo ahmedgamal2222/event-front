@@ -508,9 +508,16 @@ function RegistrationsTab({ eventId, token, router }: any) {
   useEffect(() => { load(); }, [load]);
 
   const changeStatus = async (id: number, status: string) => {
-    await updateRegistration(eventId, id, { status }, token);
-    load();
+    // Optimistic update - update UI immediately
+    setRegistrations(prev => prev.map(r => r.id === id ? { ...r, status } : r));
     if (selected?.id === id) setSelected((s: any) => s ? { ...s, status } : null);
+    try {
+      await updateRegistration(eventId, id, { status }, token);
+    } catch (e: any) {
+      // Revert on error
+      load();
+      alert('❌ خطأ في تحديث الحالة: ' + e.message);
+    }
   };
 
   const deleteReg = async (id: number) => {

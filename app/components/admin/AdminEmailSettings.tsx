@@ -82,6 +82,35 @@ export default function AdminEmailSettings({ eventId, token: propToken }: { even
     }
   };
 
+  const handleTestEmail = async () => {
+    const testEmail = form?.admin_email || prompt('أدخل البريد الإلكتروني للاختبار:');
+    if (!testEmail) return;
+    try {
+      setError('');
+      setSuccess('');
+      const token = getToken();
+      const response = await fetch(
+        `https://event-api.info1703.workers.dev/api/events/${eventId}/email-settings/test`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ email: testEmail })
+        }
+      );
+      const data = await response.json();
+      if (data.success) {
+        setSuccess(`✅ ${data.message}`);
+      } else {
+        setError(`❌ ${data.error || 'فشل إرسال البريد التجريبي'}`);
+      }
+    } catch (err: any) {
+      setError('❌ خطأ في الاتصال: ' + err.message);
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-8 text-[var(--text-muted)]">جاري التحميل...</div>;
   }
@@ -218,7 +247,7 @@ export default function AdminEmailSettings({ eventId, token: propToken }: { even
         </div>
 
         {/* Submit Button */}
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-wrap">
           <button
             type="submit"
             disabled={saving}
@@ -229,12 +258,30 @@ export default function AdminEmailSettings({ eventId, token: propToken }: { even
           </button>
           <button
             type="button"
+            onClick={handleTestEmail}
+            className="btn-outline"
+            disabled={saving}
+          >
+            📧 إرسال إيميل تجريبي
+          </button>
+          <button
+            type="button"
             onClick={loadSettings}
             className="btn-outline"
             disabled={saving}
           >
             ↻ إعادة تحميل
           </button>
+        </div>
+
+        <div className="p-4 rounded-lg" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)' }}>
+          <p className="text-blue-300 text-sm font-semibold mb-2">⚠️ مهم: إعداد SendGrid</p>
+          <p className="text-[var(--text-muted)] text-xs leading-relaxed">
+            لإرسال الإيميلات، يجب أن يكون بريد المرسل محققاً في SendGrid عبر
+            <strong className="text-white"> Single Sender Verification</strong> أو
+            <strong className="text-white"> Domain Authentication</strong>.
+            استخدم زر "إرسال إيميل تجريبي" للتحقق من عمل الإعدادات.
+          </p>
         </div>
       </form>
     </div>
