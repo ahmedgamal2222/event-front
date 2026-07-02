@@ -87,7 +87,7 @@ export default function AdminEmailSettings({ eventId, token: propToken }: { even
     if (!testEmail) return;
     try {
       setError('');
-      setSuccess('');
+      setSuccess('جاري إرسال الاختبار...');
       const token = getToken();
       const response = await fetch(
         `https://event-api.info1703.workers.dev/api/events/${eventId}/email-settings/test`,
@@ -97,14 +97,19 @@ export default function AdminEmailSettings({ eventId, token: propToken }: { even
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ email: testEmail })
+          // Pass sender settings directly to avoid DB query
+          body: JSON.stringify({ 
+            email: testEmail,
+            from_email: form?.from_email,
+            from_name: form?.from_name
+          })
         }
       );
       const data = await response.json();
       if (data.success) {
         setSuccess(`✅ ${data.message}`);
       } else {
-        setError(`❌ ${data.error || 'فشل إرسال البريد التجريبي'}`);
+        setError(`❌ ${data.error}${data.hint ? '\n💡 ' + data.hint : ''}`);
       }
     } catch (err: any) {
       setError('❌ خطأ في الاتصال: ' + err.message);
