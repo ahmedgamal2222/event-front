@@ -303,7 +303,7 @@ export default function AdminDashboard() {
           {activeTab === 'tickets'       && <AdminTickets eventId={eventId} token={token} />}
           {activeTab === 'support'       && <AdminSupport eventId={eventId} token={token} />}
           {activeTab === 'pixels'        && <AdminPixels eventId={eventId} token={token} />}
-          {activeTab === 'email'         && <AdminEmailSettings eventId={eventId} />}
+          {activeTab === 'email'         && <AdminEmailSettings eventId={eventId} token={token} />}
         </div>
 
         {/* Toast Notification */}

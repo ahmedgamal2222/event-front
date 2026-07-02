@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAdmin } from '../../lib/api';
 
 interface EmailSettings {
   from_email: string;
@@ -15,13 +14,15 @@ interface EmailSettings {
   confirmation_message_member: string;
 }
 
-export default function AdminEmailSettings({ eventId }: { eventId: number }) {
+export default function AdminEmailSettings({ eventId, token: propToken }: { eventId: number; token?: string }) {
   const [settings, setSettings] = useState<EmailSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [form, setForm] = useState<EmailSettings | null>(null);
+
+  const getToken = () => propToken || (typeof window !== 'undefined' ? localStorage.getItem('admin_token') || '' : '');
 
   useEffect(() => {
     loadSettings();
@@ -30,10 +31,10 @@ export default function AdminEmailSettings({ eventId }: { eventId: number }) {
   const loadSettings = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('auth_token');
+      const token = getToken();
       const response = await fetch(
         `https://event-api.info1703.workers.dev/api/events/${eventId}/email-settings`,
-        { headers: { 'Authorization': `Bearer ${token}` } }
+        { headers: { 'Authorization': `Bearer ${token}`, 'Cache-Control': 'no-store' } }
       );
 
       if (!response.ok) throw new Error('فشل تحميل الإعدادات');
@@ -56,7 +57,7 @@ export default function AdminEmailSettings({ eventId }: { eventId: number }) {
       setError('');
       setSuccess('');
 
-      const token = localStorage.getItem('auth_token');
+      const token = getToken();
       const method = settings?.from_email ? 'PUT' : 'POST';
       const response = await fetch(
         `https://event-api.info1703.workers.dev/api/events/${eventId}/email-settings`,
