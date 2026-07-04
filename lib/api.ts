@@ -276,3 +276,29 @@ export const deleteVenueMedia = (eventId: number, id: number, token: string) =>
   apiFetch<any>(`/api/events/${eventId}/venue/${id}`, { 
     method: 'DELETE', headers: getAuthHeaders(token) 
   });
+
+// ── Public – Articles ─────────────────────────────────────────────────────
+export const fetchArticles = (eventId: number, params = '') =>
+  apiFetch<any>(`/api/events/${eventId}/articles${params ? '?' + params : ''}`);
+
+export const fetchArticle = (eventId: number, slug: string) =>
+  apiFetch<any>(`/api/events/${eventId}/articles/${slug}`);
+
+// ── Admin – Articles ──────────────────────────────────────────────────────
+export const fetchArticlesAdmin = (eventId: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/articles/admin/all`, { headers: getAuthHeaders(token) });
+
+export const createArticle = (eventId: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/articles`, {
+    method: 'POST', body: JSON.stringify(body), headers: getAuthHeaders(token)
+  });
+
+export const updateArticle = (eventId: number, id: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/articles/${id}`, {
+    method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token)
+  });
+
+export const deleteArticle = (eventId: number, id: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/articles/${id}`, {
+    method: 'DELETE', headers: getAuthHeaders(token)
+  });

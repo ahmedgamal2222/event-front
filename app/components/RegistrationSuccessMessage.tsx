@@ -131,21 +131,12 @@ export default function RegistrationSuccessMessage({
         </p>
       </div>
 
-      {/* Digital Ticket Preview */}
+      {/* Digital Ticket - Hidden for now */}
+      {/* 
       <div className="mt-8">
-        <button
-          onClick={handleShowTicket}
-          className="inline-block px-6 py-3 rounded-lg font-semibold transition-all hover:scale-105"
-          style={{
-            background: 'linear-gradient(135deg, #6C63FF 0%, #4C5FD5 100%)',
-            color: 'white',
-            border: 'none',
-            cursor: 'pointer'
-          }}
-        >
-          🎫 عرض بطاقة التسجيل الذكية
-        </button>
+        <button onClick={handleShowTicket} ...>🎫 عرض بطاقة التسجيل الذكية</button>
       </div>
+      */}
 
       {/* Close Button */}
       <button 

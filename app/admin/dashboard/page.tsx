@@ -12,6 +12,7 @@ import {
   uploadImage, deleteImage,
   fetchVenueGalleryAdmin, createVenueMedia, updateVenueMedia, deleteVenueMedia,
   clearApiCacheFor,
+  fetchArticlesAdmin, createArticle, updateArticle, deleteArticle,
 } from '../../../lib/api';
 import AdminTickets from '../../../app/components/admin/AdminTickets';
 import AdminSupport from '../../../app/components/admin/AdminSupport';
@@ -55,6 +56,7 @@ const TABS = [
   { key: 'support',        label: '💬 الدعم الفني',     group: 'الدعم' },
   { key: 'pixels',         label: '📊 البكسل والتتبع',  group: 'الدعم' },
   { key: 'email',          label: '📧 إعدادات البريد',  group: 'الدعم' },
+  { key: 'articles',       label: '📝 المقالات',        group: 'المحتوى' },
 ] as const;
 type Tab = typeof TABS[number]['key'];
 
@@ -305,6 +307,7 @@ export default function AdminDashboard() {
           {activeTab === 'support'       && <AdminSupport eventId={eventId} token={token} />}
           {activeTab === 'pixels'        && <AdminPixels eventId={eventId} token={token} />}
           {activeTab === 'email'         && <AdminEmailSettings eventId={eventId} token={token} />}
+          {activeTab === 'articles'      && <ArticlesTab eventId={eventId} token={token} showToast={showToast} />}
         </div>
 
         {/* Toast Notification */}
@@ -1749,6 +1752,197 @@ function SiteConfigTab({ eventId, token, save, saving }: any) {
       </div>
 
       <div style={{ paddingBottom: 8 }}><SaveBtn loading={saving} onClick={saveAll} /></div>
+    </div>
+  );
+}
+
+// ── Articles ──────────────────────────────────────────────────────────────────
+function ArticlesTab({ eventId, token, showToast }: any) {
+  const [articles, setArticles] = useState<any[]>([]);
+  const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
+  const blank = {
+    title: '', title_ar: '', slug: '',
+    excerpt: '', excerpt_ar: '',
+    content: '', content_ar: '',
+    cover_image: '', author_name: 'S3 Summit Team',
+    category: 'general', tags: '', status: 'draft',
+    meta_title: '', meta_description: '',
+  };
+  const [form, setForm] = useState<any>(blank);
+
+  const load = () => {
+    if (token) fetchArticlesAdmin(eventId, token).then((r: any) => setArticles(r.data || [])).catch(() => {});
+  };
+  useEffect(() => { load(); }, [token]);
+  const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
+
+  const generateSlug = (title: string) =>
+    title.toLowerCase().trim()
+      .replace(/[\u0600-\u06FF]/g, (c) => c) // keep arabic
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9\u0600-\u06FF-]/g, '')
+      .slice(0, 80);
+
+  const saveItem = async () => {
+    if (!form.title || !form.content || !form.slug) {
+      showToast('❌ العنوان والمحتوى والرابط مطلوبة');
+      return;
+    }
+    setSaving(true);
+    try {
+      if (editing) {
+        await updateArticle(eventId, editing.id, form, token);
+        showToast('✅ تم تحديث المقال');
+      } else {
+        await createArticle(eventId, form, token);
+        showToast('✅ تم إنشاء المقال');
+      }
+      setAdding(false); setEditing(null); setForm(blank); load();
+    } catch (e: any) {
+      showToast('❌ ' + e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const del = async (id: number) => {
+    if (!confirm('حذف المقال نهائياً؟')) return;
+    setArticles(prev => prev.filter(a => a.id !== id));
+    try { await deleteArticle(eventId, id, token); showToast('✅ تم الحذف'); }
+    catch (e: any) { showToast('❌ ' + e.message); load(); }
+  };
+
+  const toggleStatus = async (article: any) => {
+    const newStatus = article.status === 'published' ? 'draft' : 'published';
+    setArticles(prev => prev.map(a => a.id === article.id ? { ...a, status: newStatus } : a));
+    try { await updateArticle(eventId, article.id, { status: newStatus }, token); }
+    catch { load(); }
+  };
+
+  const CATEGORIES = ['general', 'startup', 'investor', 'tech', 'news', 'interview'];
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div>
+          <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'white', margin: 0 }}>📝 المقالات ({articles.length})</h1>
+          <p style={{ color: '#94a3b8', fontSize: '0.8rem', margin: '4px 0 0' }}>
+            المقالات المنشورة تظهر على: <a href="/blog" target="_blank" style={{ color: '#6C63FF' }}>/blog</a>
+          </p>
+        </div>
+        {!adding && <button style={S.btn()} onClick={() => { setAdding(true); setEditing(null); setForm(blank); }}>+ مقال جديد</button>}
+      </div>
+
+      {adding && (
+        <div style={{ ...S.card, marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+            <h3 style={{ color: 'white', margin: 0 }}>{editing ? 'تعديل مقال' : 'مقال جديد'}</h3>
+            <button style={S.del} onClick={() => { setAdding(false); setEditing(null); setForm(blank); }}>✕ إغلاق</button>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <Field label="العنوان العربي *">
+              <input value={form.title_ar||''} onChange={e => { set('title_ar', e.target.value); if (!form.slug) set('slug', generateSlug(e.target.value)); }} style={S.inp} />
+            </Field>
+            <Field label="العنوان الإنجليزي">
+              <input value={form.title||''} onChange={e => set('title', e.target.value)} style={S.inp} placeholder="English title" />
+            </Field>
+            <Field label="رابط المقال (slug) *">
+              <input value={form.slug||''} onChange={e => set('slug', e.target.value)} style={S.inp} placeholder="article-url-slug" dir="ltr" />
+            </Field>
+            <Field label="الكاتب">
+              <input value={form.author_name||''} onChange={e => set('author_name', e.target.value)} style={S.inp} />
+            </Field>
+            <Field label="التصنيف">
+              <select value={form.category||'general'} onChange={e => set('category', e.target.value)} style={S.inp}>
+                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </Field>
+            <Field label="الحالة">
+              <select value={form.status||'draft'} onChange={e => set('status', e.target.value)} style={S.inp}>
+                <option value="draft">مسودة</option>
+                <option value="published">منشور</option>
+              </select>
+            </Field>
+            <div style={{ gridColumn: '1/-1' }}>
+              <Field label="المقتطف (وصف قصير)">
+                <textarea value={form.excerpt_ar||''} onChange={e => set('excerpt_ar', e.target.value)} rows={2} style={{ ...S.inp, resize: 'vertical' }} placeholder="وصف قصير يظهر في قائمة المقالات ومحركات البحث..." />
+              </Field>
+            </div>
+            <div style={{ gridColumn: '1/-1' }}>
+              <Field label="محتوى المقال (يدعم HTML) *">
+                <textarea value={form.content_ar||''} onChange={e => set('content_ar', e.target.value)} rows={12} style={{ ...S.inp, resize: 'vertical', fontFamily: 'monospace', fontSize: '0.85rem' }} placeholder="<p>محتوى المقال...</p>" />
+              </Field>
+              <p style={{ color: '#64748b', fontSize: '0.75rem', marginTop: 4 }}>💡 يمكن استخدام HTML: &lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;strong&gt;, &lt;img&gt;</p>
+            </div>
+            <Field label="صورة الغلاف (URL)">
+              <input value={form.cover_image||''} onChange={e => set('cover_image', e.target.value)} style={S.inp} placeholder="https://..." dir="ltr" />
+            </Field>
+            <Field label="الوسوم (tags) - مفصولة بفاصلة">
+              <input value={form.tags||''} onChange={e => set('tags', e.target.value)} style={S.inp} placeholder="ريادة, تكنولوجيا, سوريا" />
+            </Field>
+            <div style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(108,99,255,0.15)', paddingTop: 10, marginTop: 4 }}>
+              <p style={{ color: '#6C63FF', fontSize: '0.8rem', fontWeight: 600, marginBottom: 8 }}>🔍 SEO</p>
+            </div>
+            <Field label="عنوان SEO">
+              <input value={form.meta_title||''} onChange={e => set('meta_title', e.target.value)} style={S.inp} placeholder="يُترك فارغاً لاستخدام العنوان الرئيسي" />
+            </Field>
+            <Field label="وصف SEO (meta description)">
+              <input value={form.meta_description||''} onChange={e => set('meta_description', e.target.value)} style={S.inp} placeholder="يُترك فارغاً لاستخدام المقتطف" />
+            </Field>
+          </div>
+          <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+            <button style={S.btn()} onClick={saveItem} disabled={saving}>{saving ? 'جار الحفظ...' : editing ? 'تحديث' : 'نشر المقال'}</button>
+          </div>
+        </div>
+      )}
+
+      {articles.length === 0 && !adding && (
+        <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+          لا توجد مقالات بعد. أنشئ أول مقال لتحسين ظهور الموقع في محركات البحث.
+        </div>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 12 }}>
+        {articles.map(article => (
+          <div key={article.id} style={{ ...S.card }}>
+            {article.cover_image && (
+              <img src={article.cover_image} alt="" style={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: 8, marginBottom: 10 }} />
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+              <h3 style={{ color: 'white', fontWeight: 700, fontSize: '0.92rem', margin: 0, flex: 1 }}>{article.title_ar || article.title}</h3>
+              <span style={{
+                fontSize: '0.7rem', padding: '2px 8px', borderRadius: 20, marginRight: 8, flexShrink: 0,
+                background: article.status === 'published' ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)',
+                color: article.status === 'published' ? '#86efac' : '#fcd34d'
+              }}>{article.status === 'published' ? '✅ منشور' : '📝 مسودة'}</span>
+            </div>
+            <p style={{ color: '#94a3b8', fontSize: '0.75rem', margin: '0 0 8px' }}>
+              {article.category} · {article.views || 0} مشاهدة
+              {article.published_at && ` · ${new Date(article.published_at).toLocaleDateString('ar-SA')}`}
+            </p>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              <button style={{ ...S.btn('#1a1740'), fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
+                onClick={() => { setEditing(article); setAdding(true); setForm({ ...article, content_ar: article.content_ar || article.content || '' }); }}>
+                ✏️ تعديل
+              </button>
+              <button style={{ ...S.btn(article.status === 'published' ? '#92400e' : '#065f46'), fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
+                onClick={() => toggleStatus(article)}>
+                {article.status === 'published' ? '📝 إخفاء' : '🚀 نشر'}
+              </button>
+              {article.status === 'published' && (
+                <a href={`/blog/${article.slug}`} target="_blank" rel="noopener noreferrer"
+                  style={{ ...S.btn('#0c4a6e'), fontSize: '0.75rem', padding: '0.3rem 0.6rem', textDecoration: 'none' }}>
+                  👁️ عرض
+                </a>
+              )}
+              <button style={{ ...S.del, fontSize: '0.75rem' }} onClick={() => del(article.id)}>🗑️ حذف</button>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
