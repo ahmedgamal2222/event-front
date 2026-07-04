@@ -11,6 +11,7 @@ import {
   createAgendaSession, updateAgendaSession, deleteAgendaSession,
   uploadImage, deleteImage,
   fetchVenueGalleryAdmin, createVenueMedia, updateVenueMedia, deleteVenueMedia,
+  clearApiCacheFor,
 } from '../../../lib/api';
 import AdminTickets from '../../../app/components/admin/AdminTickets';
 import AdminSupport from '../../../app/components/admin/AdminSupport';
@@ -681,7 +682,12 @@ function SpeakersTab({ eventId, token, save, saving, showToast }: any) {
   const blank = { name: '', name_ar: '', title_ar: '', company: '', bio_ar: '', bio_extended: '', achievements: '', linkedin_url: '', twitter_url: '', photo_url: '', is_featured: false, is_surprise: false, sort_order: 0 };
   const [form, setForm] = useState<any>(blank);
 
-  const load = () => { if (token) fetchSpeakers(eventId).then((r: any) => setSpeakers(r.data || [])).catch(() => {}); };
+  const load = () => {
+    if (token) {
+      clearApiCacheFor(`/api/events/${eventId}/speakers`);
+      fetchSpeakers(eventId).then((r: any) => setSpeakers(r.data || [])).catch(() => {});
+    }
+  };
   useEffect(() => { load(); }, [token]);
   const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
@@ -693,8 +699,16 @@ function SpeakersTab({ eventId, token, save, saving, showToast }: any) {
 
   const del = async (id: number) => {
     if (!confirm('حذف المتحدث؟')) return;
-    try { await deleteSpeaker(eventId, id, token); showToast('✅ تم الحذف'); load(); }
-    catch (e: any) { showToast('❌ ' + e.message); }
+    // Optimistic UI update
+    setSpeakers(prev => prev.filter(s => s.id !== id));
+    try {
+      await deleteSpeaker(eventId, id, token);
+      showToast('✅ تم الحذف');
+      clearApiCacheFor(`/api/events/${eventId}/speakers`);
+    } catch (e: any) {
+      showToast('❌ ' + e.message);
+      load(); // revert on error
+    }
   };
 
   return (
@@ -951,16 +965,24 @@ function VideoTab({ eventId, token, save, saving }: any) {
 
   useEffect(() => {
     if (!token) return;
-    fetchEvent('s3-summit-2026').then((r: any) => {
-      const ev = r.data;
-      setForm({
-        intro_video_url: ev.intro_video_url || '',
-        intro_video_thumbnail: ev.intro_video_thumbnail || '',
-        show_intro_video: !!ev.show_intro_video,
-      });
-      setLoaded(true);
-    }).catch(() => setLoaded(true));
-  }, [token]);
+    // Fetch the event by ID for the admin (use eventId directly)
+    fetch(`https://event-api.info1703.workers.dev/api/events/${eventId}`, {
+      headers: { 'Authorization': `Bearer ${token}`, 'Cache-Control': 'no-store' }
+    })
+      .then(r => r.json())
+      .then((res: any) => {
+        const ev = res?.data;
+        if (ev) {
+          setForm({
+            intro_video_url: ev.intro_video_url || '',
+            intro_video_thumbnail: ev.intro_video_thumbnail || '',
+            show_intro_video: !!ev.show_intro_video,
+          });
+        }
+        setLoaded(true);
+      })
+      .catch(() => setLoaded(true));
+  }, [token, eventId]);
 
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }));
 
