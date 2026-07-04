@@ -514,6 +514,8 @@ function RegistrationsTab({ eventId, token, router }: any) {
     if (selected?.id === id) setSelected((s: any) => s ? { ...s, status } : null);
     try {
       await updateRegistration(eventId, id, { status }, token);
+      // Clear cache so next load gets fresh data
+      clearApiCacheFor(`/api/events/${eventId}/registrations`);
     } catch (e: any) {
       // Revert on error
       load();

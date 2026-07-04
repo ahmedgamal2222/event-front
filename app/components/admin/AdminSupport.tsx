@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { SupportMessage } from '@/lib/types';
-import { fetchSupportMessages, fetchSupportMessage, respondToSupportMessage } from '@/lib/api';
+import { fetchSupportMessages, fetchSupportMessage, respondToSupportMessage, clearApiCacheFor } from '@/lib/api';
 
 interface AdminSupportProps {
   eventId: number;
@@ -29,10 +29,11 @@ export default function AdminSupport({ eventId, token }: AdminSupportProps) {
     loadMessages();
   }, [eventId]);
 
-  const loadMessages = async () => {
+  const loadMessages = async (bypassCache = false) => {
     try {
       setLoading(true);
       setError(null);
+      if (bypassCache) clearApiCacheFor(`/api/events/${eventId}/support/messages`);
       const res = await fetchSupportMessages(eventId, token);
       setMessages(res.data || []);
     } catch (err) {
@@ -62,16 +63,40 @@ export default function AdminSupport({ eventId, token }: AdminSupportProps) {
     try {
       setIsResponding(true);
       setError(null);
-      await respondToSupportMessage(eventId, selectedMessage.id, { admin_response: responseText, admin_name: 'Admin', status: 'resolved', priority: selectedMessage.priority }, token);
-      await loadMessages();
-      setSelectedMessage(null);
+
+      // Optimistic update - update UI immediately
+      const updatedMsg = { ...selectedMessage, admin_response: responseText, admin_name: 'Admin', status: 'resolved' as any };
+      setMessages(prev => prev.map(m => m.id === selectedMessage.id ? updatedMsg : m));
+      setSelectedMessage(updatedMsg);
+
+      await respondToSupportMessage(eventId, selectedMessage.id, {
+        admin_response: responseText,
+        admin_name: 'Admin',
+        status: 'resolved',
+        priority: selectedMessage.priority
+      }, token);
+
+      clearApiCacheFor(`/api/events/${eventId}/support/messages`);
       setResponseText('');
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'فشل إرسال الرد';
       setError(errorMsg);
+      loadMessages(true); // revert on error
       console.error('Error responding to message:', err);
     } finally {
       setIsResponding(false);
+    }
+  };
+
+  const handleStatusChange = async (msgId: number, newStatus: string) => {
+    // Optimistic update
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, status: newStatus as any } : m));
+    if (selectedMessage?.id === msgId) setSelectedMessage(s => s ? { ...s, status: newStatus as any } : null);
+    try {
+      await respondToSupportMessage(eventId, msgId, { status: newStatus }, token);
+      clearApiCacheFor(`/api/events/${eventId}/support/messages`);
+    } catch (err) {
+      loadMessages(true); // revert on error
     }
   };
 
@@ -145,15 +170,25 @@ export default function AdminSupport({ eventId, token }: AdminSupportProps) {
                 <span>من: <strong style={{ color: '#e2e8f0' }}>{selectedMessage.name}</strong></span>
                 <span>البريد: <strong style={{ color: '#e2e8f0' }}>{selectedMessage.email}</strong></span>
                 {selectedMessage.phone && <span>الهاتف: <strong style={{ color: '#e2e8f0' }}>{selectedMessage.phone}</strong></span>}
-                <span style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(108,99,255,0.15)', color: '#94a3b8', fontSize: '0.8rem' }}>📧 ملاحظة: الرسائل محفوظة في قاعدة البيانات. يمكن إضافة نظام بريء لاحقاً</span>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.85rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.85rem', alignItems: 'center' }}>
               {(() => { const statusColor = getStatusColor(selectedMessage.status); return <span style={{ padding: '0.4rem 0.75rem', borderRadius: '0.4rem', background: statusColor.bg, color: statusColor.text }}>{statusColor.label}</span>; })()}
               <span style={{ padding: '0.4rem 0.75rem', borderRadius: '0.4rem', background: 'rgba(108,99,255,0.1)', color: getPriorityColor(selectedMessage.priority).text }}>{getPriorityColor(selectedMessage.priority).label}</span>
               <span style={{ padding: '0.4rem 0.75rem', borderRadius: '0.4rem', background: 'rgba(108,99,255,0.1)', color: '#94a3b8', fontSize: '0.75rem' }}>
                 {selectedMessage.category === 'general' && '📋 عام'} {selectedMessage.category === 'technical' && '🔧 تقني'} {selectedMessage.category === 'registration' && '📝 التسجيل'} {selectedMessage.category === 'ticketing' && '🎫 التذاكر'} {selectedMessage.category === 'other' && '⚙️ أخرى'}
               </span>
+              {/* Quick status change */}
+              <select
+                value={selectedMessage.status}
+                onChange={e => handleStatusChange(selectedMessage.id, e.target.value)}
+                style={{ ...S.inp, width: 'auto', fontSize: '0.8rem', padding: '0.3rem 0.6rem' }}
+              >
+                <option value="new">جديدة</option>
+                <option value="open">مفتوحة</option>
+                <option value="in_progress">قيد المعالجة</option>
+                <option value="resolved">تم حلها</option>
+              </select>
             </div>
             <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '0.5rem', border: '1px solid rgba(108,99,255,0.1)', color: '#e2e8f0', whiteSpace: 'pre-wrap', lineHeight: 1.6, flex: 1, overflowY: 'auto' }}>{selectedMessage.message}</div>
             {selectedMessage.admin_response && (
