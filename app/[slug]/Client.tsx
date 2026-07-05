@@ -410,7 +410,7 @@ export default function EventLandingClient() {
     { href: '#sponsors', label: 'الشركاء' },
     { href: '#faq', label: 'الأسئلة الشائعة' },
     { href: '#register', label: 'سجّل الآن' },
-    ...(hasArticles ? [{ href: '/blog', label: '📝 المدونة' }] : []),
+    ...(hasArticles ? [{ href: '/blog', label: 'المدونة' }] : []),
   ];
 
   const eventName = event?.name_ar || 'قمة الشركات الناشئة السورية';

@@ -1824,7 +1824,14 @@ function ArticlesTab({ eventId, token, showToast }: any) {
     catch { load(); }
   };
 
-  const CATEGORIES = ['general', 'startup', 'investor', 'tech', 'news', 'interview'];
+  const CATEGORIES = [
+    { value: 'general', label: 'عام' },
+    { value: 'startup', label: 'شركات ناشئة' },
+    { value: 'investor', label: 'استثمار' },
+    { value: 'tech', label: 'تكنولوجيا' },
+    { value: 'news', label: 'أخبار' },
+    { value: 'interview', label: 'مقابلات' },
+  ];
 
   return (
     <div>
@@ -1860,7 +1867,7 @@ function ArticlesTab({ eventId, token, showToast }: any) {
             </Field>
             <Field label="التصنيف">
               <select value={form.category||'general'} onChange={e => set('category', e.target.value)} style={S.inp}>
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
             </Field>
             <Field label="الحالة">
@@ -1932,7 +1939,27 @@ function ArticlesTab({ eventId, token, showToast }: any) {
             </p>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               <button style={{ ...S.btn('#1a1740'), fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
-                onClick={() => { setEditing(article); setAdding(true); setForm({ ...article, content_ar: article.content_ar || article.content || '' }); }}>
+                onClick={() => {
+                  setEditing(article);
+                  setAdding(true);
+                  setForm({
+                    title: article.title || '',
+                    title_ar: article.title_ar || '',
+                    slug: article.slug || '',
+                    excerpt: article.excerpt || '',
+                    excerpt_ar: article.excerpt_ar || '',
+                    content: article.content || '',
+                    content_ar: article.content_ar || '',
+                    cover_image: article.cover_image || '',
+                    author_name: article.author_name || 'S3 Summit Team',
+                    author_avatar: article.author_avatar || '',
+                    category: article.category || 'general',
+                    tags: article.tags || '',
+                    status: article.status || 'draft',
+                    meta_title: article.meta_title || '',
+                    meta_description: article.meta_description || '',
+                  });
+                }}>
                 ✏️ تعديل
               </button>
               <button style={{ ...S.btn(article.status === 'published' ? '#92400e' : '#065f46'), fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
@@ -1940,7 +1967,7 @@ function ArticlesTab({ eventId, token, showToast }: any) {
                 {article.status === 'published' ? '📝 إخفاء' : '🚀 نشر'}
               </button>
               {article.status === 'published' && (
-                <a href={`/blog/${article.slug}`} target="_blank" rel="noopener noreferrer"
+                <a href={`/blog?article=${article.slug}`} target="_blank" rel="noopener noreferrer"
                   style={{ ...S.btn('#0c4a6e'), fontSize: '0.75rem', padding: '0.3rem 0.6rem', textDecoration: 'none' }}>
                   👁️ عرض
                 </a>

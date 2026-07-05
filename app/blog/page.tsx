@@ -113,8 +113,9 @@ function ArticlesList() {
 
   const load = (cat = '') => {
     setLoading(true);
-    const q = cat ? `?category=${cat}` : '';
-    fetch(`${API_BASE}/api/events/${EVENT_ID}/articles${q}&limit=20`, { cache: 'no-store' })
+    const params = new URLSearchParams({ limit: '20' });
+    if (cat) params.set('category', cat);
+    fetch(`${API_BASE}/api/events/${EVENT_ID}/articles?${params}`, { cache: 'no-store' })
       .then(r => r.json())
       .then(data => setArticles(data.data || []))
       .catch(() => setArticles([]))
@@ -131,7 +132,7 @@ function ArticlesList() {
       <div style={{ background: 'rgba(108,99,255,0.06)', borderBottom: '1px solid rgba(108,99,255,0.2)', padding: '2rem 1.5rem' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <a href="/" style={{ color: '#6C63FF', textDecoration: 'none', fontSize: '0.88rem' }}>← الصفحة الرئيسية</a>
-          <h1 style={{ fontSize: '2.2rem', fontWeight: 900, color: 'white', margin: '0.75rem 0 0.4rem' }}>📝 المدونة</h1>
+          <h1 style={{ fontSize: '2.2rem', fontWeight: 900, color: 'white', margin: '0.75rem 0 0.4rem' }}>المدونة</h1>
           <p style={{ color: '#94a3b8', margin: 0 }}>مقالات وأفكار حول ريادة الأعمال والشركات الناشئة</p>
         </div>
       </div>
