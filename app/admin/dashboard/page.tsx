@@ -177,13 +177,8 @@ export default function AdminDashboard() {
   const save = async (fn: () => Promise<any>) => {
     setSaving(true);
     try { 
-      const result = await fn();
+      await fn();
       showToast('✅ تم الحفظ بنجاح');
-      
-      // إذا كانت النتيجة تحتوي على بيانات محدثة، حدّث الـ form
-      if (result.data && activeTab === 'event') {
-        setForm(result.data);
-      }
     }
     catch (e: any) { showToast('❌ ' + (e.message || 'حدث خطأ')); }
     finally { setSaving(false); }
