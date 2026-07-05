@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { Event, Speaker, AgendaDay, Stats, Sponsor, Faq, FormConfig, SiteConfig } from '../../lib/types';
-import { fetchEvent, fetchSpeakers, fetchAgenda, fetchStats, fetchSponsors, fetchFaqs, submitRegistration, fetchVenueGallery } from '../../lib/api';
+import { fetchEvent, fetchSpeakers, fetchAgenda, fetchStats, fetchSponsors, fetchFaqs, submitRegistration, fetchVenueGallery, fetchArticles } from '../../lib/api';
 import { VenueMedia } from '../../lib/types';
 import PixelInjector from '../components/PixelInjector';
 import TicketsSection from '../components/TicketsSection';
@@ -384,8 +384,9 @@ export default function EventLandingClient() {
         }
         // Update browser title dynamically
         document.title = `${ev.name_ar || ev.name} – ${ev.tagline_ar || ev.tagline || ''}`;
-        const [spRes, agRes, stRes, spnRes, fqRes, venueRes] = await Promise.all([
-          fetchSpeakers(ev.id), fetchAgenda(ev.id), fetchStats(ev.id), fetchSponsors(ev.id), fetchFaqs(ev.id), fetchVenueGallery(ev.id)
+        const [spRes, agRes, stRes, spnRes, fqRes, venueRes, artRes] = await Promise.all([
+          fetchSpeakers(ev.id), fetchAgenda(ev.id), fetchStats(ev.id), fetchSponsors(ev.id), fetchFaqs(ev.id), fetchVenueGallery(ev.id),
+          fetchArticles(ev.id, 'limit=1&status=published')
         ]);
         setSpeakers(spRes.data || []);
         setAgenda(agRes.data || []);
@@ -393,10 +394,14 @@ export default function EventLandingClient() {
         setSponsors(spnRes.data || []);
         setFaqs(fqRes.data || []);
         setVenueGallery(venueRes.data || []);
+        setHasArticles((artRes.data || []).length > 0);
       } catch { /* use default demo data */ }
       setLoading(false);
     })();
   }, []);
+
+  // Show blog in navbar only if there are articles
+  const [hasArticles, setHasArticles] = useState(false);
 
   const navLinks = [
     { href: '#about', label: 'عن الفعالية' },
@@ -405,6 +410,7 @@ export default function EventLandingClient() {
     { href: '#sponsors', label: 'الشركاء' },
     { href: '#faq', label: 'الأسئلة الشائعة' },
     { href: '#register', label: 'سجّل الآن' },
+    ...(hasArticles ? [{ href: '/blog', label: '📝 المدونة' }] : []),
   ];
 
   const eventName = event?.name_ar || 'قمة الشركات الناشئة السورية';

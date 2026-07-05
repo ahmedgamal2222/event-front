@@ -1781,17 +1781,25 @@ function ArticlesTab({ eventId, token, showToast }: any) {
       .slice(0, 80);
 
   const saveItem = async () => {
-    if (!form.title || !form.content || !form.slug) {
-      showToast('❌ العنوان والمحتوى والرابط مطلوبة');
+    const titleVal = form.title_ar || form.title;
+    const contentVal = form.content_ar || form.content;
+    if (!titleVal || !contentVal || !form.slug) {
+      showToast('❌ العنوان (عربي) والمحتوى والرابط مطلوبة');
       return;
     }
+    // Ensure title/content are always filled (use Arabic if English missing)
+    const payload = {
+      ...form,
+      title: form.title || form.title_ar,
+      content: form.content || form.content_ar,
+    };
     setSaving(true);
     try {
       if (editing) {
-        await updateArticle(eventId, editing.id, form, token);
+        await updateArticle(eventId, editing.id, payload, token);
         showToast('✅ تم تحديث المقال');
       } else {
-        await createArticle(eventId, form, token);
+        await createArticle(eventId, payload, token);
         showToast('✅ تم إنشاء المقال');
       }
       setAdding(false); setEditing(null); setForm(blank); load();
@@ -1872,8 +1880,12 @@ function ArticlesTab({ eventId, token, showToast }: any) {
               </Field>
               <p style={{ color: '#64748b', fontSize: '0.75rem', marginTop: 4 }}>💡 يمكن استخدام HTML: &lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;strong&gt;, &lt;img&gt;</p>
             </div>
-            <Field label="صورة الغلاف (URL)">
-              <input value={form.cover_image||''} onChange={e => set('cover_image', e.target.value)} style={S.inp} placeholder="https://..." dir="ltr" />
+            <Field label="صورة الغلاف">
+              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                <input value={form.cover_image||''} onChange={e => set('cover_image', e.target.value)} style={{ ...S.inp, flex: 1 }} placeholder="https://..." dir="ltr" />
+                {form.cover_image && <button style={{ ...S.del, whiteSpace: 'nowrap' }} onClick={() => set('cover_image', '')}>✕</button>}
+              </div>
+              <ImageUploadField onUploaded={v => set('cover_image', v)} maxSizeMB={5} token={token} />
             </Field>
             <Field label="الوسوم (tags) - مفصولة بفاصلة">
               <input value={form.tags||''} onChange={e => set('tags', e.target.value)} style={S.inp} placeholder="ريادة, تكنولوجيا, سوريا" />
