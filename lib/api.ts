@@ -11,9 +11,11 @@ if (typeof window !== 'undefined' && !process.env.NEXT_PUBLIC_API_URL) {
 
 export async function apiFetch<T>(path: string, options?: RequestInit, bypassCache = false): Promise<T> {
   const isGet = !options?.method || options.method === 'GET';
+  // Admin requests (with Authorization header) always bypass cache
+  const hasAuth = !!(options?.headers as any)?.Authorization;
 
-  // Check in-memory cache for GET requests (unless bypassed)
-  if (isGet && !bypassCache) {
+  // Check in-memory cache for GET requests (unless bypassed or admin)
+  if (isGet && !bypassCache && !hasAuth) {
     const cached = cache.get(path);
     if (cached && Date.now() - cached.time < CACHE_TTL) {
       return cached.data;

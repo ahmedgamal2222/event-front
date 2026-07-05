@@ -694,6 +694,7 @@ function SpeakersTab({ eventId, token, save, saving, showToast }: any) {
   const saveItem = () => save(async () => {
     if (editing) await updateSpeaker(eventId, editing.id, form, token);
     else         await createSpeaker(eventId, form, token);
+    clearApiCacheFor(`/api/events/${eventId}/speakers`);
     setEditing(null); setAdding(false); setForm(blank); load();
   });
 
@@ -800,6 +801,7 @@ function AgendaTab({ eventId, token, save, saving, showToast }: any) {
 
   const load = () => {
     if (!token) return;
+    clearApiCacheFor(`/api/events/${eventId}/agenda`);
     fetchAgenda(eventId).then((r: any) => setAgenda(r.data || [])).catch(() => {});
     fetchSpeakers(eventId).then((r: any) => setSpeakers(r.data || [])).catch(() => {});
   };
@@ -816,12 +818,13 @@ function AgendaTab({ eventId, token, save, saving, showToast }: any) {
     };
     if (sessionState.editing) await updateAgendaSession(eventId, sessionState.editing.id, body, token);
     else                       await createAgendaSession(eventId, body, token);
+    clearApiCacheFor(`/api/events/${eventId}/agenda`);
     setSessionState({ dayId: null, editing: null }); load();
   });
 
   const delSession = async (id: number) => {
     if (!confirm('حذف الجلسة؟')) return;
-    try { await deleteAgendaSession(eventId, id, token); showToast('✅ تم الحذف'); load(); }
+    try { await deleteAgendaSession(eventId, id, token); clearApiCacheFor(`/api/events/${eventId}/agenda`); showToast('✅ تم الحذف'); load(); }
     catch (e: any) { showToast('❌ ' + e.message); }
   };
 
@@ -1174,19 +1177,25 @@ function SponsorsTab({ eventId, token, save, saving, showToast }: any) {
   const blank = { name: '', logo_url: '', website: '', tier: 'silver', sort_order: 0 };
   const [form, setForm] = useState<any>(blank);
 
-  const load = () => { if (token) fetchSponsors(eventId).then((r: any) => setSponsors(r.data || [])).catch(() => {}); };
+  const load = () => {
+    if (token) {
+      clearApiCacheFor(`/api/events/${eventId}/sponsors`);
+      fetchSponsors(eventId).then((r: any) => setSponsors(r.data || [])).catch(() => {});
+    }
+  };
   useEffect(() => { load(); }, [token]);
   const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
   const saveItem = () => save(async () => {
     if (editing) await updateSponsor(eventId, editing.id, form, token);
     else         await createSponsor(eventId, form, token);
+    clearApiCacheFor(`/api/events/${eventId}/sponsors`);
     setEditing(null); setAdding(false); setForm(blank); load();
   });
 
   const del = async (id: number) => {
     if (!confirm('حذف الراعي؟')) return;
-    try { await deleteSponsor(eventId, id, token); showToast('✅ تم الحذف'); load(); }
+    try { await deleteSponsor(eventId, id, token); clearApiCacheFor(`/api/events/${eventId}/sponsors`); showToast('✅ تم الحذف'); load(); }
     catch (e: any) { showToast('❌ ' + e.message); }
   };
 
@@ -1243,17 +1252,23 @@ function FaqsTab({ eventId, token, save, saving, showToast }: any) {
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ question_ar: '', answer_ar: '', sort_order: 0 });
 
-  const load = () => { if (token) fetchFaqs(eventId).then((r: any) => setFaqs(r.data || [])).catch(() => {}); };
+  const load = () => {
+    if (token) {
+      clearApiCacheFor(`/api/events/${eventId}/faqs`);
+      fetchFaqs(eventId).then((r: any) => setFaqs(r.data || [])).catch(() => {});
+    }
+  };
   useEffect(() => { load(); }, [token]);
 
   const saveItem = () => save(async () => {
     await createFaq(eventId, form, token);
+    clearApiCacheFor(`/api/events/${eventId}/faqs`);
     setAdding(false); setForm({ question_ar: '', answer_ar: '', sort_order: 0 }); load();
   });
 
   const del = async (id: number) => {
     if (!confirm('حذف السؤال؟')) return;
-    try { await deleteFaq(eventId, id, token); showToast('✅ تم الحذف'); load(); }
+    try { await deleteFaq(eventId, id, token); clearApiCacheFor(`/api/events/${eventId}/faqs`); showToast('✅ تم الحذف'); load(); }
     catch (e: any) { showToast('❌ ' + e.message); }
   };
 
@@ -1767,8 +1782,13 @@ function ArticlesTab({ eventId, token, showToast }: any) {
   };
   const [form, setForm] = useState<any>(blank);
 
+  const ARTICLES_PATH = `/api/events/${eventId}/articles/admin/all`;
+
   const load = () => {
-    if (token) fetchArticlesAdmin(eventId, token).then((r: any) => setArticles(r.data || [])).catch(() => {});
+    if (token) {
+      clearApiCacheFor(ARTICLES_PATH);
+      fetchArticlesAdmin(eventId, token).then((r: any) => setArticles(r.data || [])).catch(() => {});
+    }
   };
   useEffect(() => { load(); }, [token]);
   const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
@@ -1802,6 +1822,7 @@ function ArticlesTab({ eventId, token, showToast }: any) {
         await createArticle(eventId, payload, token);
         showToast('✅ تم إنشاء المقال');
       }
+      clearApiCacheFor(ARTICLES_PATH);
       setAdding(false); setEditing(null); setForm(blank); load();
     } catch (e: any) {
       showToast('❌ ' + e.message);
@@ -1813,14 +1834,21 @@ function ArticlesTab({ eventId, token, showToast }: any) {
   const del = async (id: number) => {
     if (!confirm('حذف المقال نهائياً؟')) return;
     setArticles(prev => prev.filter(a => a.id !== id));
-    try { await deleteArticle(eventId, id, token); showToast('✅ تم الحذف'); }
+    try {
+      await deleteArticle(eventId, id, token);
+      clearApiCacheFor(ARTICLES_PATH);
+      showToast('✅ تم الحذف');
+    }
     catch (e: any) { showToast('❌ ' + e.message); load(); }
   };
 
   const toggleStatus = async (article: any) => {
     const newStatus = article.status === 'published' ? 'draft' : 'published';
     setArticles(prev => prev.map(a => a.id === article.id ? { ...a, status: newStatus } : a));
-    try { await updateArticle(eventId, article.id, { status: newStatus }, token); }
+    try {
+      await updateArticle(eventId, article.id, { status: newStatus }, token);
+      clearApiCacheFor(ARTICLES_PATH);
+    }
     catch { load(); }
   };
 
@@ -1832,6 +1860,7 @@ function ArticlesTab({ eventId, token, showToast }: any) {
     { value: 'news', label: 'أخبار' },
     { value: 'interview', label: 'مقابلات' },
   ];
+  const CATEGORY_AR: Record<string, string> = Object.fromEntries(CATEGORIES.map(c => [c.value, c.label]));
 
   return (
     <div>
@@ -1921,22 +1950,33 @@ function ArticlesTab({ eventId, token, showToast }: any) {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 12 }}>
         {articles.map(article => (
-          <div key={article.id} style={{ ...S.card }}>
+          <div key={article.id} style={{ ...S.card, padding: '1rem' }}>
             {article.cover_image && (
               <img src={article.cover_image} alt="" style={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: 8, marginBottom: 10 }} />
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-              <h3 style={{ color: 'white', fontWeight: 700, fontSize: '0.92rem', margin: 0, flex: 1 }}>{article.title_ar || article.title}</h3>
+            {/* Title + Status */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 8 }}>
+              <h3 style={{ color: 'white', fontWeight: 700, fontSize: '0.92rem', margin: 0, flex: 1, lineHeight: 1.4 }}>
+                {article.title_ar || article.title}
+              </h3>
               <span style={{
-                fontSize: '0.7rem', padding: '2px 8px', borderRadius: 20, marginRight: 8, flexShrink: 0,
+                fontSize: '0.68rem', padding: '2px 8px', borderRadius: 20, flexShrink: 0, whiteSpace: 'nowrap',
                 background: article.status === 'published' ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)',
                 color: article.status === 'published' ? '#86efac' : '#fcd34d'
               }}>{article.status === 'published' ? '✅ منشور' : '📝 مسودة'}</span>
             </div>
-            <p style={{ color: '#94a3b8', fontSize: '0.75rem', margin: '0 0 8px' }}>
-              {article.category} · {article.views || 0} مشاهدة
-              {article.published_at && ` · ${new Date(article.published_at).toLocaleDateString('ar-SA')}`}
-            </p>
+            {/* Meta info */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+              <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: 20, background: 'rgba(108,99,255,0.15)', color: '#a5b4fc' }}>
+                {CATEGORY_AR[article.category] || article.category}
+              </span>
+              <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>👁 {article.views || 0} مشاهدة</span>
+              {article.published_at && (
+                <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                  {new Date(article.published_at).toLocaleDateString('ar-SA', { day: 'numeric', month: 'short' })}
+                </span>
+              )}
+            </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               <button style={{ ...S.btn('#1a1740'), fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
                 onClick={() => {
