@@ -1942,14 +1942,16 @@ function ArticlesTab({ eventId, token, showToast }: any) {
                 onClick={() => {
                   setEditing(article);
                   setAdding(true);
+                  const contentAr = article.content_ar || article.content || '';
+                  const titleAr = article.title_ar || article.title || '';
                   setForm({
                     title: article.title || '',
-                    title_ar: article.title_ar || '',
+                    title_ar: titleAr,
                     slug: article.slug || '',
                     excerpt: article.excerpt || '',
-                    excerpt_ar: article.excerpt_ar || '',
+                    excerpt_ar: article.excerpt_ar || article.excerpt || '',
                     content: article.content || '',
-                    content_ar: article.content_ar || '',
+                    content_ar: contentAr,
                     cover_image: article.cover_image || '',
                     author_name: article.author_name || 'S3 Summit Team',
                     author_avatar: article.author_avatar || '',
