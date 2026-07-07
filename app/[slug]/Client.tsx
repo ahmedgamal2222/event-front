@@ -405,10 +405,10 @@ export default function EventLandingClient() {
 
   const navLinks = [
     { href: '#about', label: 'عن الفعالية' },
-    { href: '#agenda', label: 'البرنامج' },
-    { href: '#speakers', label: 'المتحدثون' },
-    { href: '#sponsors', label: 'الشركاء' },
-    { href: '#faq', label: 'الأسئلة الشائعة' },
+    ...(agenda.length > 0 ? [{ href: '#agenda', label: 'البرنامج' }] : []),
+    ...(speakers.length > 0 ? [{ href: '#speakers', label: 'المتحدثون' }] : []),
+    ...(sponsors.length > 0 ? [{ href: '#sponsors', label: 'الشركاء' }] : []),
+    ...(faqs.length > 0 ? [{ href: '#faq', label: 'الأسئلة الشائعة' }] : []),
     { href: '#register', label: 'سجّل الآن' },
     ...(hasArticles ? [{ href: '/blog', label: 'المدونة' }] : []),
   ];
@@ -593,6 +593,7 @@ export default function EventLandingClient() {
       </section>
 
       {/* ── Agenda ────────────────────────────────────────────────────────────── */}
+      {agenda.length > 0 && (
       <section id="agenda" className="py-20 px-6" style={{ background: 'rgba(108,99,255,0.03)' }}>
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
@@ -649,8 +650,10 @@ export default function EventLandingClient() {
           )}
         </div>
       </section>
+      )}
 
       {/* ── Speakers ─────────────────────────────────────────────────────────── */}
+      {speakers.length > 0 && (
       <section id="speakers" className="py-20 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
@@ -688,8 +691,7 @@ export default function EventLandingClient() {
           </div>
         </div>
       </section>
-
-      {/* ── Venue Gallery ──────────────────────────────────────────────────────── */}
+      )}
       {venueGallery.length > 0 && (
         <section id="venue" className="py-20 px-6" style={{ background: 'rgba(0,0,0,0.3)' }}>
           <div className="max-w-6xl mx-auto">
