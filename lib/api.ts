@@ -43,6 +43,12 @@ export async function apiFetch<T>(path: string, options?: RequestInit, bypassCac
   const data = await res.json();
   if (!data.success) {
     console.error('❌ API Error:', data.error);
+    // Auto-logout on expired/invalid token
+    if (res.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('admin_token');
+      window.location.href = '/admin';
+      throw new Error('انتهت صلاحية الجلسة، يرجى تسجيل الدخول مجدداً');
+    }
     throw new Error(data.error || 'API error');
   }
   
