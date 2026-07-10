@@ -440,7 +440,8 @@ function EventTab({ eventId, token, save, saving }: any) {
           </div>
         </HelpBox>
 
-        <div>
+        {/* Cover image and logo hidden temporarily */}
+        {false && <div>
           <Field label="صورة الغلاف">
             {form.cover_image && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
@@ -451,8 +452,8 @@ function EventTab({ eventId, token, save, saving }: any) {
             <input value={form.cover_image || ''} onChange={e => set('cover_image', e.target.value)} style={S.inp} />
           </Field>
           <ImageUploadField onUploaded={(value) => set('cover_image', value)} maxSizeMB={4} token={token} />
-        </div>
-        <div>
+        </div>}
+        {false && <div>
           <Field label="شعار الحدث">
             {form.logo && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
@@ -463,7 +464,7 @@ function EventTab({ eventId, token, save, saving }: any) {
             <input value={form.logo || ''} onChange={e => set('logo', e.target.value)} style={S.inp} />
           </Field>
           <ImageUploadField onUploaded={(value) => set('logo', value)} maxSizeMB={3} token={token} />
-        </div>
+        </div>}
       </div>
     </div>
   );
