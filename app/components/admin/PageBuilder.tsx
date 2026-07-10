@@ -3,6 +3,23 @@ import { useState, useCallback, useRef } from 'react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
 
+async function uploadMedia(file: File, token: string, onProgress?: (p: number) => void): Promise<{ url: string; category: string; originalName: string }> {
+  return new Promise((resolve, reject) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_BASE}/api/uploads/media`);
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    if (onProgress) xhr.upload.onprogress = e => { if (e.lengthComputable) onProgress(Math.round(e.loaded * 100 / e.total)); };
+    xhr.onload = () => {
+      try { const d = JSON.parse(xhr.responseText); if (d.success) resolve(d); else reject(new Error(d.error || 'Upload failed')); }
+      catch { reject(new Error('Server error')); }
+    };
+    xhr.onerror = () => reject(new Error('Network error'));
+    xhr.send(fd);
+  });
+}
+
 // ─── Block Types ──────────────────────────────────────────────────────────────
 export type BlockType =
   | 'h1' | 'h2' | 'h3'
@@ -150,27 +167,30 @@ export function htmlToBlocks(html: string): Block[] {
 function BlockEditor({ block, onChange, primaryColor, token }: { block: Block; onChange: (b: Block) => void; primaryColor: string; token?: string }) {
   const set = (k: keyof Block, v: any) => onChange({ ...block, [k]: v });
   const [uploading, setUploading] = useState(false);
+  const [uploadPct, setUploadPct] = useState(0);
 
   const inputStyle: React.CSSProperties = { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(108,99,255,0.25)', borderRadius: 6, padding: '0.45rem 0.7rem', color: 'white', outline: 'none', width: '100%', fontSize: '0.85rem', colorScheme: 'dark' };
   const labelStyle: React.CSSProperties = { fontSize: '0.72rem', color: '#94a3b8', display: 'block', marginBottom: 3 };
 
-  const uploadBtn = (accept: string, onUrl: (url: string, name?: string) => void, label = '📤 رفع من الجهاز', isFile = false) =>
+  const doUpload = async (file: File, onUrl: (url: string, name?: string, cat?: string) => void) => {
+    if (!token) return;
+    setUploading(true); setUploadPct(0);
+    try {
+      const result = await uploadMedia(file, token, p => setUploadPct(p));
+      onUrl(result.url, result.originalName, result.category);
+    } catch (e: any) {
+      alert('فشل الرفع: ' + e.message);
+    }
+    setUploading(false); setUploadPct(0);
+  };
+
+  const uploadBtn = (accept: string, onUrl: (url: string, name?: string, cat?: string) => void, label = '📤 رفع من الجهاز') =>
     token ? (
       <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.3rem 0.7rem', background: 'rgba(108,99,255,0.12)', border: '1px solid rgba(108,99,255,0.3)', borderRadius: '0.4rem', color: '#a5b4fc', fontSize: '0.78rem', cursor: uploading ? 'not-allowed' : 'pointer', opacity: uploading ? 0.6 : 1 }}>
-        {uploading ? '⏳ جار الرفع...' : label}
+        {uploading ? `⏳ ${uploadPct}%` : label}
         <input type="file" accept={accept} hidden disabled={uploading}
-          onChange={async e => {
-            const f = e.target.files?.[0]; if (!f) return;
-            setUploading(true);
-            try {
-              const fd = new FormData(); fd.append('file', f);
-              const endpoint = isFile ? '/api/uploads/file' : '/api/uploads/image';
-              const r = await fetch(`${API_BASE}${endpoint}`, { method: 'POST', body: fd, headers: { Authorization: `Bearer ${token}` } });
-              const d = await r.json();
-              if (d.url) onUrl(d.url, d.originalName || f.name);
-            } catch { /* ignore */ }
-            setUploading(false); e.target.value = '';
-          }} />
+          onChange={e => { const f = e.target.files?.[0]; if (f) doUpload(f, onUrl); e.target.value = ''; }} />
+        {uploading && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, background: 'rgba(108,99,255,0.2)', borderRadius: 1 }}><div style={{ height: '100%', background: '#6C63FF', width: `${uploadPct}%`, transition: 'width 0.2s' }} /></div>}
       </label>
     ) : null;
 
@@ -222,7 +242,7 @@ function BlockEditor({ block, onChange, primaryColor, token }: { block: Block; o
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <div><label style={labelStyle}>رابط الفيديو (YouTube / Vimeo / مباشر)</label>
             <input style={inputStyle} value={block.videoUrl || ''} onChange={e => set('videoUrl', e.target.value)} placeholder="https://www.youtube.com/watch?v=..." dir="ltr" /></div>
-          <div style={{ marginTop: '0.2rem' }}>{uploadBtn('video/*', url => set('videoUrl', url), '🎬 رفع فيديو من الجهاز', true)}</div>
+          <div style={{ marginTop: '0.2rem' }}>{uploadBtn('video/*', url => set('videoUrl', url), '🎬 رفع فيديو من الجهاز')}</div>
           <p style={{ color: '#64748b', fontSize: '0.72rem', margin: 0 }}>أو الصق رابط YouTube / Vimeo للتضمين التلقائي</p>
         </div>
       );
@@ -232,7 +252,7 @@ function BlockEditor({ block, onChange, primaryColor, token }: { block: Block; o
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <div><label style={labelStyle}>رابط الملف</label>
             <input style={inputStyle} value={block.fileUrl || ''} onChange={e => set('fileUrl', e.target.value)} placeholder="https://..." dir="ltr" /></div>
-          <div>{uploadBtn('.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt', (url, name) => { set('fileUrl', url); if (name && !block.fileName) set('fileName', name); }, '📎 رفع ملف من الجهاز', true)}</div>
+          <div>{uploadBtn('.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt', (url, name) => { set('fileUrl', url); if (name && !block.fileName) set('fileName', name); }, '📎 رفع ملف من الجهاز')}</div>
           <div><label style={labelStyle}>اسم الملف (يظهر للزائر)</label>
             <input style={inputStyle} value={block.fileName || ''} onChange={e => set('fileName', e.target.value)} /></div>
         </div>

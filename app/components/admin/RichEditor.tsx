@@ -13,12 +13,34 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
 
 interface RichEditorProps {
-  value: string;                   // HTML string
+  value: string;
   onChange: (html: string) => void;
-  token?: string;                  // If provided, enables media upload
+  token?: string;
   placeholder?: string;
   minHeight?: number;
   showPreview?: boolean;
+}
+
+type UploadStatus = { name: string; progress: number; done: boolean; url?: string; error?: string; category?: string };
+
+async function uploadToR2(file: File, token: string, onProgress: (p: number) => void): Promise<{ url: string; category: string; originalName: string }> {
+  return new Promise((resolve, reject) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_BASE}/api/uploads/media`);
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    xhr.upload.onprogress = e => { if (e.lengthComputable) onProgress(Math.round(e.loaded * 100 / e.total)); };
+    xhr.onload = () => {
+      try {
+        const d = JSON.parse(xhr.responseText);
+        if (d.success) resolve({ url: d.url, category: d.category, originalName: d.originalName });
+        else reject(new Error(d.error || 'Upload failed'));
+      } catch { reject(new Error('Server error')); }
+    };
+    xhr.onerror = () => reject(new Error('Network error'));
+    xhr.send(fd);
+  });
 }
 
 // ─── Toolbar button helper ────────────────────────────────────────────────────
@@ -89,7 +111,7 @@ export default function RichEditor({ value, onChange, token, placeholder = 'اب
   const [mode, setMode] = useState<'visual' | 'html'>('visual');
   const [htmlSrc, setHtmlSrc] = useState(value || '');
   const [preview, setPreview] = useState(showPreview);
-  const [uploading, setUploading] = useState(false);
+  const [uploads, setUploads] = useState<UploadStatus[]>([]);
   const [linkPrompt, setLinkPrompt] = useState(false);
   const [linkUrl, setLinkUrl] = useState('https://');
   const [linkText, setLinkText] = useState('');
@@ -97,6 +119,7 @@ export default function RichEditor({ value, onChange, token, placeholder = 'اب
   const [tableRows, setTableRows] = useState(3);
   const [tableCols, setTableCols] = useState(3);
   const savedRange = useRef<Range | null>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
 
   // Inject CSS once
   useEffect(() => {
@@ -146,44 +169,82 @@ export default function RichEditor({ value, onChange, token, placeholder = 'اب
     setMode('visual');
   };
 
-  // ── Upload helpers ────────────────────────────────────────────────────────
-  const uploadImage = async (file: File) => {
+  // ── Unified upload handler ────────────────────────────────────────────────
+  const handleUpload = useCallback(async (file: File) => {
     if (!token) return;
-    setUploading(true);
-    try {
-      const fd = new FormData(); fd.append('file', file);
-      const r = await fetch(`${API_BASE}/api/uploads/image`, {
-        method: 'POST', body: fd, headers: { Authorization: `Bearer ${token}` },
-      });
-      const d = await r.json();
-      if (d.url) {
-        editorRef.current?.focus();
-        restoreRange();
-        exec('insertImage', d.url);
-        onInput();
-      }
-    } catch { /* ignore */ }
-    setUploading(false);
-  };
 
-  const uploadFile = async (file: File) => {
-    if (!token) return;
-    setUploading(true);
+    const id = Math.random().toString(36).slice(2);
+    setUploads(prev => [...prev, { name: file.name, progress: 0, done: false }]);
+    editorRef.current?.focus();
+    saveRange();
+
+    // Insert placeholder while uploading
+    const placeholderId = `upload-${id}`;
+    const isImage = file.type.startsWith('image/');
+    const isVideo = file.type.startsWith('video/') || ['mp4','webm','mov','avi'].includes(file.name.split('.').pop()?.toLowerCase() || '');
+
+    if (isImage) {
+      // Show local preview immediately
+      const localUrl = URL.createObjectURL(file);
+      restoreRange();
+      insertHtmlAtCaret(`<img id="${placeholderId}" src="${localUrl}" alt="${file.name}" style="max-width:100%;border-radius:8px;margin:.5rem 0;opacity:0.6;outline:2px dashed #6C63FF">`);
+      onInput();
+    } else {
+      restoreRange();
+      insertHtmlAtCaret(`<span id="${placeholderId}" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(108,99,255,0.15);border:1px dashed #6C63FF;border-radius:8px;color:#a5b4fc;font-size:.85rem">⏳ ${file.name}</span>`);
+      onInput();
+    }
+
     try {
-      const fd = new FormData(); fd.append('file', file);
-      const r = await fetch(`${API_BASE}/api/uploads/file`, {
-        method: 'POST', body: fd, headers: { Authorization: `Bearer ${token}` },
+      const result = await uploadToR2(file, token, (progress) => {
+        setUploads(prev => prev.map(u => u.name === file.name ? { ...u, progress } : u));
       });
-      const d = await r.json();
-      if (d.url) {
-        editorRef.current?.focus();
-        restoreRange();
-        insertHtmlAtCaret(`<a href="${d.url}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:rgba(108,99,255,0.15);border:1px solid rgba(108,99,255,0.4);border-radius:8px;color:#a5b4fc;text-decoration:none;font-weight:600">📎 ${d.originalName || file.name}</a>`);
-        onInput();
+
+      // Replace placeholder with final element
+      const placeholder = editorRef.current?.querySelector(`#${placeholderId}`);
+
+      let finalHtml = '';
+      if (result.category === 'image') {
+        finalHtml = `<img src="${result.url}" alt="${result.originalName}" style="max-width:100%;border-radius:8px;margin:.5rem 0">`;
+      } else if (result.category === 'video') {
+        finalHtml = `<video src="${result.url}" controls style="width:100%;border-radius:8px;margin:.5rem 0;background:#000"></video>`;
+      } else if (result.category === 'audio') {
+        finalHtml = `<audio src="${result.url}" controls style="width:100%;margin:.5rem 0"></audio>`;
+      } else {
+        const icon = result.url.endsWith('.pdf') ? '📄' : result.url.endsWith('.zip') ? '🗜' : '📎';
+        finalHtml = `<a href="${result.url}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:rgba(108,99,255,0.15);border:1px solid rgba(108,99,255,0.4);border-radius:8px;color:#a5b4fc;text-decoration:none;font-weight:600">${icon} ${result.originalName}</a>`;
       }
-    } catch { /* ignore */ }
-    setUploading(false);
-  };
+
+      if (placeholder) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = finalHtml;
+        placeholder.replaceWith(tmp.firstElementChild!);
+      } else {
+        restoreRange();
+        insertHtmlAtCaret(finalHtml);
+      }
+
+      onInput();
+      setUploads(prev => prev.map(u => u.name === file.name ? { ...u, progress: 100, done: true, url: result.url, category: result.category } : u));
+      setTimeout(() => setUploads(prev => prev.filter(u => u.name !== file.name)), 3000);
+
+    } catch (err: any) {
+      const placeholder = editorRef.current?.querySelector(`#${placeholderId}`);
+      if (placeholder) {
+        placeholder.replaceWith(document.createTextNode(''));
+      }
+      onInput();
+      setUploads(prev => prev.map(u => u.name === file.name ? { ...u, done: true, error: err.message } : u));
+      setTimeout(() => setUploads(prev => prev.filter(u => u.name !== file.name)), 5000);
+    }
+  }, [token, onInput]);
+
+  // ── Drop zone ─────────────────────────────────────────────────────────────
+  const onDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    Array.from(e.dataTransfer.files).forEach(f => handleUpload(f));
+  }, [token, handleUpload]);
 
   // ── Insert table ──────────────────────────────────────────────────────────
   const insertTable = () => {
@@ -253,7 +314,7 @@ export default function RichEditor({ value, onChange, token, placeholder = 'اب
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 0, border: '1px solid rgba(108,99,255,0.25)', borderRadius: '0.6rem', overflow: 'hidden', direction: 'rtl' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 0, border: '1px solid rgba(108,99,255,0.25)', borderRadius: '0.6rem', overflow: 'hidden', direction: 'rtl', position: 'relative' }}>
       {/* ── Mode bar ── */}
       <div style={{ display: 'flex', gap: '0.3rem', padding: '0.4rem 0.6rem', background: '#0f0d24', borderBottom: '1px solid rgba(108,99,255,0.15)', flexWrap: 'wrap', alignItems: 'center' }}>
         <button onClick={() => setMode('visual')} style={btnStyle(mode === 'visual')}>✏️ مرئي</button>
@@ -262,35 +323,21 @@ export default function RichEditor({ value, onChange, token, placeholder = 'اب
         <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.1)', margin: '0 0.2rem' }} />
         {token && (
           <>
-            <label title="رفع صورة" style={{ ...TB, cursor: uploading ? 'not-allowed' : 'pointer', opacity: uploading ? 0.5 : 1 }}>
-              {uploading ? '⏳' : '🖼'}
-              <input type="file" accept="image/*" hidden disabled={uploading}
-                onChange={e => { const f = e.target.files?.[0]; if (f) { saveRange(); uploadImage(f); } e.target.value = ''; }} />
+            <label title="رفع صورة" style={{ ...TB, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+              🖼
+              <input type="file" accept="image/*" hidden onChange={e => { const f = e.target.files?.[0]; if (f) { saveRange(); handleUpload(f); } e.target.value = ''; }} />
             </label>
-            <label title="رفع ملف PDF/Doc" style={{ ...TB, cursor: uploading ? 'not-allowed' : 'pointer', opacity: uploading ? 0.5 : 1 }}>
-              {uploading ? '⏳' : '📎'}
-              <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt" hidden disabled={uploading}
-                onChange={e => { const f = e.target.files?.[0]; if (f) { saveRange(); uploadFile(f); } e.target.value = ''; }} />
+            <label title="رفع فيديو" style={{ ...TB, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+              🎬
+              <input type="file" accept="video/*" hidden onChange={e => { const f = e.target.files?.[0]; if (f) { saveRange(); handleUpload(f); } e.target.value = ''; }} />
             </label>
-            <label title="رفع فيديو" style={{ ...TB, cursor: uploading ? 'not-allowed' : 'pointer', opacity: uploading ? 0.5 : 1 }}>
-              {uploading ? '⏳' : '🎬'}
-              <input type="file" accept="video/*" hidden disabled={uploading}
-                onChange={async e => {
-                  const f = e.target.files?.[0];
-                  if (!f) return;
-                  setUploading(true);
-                  try {
-                    const fd = new FormData(); fd.append('file', f);
-                    const r = await fetch(`${API_BASE}/api/uploads/file`, { method: 'POST', body: fd, headers: { Authorization: `Bearer ${token}` } });
-                    const d = await r.json();
-                    if (d.url) {
-                      editorRef.current?.focus(); restoreRange();
-                      insertHtmlAtCaret(`<video src="${d.url}" controls style="width:100%;border-radius:8px;margin:.5rem 0"></video>`);
-                      onInput();
-                    }
-                  } catch { /* ignore */ }
-                  setUploading(false); e.target.value = '';
-                }} />
+            <label title="رفع ملف (PDF، Doc، ...)" style={{ ...TB, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+              📎
+              <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.mp3,.wav" hidden onChange={e => { const f = e.target.files?.[0]; if (f) { saveRange(); handleUpload(f); } e.target.value = ''; }} />
+            </label>
+            <label title="رفع أي ملف" style={{ ...TB, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 3, color: '#a5b4fc' }}>
+              📤
+              <input type="file" hidden onChange={e => { const f = e.target.files?.[0]; if (f) { saveRange(); handleUpload(f); } e.target.value = ''; }} />
             </label>
             <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.1)', margin: '0 0.2rem' }} />
           </>
@@ -340,8 +387,27 @@ export default function RichEditor({ value, onChange, token, placeholder = 'اب
         </div>
       )}
 
-      {/* ── Link prompt ── */}
-      {linkPrompt && (
+      {/* ── Upload progress ── */}
+      {uploads.length > 0 && (
+        <div style={{ background: '#0f0d24', borderBottom: '1px solid rgba(108,99,255,0.15)', padding: '0.4rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+          {uploads.map((u, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.78rem' }}>
+              <span style={{ color: u.error ? '#fca5a5' : u.done ? '#86efac' : '#a5b4fc', minWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {u.error ? `❌ ${u.name}` : u.done ? `✅ ${u.name}` : `⏳ ${u.name}`}
+              </span>
+              {!u.done && (
+                <div style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', background: '#6C63FF', borderRadius: 3, width: `${u.progress}%`, transition: 'width 0.2s' }} />
+                </div>
+              )}
+              {!u.done && <span style={{ color: '#64748b', minWidth: 35 }}>{u.progress}%</span>}
+              {u.error && <span style={{ color: '#fca5a5', fontSize: '0.72rem' }}>{u.error}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Link prompt ── */}      {linkPrompt && (
         <div style={{ background: '#1a1830', padding: '0.75rem', borderBottom: '1px solid rgba(108,99,255,0.2)', display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <input value={linkUrl} onChange={e => setLinkUrl(e.target.value)} placeholder="https://example.com"
             style={{ ...TB, padding: '0.3rem 0.6rem', background: 'rgba(255,255,255,0.07)', flex: 2, minWidth: 200, textAlign: 'left', fontFamily: 'monospace' }} dir="ltr" />
@@ -372,7 +438,19 @@ export default function RichEditor({ value, onChange, token, placeholder = 'اب
       )}
 
       {/* ── Main area (editor | preview | html) ── */}
-      <div style={{ display: 'flex', flex: 1 }}>
+      <div style={{ display: 'flex', flex: 1 }}
+        ref={dropZoneRef}
+        onDragOver={e => { e.preventDefault(); if (token) e.dataTransfer.dropEffect = 'copy'; }}
+        onDrop={onDrop}>
+
+        {/* Drop overlay */}
+        {token && (
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 5 }}
+            onDragOver={e => { e.preventDefault(); e.currentTarget.style.background = 'rgba(108,99,255,0.15)'; e.currentTarget.style.pointerEvents = 'all'; }}
+            onDragLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.pointerEvents = 'none'; }}
+            onDrop={e => { e.preventDefault(); e.currentTarget.style.background = ''; e.currentTarget.style.pointerEvents = 'none'; onDrop(e); }}
+          />
+        )}
         {/* Editor / HTML source */}
         <div style={{ flex: preview ? '0 0 50%' : 1, borderRight: preview ? '1px solid rgba(108,99,255,0.15)' : 'none' }}>
           {mode === 'visual' ? (
@@ -430,6 +508,13 @@ export default function RichEditor({ value, onChange, token, placeholder = 'اب
           </div>
         )}
       </div>
+      {/* Drop hint */}
+      {token && mode === 'visual' && (
+        <div style={{ background: '#0f0d24', borderTop: '1px solid rgba(108,99,255,0.1)', padding: '0.3rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#475569', fontSize: '0.72rem' }}>
+          <span>📤</span>
+          <span>اسحب وأفلت أي صورة أو فيديو أو ملف مباشرة هنا</span>
+        </div>
+      )}
     </div>
   );
 }
