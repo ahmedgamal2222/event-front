@@ -310,3 +310,59 @@ export const deleteArticle = (eventId: number, id: number, token: string) =>
   apiFetch<any>(`/api/events/${eventId}/articles/${id}`, {
     method: 'DELETE', headers: getAuthHeaders(token)
   });
+
+// ── Public – Terms & Privacy ───────────────────────────────────────────────
+export const fetchTerms = (eventId: number) =>
+  apiFetch<any>(`/api/events/${eventId}/terms`);
+
+// ── Admin – Terms & Privacy ────────────────────────────────────────────────
+export const updateTerms = (eventId: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/terms`, {
+    method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token)
+  });
+
+// ── Public – Static Pages ──────────────────────────────────────────────────
+export const fetchPages = (eventId: number, position?: string) =>
+  apiFetch<any>(`/api/events/${eventId}/pages${position ? '?position=' + position : ''}`);
+
+export const fetchPage = (eventId: number, slug: string) =>
+  apiFetch<any>(`/api/events/${eventId}/pages/${slug}`);
+
+// ── Admin – Static Pages ───────────────────────────────────────────────────
+export const fetchPagesAdmin = (eventId: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/pages/admin/all`, { headers: getAuthHeaders(token) });
+
+export const createPage = (eventId: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/pages`, {
+    method: 'POST', body: JSON.stringify(body), headers: getAuthHeaders(token)
+  });
+
+export const updatePage = (eventId: number, id: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/pages/${id}`, {
+    method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token)
+  });
+
+export const deletePage = (eventId: number, id: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/pages/${id}`, {
+    method: 'DELETE', headers: getAuthHeaders(token)
+  });
+
+// ── Admin – Auth Profile ───────────────────────────────────────────────────
+export const updateAdminProfile = (body: any, token: string) =>
+  apiFetch<any>('/api/auth/profile', {
+    method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token)
+  });
+
+// ── Admin – File Upload ────────────────────────────────────────────────────
+export async function uploadFile(file: File, token: string): Promise<{ url: string; filename: string; originalName: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`${API_BASE}/api/uploads/file`, {
+    method: 'POST',
+    body: formData,
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Upload failed');
+  return { url: data.url, filename: data.filename, originalName: data.originalName };
+}

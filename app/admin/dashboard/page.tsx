@@ -9,15 +9,18 @@ import {
   fetchFaqs, createFaq, deleteFaq,
   fetchAgenda, createAgendaDay, updateAgendaDay,
   createAgendaSession, updateAgendaSession, deleteAgendaSession,
-  uploadImage, deleteImage,
+  uploadImage, uploadFile, deleteImage,
   fetchVenueGalleryAdmin, createVenueMedia, updateVenueMedia, deleteVenueMedia,
   clearApiCacheFor,
   fetchArticlesAdmin, createArticle, updateArticle, deleteArticle,
+  updateAdminProfile,
 } from '../../../lib/api';
 import AdminTickets from '../../../app/components/admin/AdminTickets';
 import AdminSupport from '../../../app/components/admin/AdminSupport';
 import AdminPixels from '../../../app/components/admin/AdminPixels';
 import AdminEmailSettings from '../../../app/components/admin/AdminEmailSettings';
+import AdminTerms from '../../../app/components/admin/AdminTerms';
+import AdminPages from '../../../app/components/admin/AdminPages';
 import type { FormConfig, SiteConfig } from '../../../lib/types';
 
 function getToken() { return typeof window !== 'undefined' ? localStorage.getItem('admin_token') || '' : ''; }
@@ -57,6 +60,9 @@ const TABS = [
   { key: 'pixels',         label: '📊 البكسل والتتبع',  group: 'الدعم' },
   { key: 'email',          label: '📧 إعدادات البريد',  group: 'الدعم' },
   { key: 'articles',       label: '📝 المقالات',        group: 'المحتوى' },
+  { key: 'terms',          label: '⚖️ الشروط والأحكام', group: 'الدعم' },
+  { key: 'pages',          label: '📄 الصفحات الثابتة', group: 'المحتوى' },
+  { key: 'profile',        label: '👤 إعدادات الأدمن',  group: 'رئيسي' },
 ] as const;
 type Tab = typeof TABS[number]['key'];
 
@@ -303,6 +309,9 @@ export default function AdminDashboard() {
           {activeTab === 'pixels'        && <AdminPixels eventId={eventId} token={token} />}
           {activeTab === 'email'         && <AdminEmailSettings eventId={eventId} token={token} />}
           {activeTab === 'articles'      && <ArticlesTab eventId={eventId} token={token} showToast={showToast} />}
+          {activeTab === 'terms'         && <AdminTerms eventId={eventId} token={token} />}
+          {activeTab === 'pages'         && <AdminPages eventId={eventId} token={token} />}
+          {activeTab === 'profile'       && <ProfileTab token={token} showToast={showToast} />}
         </div>
 
         {/* Toast Notification */}
@@ -1767,11 +1776,71 @@ function SiteConfigTab({ eventId, token, save, saving }: any) {
 }
 
 // ── Articles ──────────────────────────────────────────────────────────────────
+function ProfileTab({ token, showToast }: { token: string; showToast: (m: string) => void }) {
+  const [form, setForm] = useState({ current_password: '', new_email: '', new_password: '', confirm_password: '' });
+  const [loading, setLoading] = useState(false);
+
+  const handleSave = async () => {
+    if (form.new_password && form.new_password !== form.confirm_password) {
+      showToast('❌ كلمة المرور الجديدة غير متطابقة');
+      return;
+    }
+    if (!form.new_email && !form.new_password) {
+      showToast('❌ أدخل بريداً جديداً أو كلمة سر جديدة');
+      return;
+    }
+    setLoading(true);
+    try {
+      await updateAdminProfile({
+        current_password: form.current_password,
+        new_email: form.new_email || undefined,
+        new_password: form.new_password || undefined,
+      }, token);
+      showToast('✅ تم التحديث بنجاح');
+      setForm({ current_password: '', new_email: '', new_password: '', confirm_password: '' });
+    } catch (e: any) { showToast('❌ ' + e.message); }
+    finally { setLoading(false); }
+  };
+
+  return (
+    <div style={{ maxWidth: 520 }}>
+      <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'white', marginBottom: '1.5rem' }}>👤 إعدادات الأدمن</h1>
+      <div style={{ ...S.card, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <Field label="كلمة المرور الحالية *">
+          <input type="password" style={S.inp} value={form.current_password} onChange={e => setForm(f => ({ ...f, current_password: e.target.value }))} placeholder="أدخل كلمة المرور الحالية للتحقق" />
+        </Field>
+        <div style={{ borderTop: '1px solid rgba(108,99,255,0.15)', paddingTop: '0.75rem' }}>
+          <p style={{ fontSize: '0.8rem', color: '#6C63FF', fontWeight: 600, marginBottom: '0.75rem' }}>✉️ تغيير البريد الإلكتروني</p>
+          <Field label="البريد الجديد (اتركه فارغاً إذا لم تريد تغييره)">
+            <input type="email" style={S.inp} value={form.new_email} onChange={e => setForm(f => ({ ...f, new_email: e.target.value }))} placeholder="admin@example.com" dir="ltr" />
+          </Field>
+        </div>
+        <div style={{ borderTop: '1px solid rgba(108,99,255,0.15)', paddingTop: '0.75rem' }}>
+          <p style={{ fontSize: '0.8rem', color: '#6C63FF', fontWeight: 600, marginBottom: '0.75rem' }}>🔑 تغيير كلمة المرور</p>
+          <Field label="كلمة المرور الجديدة (اتركها فارغة إذا لم تريد تغييرها)">
+            <input type="password" style={S.inp} value={form.new_password} onChange={e => setForm(f => ({ ...f, new_password: e.target.value }))} placeholder="6 أحرف على الأقل" />
+          </Field>
+          <div style={{ marginTop: '0.75rem' }}>
+            <Field label="تأكيد كلمة المرور الجديدة">
+              <input type="password" style={S.inp} value={form.confirm_password} onChange={e => setForm(f => ({ ...f, confirm_password: e.target.value }))} placeholder="أعد كتابة كلمة المرور الجديدة" />
+            </Field>
+          </div>
+        </div>
+        <button style={S.btn()} onClick={handleSave} disabled={loading || !form.current_password}>
+          {loading ? 'جار الحفظ...' : '💾 حفظ التغييرات'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ArticlesTab({ eventId, token, showToast }: any) {
   const [articles, setArticles] = useState<any[]>([]);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const [fileUploading, setFileUploading] = useState(false);
+  const [contentMode, setContentMode] = useState<'code' | 'preview'>('code');
   const blank = {
     title: '', title_ar: '', slug: '',
     excerpt: '', excerpt_ar: '',
@@ -1779,6 +1848,7 @@ function ArticlesTab({ eventId, token, showToast }: any) {
     cover_image: '', author_name: 'S3 Summit Team',
     category: 'general', tags: '', status: 'draft',
     meta_title: '', meta_description: '',
+    file_attachment: '', file_attachment_name: '',
   };
   const [form, setForm] = useState<any>(blank);
 
@@ -1812,6 +1882,8 @@ function ArticlesTab({ eventId, token, showToast }: any) {
       ...form,
       title: form.title || form.title_ar,
       content: form.content || form.content_ar,
+      file_attachment: form.file_attachment || null,
+      file_attachment_name: form.file_attachment_name || null,
     };
     setSaving(true);
     try {
@@ -1911,10 +1983,45 @@ function ArticlesTab({ eventId, token, showToast }: any) {
               </Field>
             </div>
             <div style={{ gridColumn: '1/-1' }}>
-              <Field label="محتوى المقال (يدعم HTML) *">
-                <textarea value={form.content_ar||''} onChange={e => set('content_ar', e.target.value)} rows={12} style={{ ...S.inp, resize: 'vertical', fontFamily: 'monospace', fontSize: '0.85rem' }} placeholder="<p>محتوى المقال...</p>" />
-              </Field>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <label style={S.label}>محتوى المقال (يدعم HTML) *</label>
+                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                  <button onClick={() => setContentMode('code')} style={{ ...S.btn(contentMode === 'code' ? '#6C63FF' : '#374151'), padding: '0.2rem 0.6rem', fontSize: '0.75rem' }}>كود</button>
+                  <button onClick={() => setContentMode('preview')} style={{ ...S.btn(contentMode === 'preview' ? '#6C63FF' : '#374151'), padding: '0.2rem 0.6rem', fontSize: '0.75rem' }}>معاينة</button>
+                </div>
+              </div>
+              {contentMode === 'code' ? (
+                <textarea value={form.content_ar||''} onChange={e => set('content_ar', e.target.value)} rows={14} style={{ ...S.inp, resize: 'vertical', fontFamily: 'monospace', fontSize: '0.85rem' }} placeholder="<p>محتوى المقال...</p>" />
+              ) : (
+                <div style={{ minHeight: 200, padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '0.5rem', border: '1px solid rgba(255,255,255,0.08)', color: '#d1d5db', lineHeight: 1.8 }}
+                  dangerouslySetInnerHTML={{ __html: form.content_ar || '<p style="color:#64748b">لا يوجد محتوى بعد</p>' }} />
+              )}
               <p style={{ color: '#64748b', fontSize: '0.75rem', marginTop: 4 }}>💡 يمكن استخدام HTML: &lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;strong&gt;, &lt;img&gt;</p>
+            </div>
+            <div style={{ gridColumn: '1/-1' }}>
+              <Field label="📎 ملف مرفق (PDF، كتاب، تقرير...)">
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
+                  <input value={form.file_attachment||''} onChange={e => set('file_attachment', e.target.value)} style={{ ...S.inp, flex: 1 }} placeholder="رابط الملف أو ارفع ملف..." dir="ltr" />
+                  {form.file_attachment && <button style={S.del} onClick={() => { set('file_attachment', ''); set('file_attachment_name', ''); }}>✕</button>}
+                </div>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.9rem', background: 'rgba(108,99,255,0.12)', border: '1px solid rgba(108,99,255,0.3)', borderRadius: '0.4rem', color: '#a5b4fc', cursor: fileUploading ? 'not-allowed' : 'pointer', fontSize: '0.82rem' }}>
+                  {fileUploading ? '⏳ جار الرفع...' : '📤 رفع ملف'}
+                  <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.zip" hidden disabled={fileUploading}
+                    onChange={async e => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setFileUploading(true);
+                      try {
+                        const result = await uploadFile(file, token);
+                        set('file_attachment', result.url);
+                        set('file_attachment_name', result.originalName);
+                        showToast('✅ تم رفع الملف');
+                      } catch (err: any) { showToast('❌ ' + err.message); }
+                      finally { setFileUploading(false); e.target.value = ''; }
+                    }} />
+                </label>
+                {form.file_attachment_name && <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginRight: 8 }}>📎 {form.file_attachment_name}</span>}
+              </Field>
             </div>
             <Field label="صورة الغلاف">
               <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
@@ -2000,6 +2107,8 @@ function ArticlesTab({ eventId, token, showToast }: any) {
                     status: article.status || 'draft',
                     meta_title: article.meta_title || '',
                     meta_description: article.meta_description || '',
+                    file_attachment: article.file_attachment || '',
+                    file_attachment_name: article.file_attachment_name || '',
                   });
                 }}>
                 ✏️ تعديل

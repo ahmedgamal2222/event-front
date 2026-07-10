@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { updatePixelCodes, fetchPixelCodes } from '@/lib/api';
 
 interface AdminPixelsProps {
@@ -40,6 +40,18 @@ export default function AdminPixels({ eventId, token }: AdminPixelsProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState('');
+
+  // Auto-load existing pixel codes on mount
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        const res = await fetchPixelCodes(eventId);
+        if (res.data) setForm(prev => ({ ...prev, ...res.data }));
+      } catch { /* ignore */ } finally { setLoading(false); }
+    };
+    load();
+  }, [eventId]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;

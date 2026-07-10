@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { Event, Speaker, AgendaDay, Stats, Sponsor, Faq, FormConfig, SiteConfig } from '../../lib/types';
-import { fetchEvent, fetchSpeakers, fetchAgenda, fetchStats, fetchSponsors, fetchFaqs, submitRegistration, fetchVenueGallery, fetchArticles } from '../../lib/api';
+import { fetchEvent, fetchSpeakers, fetchAgenda, fetchStats, fetchSponsors, fetchFaqs, submitRegistration, fetchVenueGallery, fetchArticles, fetchTerms, fetchPages } from '../../lib/api';
 import { VenueMedia } from '../../lib/types';
 import PixelInjector from '../components/PixelInjector';
 import TicketsSection from '../components/TicketsSection';
@@ -277,6 +277,8 @@ export default function EventLandingClient() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [faqs, setFaqs] = useState<Faq[]>([]);
+  const [footerPages, setFooterPages] = useState<any[]>([]);
+  const [termsData, setTermsData] = useState<{ terms_content?: string; privacy_content?: string; show_in_footer?: number } | null>(null);
   const [cfg, setCfg] = useState<FormConfig>({
     enabled_types: ['startup', 'general'],
     form_title: 'سجّل في القمة',
@@ -395,6 +397,9 @@ export default function EventLandingClient() {
         setFaqs(fqRes.data || []);
         setVenueGallery(venueRes.data || []);
         setHasArticles((artRes.data || []).length > 0);
+        // Load footer pages and terms (non-blocking)
+        fetchPages(ev.id, 'footer').then(r => setFooterPages(r.data || [])).catch(() => {});
+        fetchTerms(ev.id).then(r => setTermsData(r.data || null)).catch(() => {});
       } catch { /* use default demo data */ }
       setLoading(false);
     })();
@@ -981,6 +986,39 @@ export default function EventLandingClient() {
             {event && <RegistrationForm event={event} onClose={() => setShowRegModal(false)} cfg={cfg} initialTab={regInitialTab} />}
           </div>
         </div>
+      )}
+
+      {/* ── Footer ────────────────────────────────────────────────────────────── */}
+      {(footerPages.length > 0 || (termsData?.show_in_footer && (termsData?.terms_content || termsData?.privacy_content))) && (
+        <footer style={{ background: 'rgba(0,0,0,0.4)', borderTop: '1px solid rgba(108,99,255,0.15)', padding: '1.5rem 1.5rem', textAlign: 'center' }}>
+          <div style={{ maxWidth: 900, margin: '0 auto', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.5rem 1.5rem' }}>
+            {footerPages.map(page => (
+              <a key={page.id} href={`/terms?page=${page.slug}`}
+                style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.82rem', transition: 'color 0.15s' }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#6C63FF')}
+                onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}>
+                {page.title_ar || page.title}
+              </a>
+            ))}
+            {termsData?.show_in_footer && termsData?.terms_content && (
+              <a href={`/terms?tab=terms`}
+                style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.82rem', transition: 'color 0.15s' }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#6C63FF')}
+                onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}>
+                الشروط والأحكام
+              </a>
+            )}
+            {termsData?.show_in_footer && termsData?.privacy_content && (
+              <a href={`/terms?tab=privacy`}
+                style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.82rem', transition: 'color 0.15s' }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#6C63FF')}
+                onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}>
+                سياسة الخصوصية
+              </a>
+            )}
+          </div>
+          <p style={{ color: '#475569', fontSize: '0.75rem', margin: '0.75rem 0 0' }}>© {new Date().getFullYear()} {event?.name_ar || 'S3 Summit'}. جميع الحقوق محفوظة.</p>
+        </footer>
       )}
     </div>
   );

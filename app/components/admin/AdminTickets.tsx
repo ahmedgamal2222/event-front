@@ -39,7 +39,9 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
     duration_type: 'single_day' as const,
     custom_days: 1,
     sort_order: 0,
+    features: [] as string[],
   });
+  const [newFeature, setNewFeature] = useState('');
 
   const [configForm, setConfigForm] = useState({
     section_title: 'احصل على تذكرتك الآن',
@@ -97,6 +99,7 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
         duration_type: form.duration_type || 'single_day',
         custom_days: form.duration_type === 'custom_days' ? (form.custom_days ?? 1) : null,
         sort_order: form.sort_order ?? 0,
+        features: form.features || [],
       };
 
       console.log('📝 Submitting ticket:', dataToSend);
@@ -115,7 +118,9 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
         duration_type: 'single_day',
         custom_days: 1,
         sort_order: 0,
+        features: [],
       });
+      setNewFeature('');
       setEditingId(null);
       setIsFormOpen(false);
       
@@ -144,6 +149,7 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
       duration_type: ticket.duration_type,
       custom_days: ticket.custom_days || 1,
       sort_order: ticket.sort_order,
+      features: Array.isArray(ticket.features) ? ticket.features : (typeof ticket.features === 'string' ? JSON.parse(ticket.features || '[]') : []),
     });
     setEditingId(ticket.id);
     setIsFormOpen(true);
@@ -390,6 +396,27 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
                 <button type="button" onClick={() => setIsFormOpen(false)} disabled={isSubmitting} style={{ ...S.btn('#6b7280'), opacity: isSubmitting ? 0.6 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }} onMouseEnter={(e) => !isSubmitting && (e.currentTarget.style.background = '#4b5563')} onMouseLeave={(e) => !isSubmitting && (e.currentTarget.style.background = '#6b7280')}>
                   ✕ إلغاء
                 </button>
+              </div>
+              {/* Features/Perks */}
+              <div style={{ borderTop: '1px solid rgba(108,99,255,0.15)', paddingTop: '0.75rem' }}>
+                <label style={{ ...S.label, marginBottom: '0.6rem' }}>🎁 ميزات هذه التذكرة (تظهر للزوار)</label>
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.6rem' }}>
+                  <input value={newFeature} onChange={e => setNewFeature(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (newFeature.trim()) { setForm(f => ({ ...f, features: [...(f.features || []), newFeature.trim()] })); setNewFeature(''); } } }}
+                    style={{ ...S.inp, flex: 1 }} placeholder="مثال: الدخول الكامل للحدث، شهادة حضور، حقيبة الحدث..." />
+                  <button type="button" onClick={() => { if (newFeature.trim()) { setForm(f => ({ ...f, features: [...(f.features || []), newFeature.trim()] })); setNewFeature(''); } }}
+                    style={S.btn()}>+ إضافة</button>
+                </div>
+                {(form.features || []).length === 0 && <p style={{ color: '#64748b', fontSize: '0.78rem' }}>لا توجد ميزات. اكتب ميزة واضغط Enter أو زر الإضافة.</p>}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                  {(form.features || []).map((feat: string, i: number) => (
+                    <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.25rem 0.65rem', background: 'rgba(108,99,255,0.12)', border: '1px solid rgba(108,99,255,0.25)', borderRadius: 20, fontSize: '0.8rem', color: '#a5b4fc' }}>
+                      ✓ {feat}
+                      <button type="button" onClick={() => setForm(ff => ({ ...ff, features: (ff.features || []).filter((_: string, j: number) => j !== i) }))}
+                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0, fontSize: '0.9rem', lineHeight: 1 }}>×</button>
+                    </span>
+                  ))}
+                </div>
               </div>
             </form>
           )}

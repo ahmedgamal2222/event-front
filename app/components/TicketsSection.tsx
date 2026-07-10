@@ -149,20 +149,27 @@ export default function TicketsSection({ eventId }: { eventId: number }) {
                   <p className="text-sm text-[var(--text-muted)] mb-6 leading-relaxed">{ticket.description}</p>
                 )}
 
-                {/* Features */}
+                {/* Features - per-ticket if available, else global config */}
                 <div className="space-y-3 mb-8 flex-1">
-                  <div className="flex items-start gap-2 text-sm">
-                    <span className="text-[var(--primary)] flex-shrink-0 mt-0.5">✓</span>
-                    <span className="text-[var(--text-muted)]">{config.feature_1}</span>
-                  </div>
-                  <div className="flex items-start gap-2 text-sm">
-                    <span className="text-[var(--primary)] flex-shrink-0 mt-0.5">✓</span>
-                    <span className="text-[var(--text-muted)]">{config.feature_2}</span>
-                  </div>
-                  <div className="flex items-start gap-2 text-sm">
-                    <span className="text-[var(--primary)] flex-shrink-0 mt-0.5">✓</span>
-                    <span className="text-[var(--text-muted)]">{config.feature_3}</span>
-                  </div>
+                  {(() => {
+                    const perks: string[] = Array.isArray(ticket.features)
+                      ? ticket.features
+                      : (typeof ticket.features === 'string' && ticket.features ? JSON.parse(ticket.features) : []);
+                    if (perks.length > 0) {
+                      return perks.map((feat: string, i: number) => (
+                        <div key={i} className="flex items-start gap-2 text-sm">
+                          <span className="text-[var(--primary)] flex-shrink-0 mt-0.5">✓</span>
+                          <span className="text-[var(--text-muted)]">{feat}</span>
+                        </div>
+                      ));
+                    }
+                    return [config.feature_1, config.feature_2, config.feature_3].filter(Boolean).map((feat, i) => (
+                      <div key={i} className="flex items-start gap-2 text-sm">
+                        <span className="text-[var(--primary)] flex-shrink-0 mt-0.5">✓</span>
+                        <span className="text-[var(--text-muted)]">{feat}</span>
+                      </div>
+                    ));
+                  })()}
                 </div>
 
                 {/* Price Section */}

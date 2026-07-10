@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import PixelInjector from '../components/PixelInjector';
 
 const API_BASE = 'https://event-api.info1703.workers.dev';
 const EVENT_ID = 1;
@@ -87,6 +88,13 @@ function ArticleView({ slug }: { slug: string }) {
 
       {/* Content */}
       <div style={{ maxWidth: 820, margin: '0 auto', padding: '2rem 1.5rem 4rem' }}>
+        {/* File attachment download */}
+        {article.file_attachment && (
+          <a href={article.file_attachment} target="_blank" rel="noopener noreferrer"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.7rem 1.25rem', background: 'rgba(108,99,255,0.15)', border: '1px solid rgba(108,99,255,0.4)', borderRadius: '0.6rem', color: '#a5b4fc', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600, marginBottom: '1.5rem' }}>
+            📎 {article.file_attachment_name || 'تحميل الملف المرفق'}
+          </a>
+        )}
         <style>{`
           .ac h2{color:white;font-size:1.4rem;font-weight:700;border-bottom:1px solid rgba(108,99,255,0.25);padding-bottom:.4rem;margin:1.5rem 0 .75rem}
           .ac h3{color:#a5b4fc;font-size:1.1rem;font-weight:700;margin:1.2rem 0 .5rem}
@@ -207,6 +215,7 @@ function BlogContent() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#0d0b1a', color: '#e2e8f0', fontFamily: 'Cairo, sans-serif', direction: 'rtl' }}>
+      <PixelInjector eventId={EVENT_ID} />
       {articleSlug ? <ArticleView slug={articleSlug} /> : <ArticlesList />}
     </div>
   );
