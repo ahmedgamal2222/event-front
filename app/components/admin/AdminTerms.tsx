@@ -1,12 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { fetchTerms, updateTerms } from '@/lib/api';
+import RichEditor from './RichEditor';
 
 const S = {
-  inp: { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(108,99,255,0.2)', borderRadius: '0.5rem', padding: '0.55rem 0.85rem', color: 'white', outline: 'none', width: '100%', fontSize: '0.9rem', colorScheme: 'dark' } as React.CSSProperties,
   btn: (color = '#6C63FF') => ({ background: color, color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.45rem 1rem', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 } as React.CSSProperties),
   card: { background: '#13102a', border: '1px solid rgba(108,99,255,0.15)', borderRadius: '0.8rem', padding: '1.25rem' } as React.CSSProperties,
-  label: { fontSize: '0.78rem', color: '#94a3b8', marginBottom: '0.3rem', display: 'block', fontWeight: 600 } as React.CSSProperties,
 };
 
 export default function AdminTerms({ eventId, token }: { eventId: number; token: string }) {
@@ -63,27 +62,16 @@ export default function AdminTerms({ eventId, token }: { eventId: number; token:
       </div>
 
       <div style={S.card}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-          <label style={S.label}>{activeTab === 'terms' ? 'نص الشروط والأحكام (HTML مدعوم)' : 'نص سياسة الخصوصية (HTML مدعوم)'}</label>
-          <span style={{ fontSize: '0.72rem', color: '#64748b' }}>يمكنك استخدام &lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;strong&gt;, &lt;a&gt; ...</span>
+        <div style={{ marginBottom: '0.75rem', fontWeight: 700, color: '#a5b4fc', fontSize: '0.88rem' }}>
+          {activeTab === 'terms' ? '📋 الشروط والأحكام' : '🔒 سياسة الخصوصية'}
         </div>
-        <textarea
-          rows={20}
-          style={{ ...S.inp, fontFamily: 'monospace', fontSize: '0.85rem', lineHeight: 1.6, resize: 'vertical' }}
-          value={activeTab === 'terms' ? form.terms_content : form.privacy_content}
-          onChange={e => setForm(f => activeTab === 'terms' ? { ...f, terms_content: e.target.value } : { ...f, privacy_content: e.target.value })}
-          placeholder={activeTab === 'terms' ? '<h2>الشروط والأحكام</h2>\n<p>نص الشروط هنا...</p>' : '<h2>سياسة الخصوصية</h2>\n<p>نص السياسة هنا...</p>'}
-          dir="rtl"
+        <RichEditor
+          value={activeTab === 'terms' ? (form.terms_content || '') : (form.privacy_content || '')}
+          onChange={html => setForm(f => activeTab === 'terms' ? { ...f, terms_content: html } : { ...f, privacy_content: html })}
+          placeholder={activeTab === 'terms' ? 'اكتب الشروط والأحكام هنا...' : 'اكتب سياسة الخصوصية هنا...'}
+          minHeight={400}
+          showPreview
         />
-
-        {/* Preview */}
-        {(activeTab === 'terms' ? form.terms_content : form.privacy_content) && (
-          <div style={{ marginTop: '1rem', borderTop: '1px solid rgba(108,99,255,0.15)', paddingTop: '1rem' }}>
-            <div style={{ fontSize: '0.78rem', color: '#64748b', marginBottom: '0.5rem' }}>معاينة:</div>
-            <div style={{ color: '#d1d5db', lineHeight: 1.8, fontSize: '0.9rem' }}
-              dangerouslySetInnerHTML={{ __html: activeTab === 'terms' ? form.terms_content : form.privacy_content }} />
-          </div>
-        )}
       </div>
     </div>
   );

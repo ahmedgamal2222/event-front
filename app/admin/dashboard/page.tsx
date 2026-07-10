@@ -23,6 +23,7 @@ import AdminTerms from '../../../app/components/admin/AdminTerms';
 import AdminPages from '../../../app/components/admin/AdminPages';
 import AdminPayments from '../../../app/components/admin/AdminPayments';
 import AdminCampaigns from '../../../app/components/admin/AdminCampaigns';
+import RichEditor from '../../../app/components/admin/RichEditor';
 import type { FormConfig, SiteConfig } from '../../../lib/types';
 
 function getToken() { return typeof window !== 'undefined' ? localStorage.getItem('admin_token') || '' : ''; }
@@ -1990,20 +1991,15 @@ function ArticlesTab({ eventId, token, showToast }: any) {
               </Field>
             </div>
             <div style={{ gridColumn: '1/-1' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                <label style={S.label}>محتوى المقال (يدعم HTML) *</label>
-                <div style={{ display: 'flex', gap: '0.4rem' }}>
-                  <button onClick={() => setContentMode('code')} style={{ ...S.btn(contentMode === 'code' ? '#6C63FF' : '#374151'), padding: '0.2rem 0.6rem', fontSize: '0.75rem' }}>كود</button>
-                  <button onClick={() => setContentMode('preview')} style={{ ...S.btn(contentMode === 'preview' ? '#6C63FF' : '#374151'), padding: '0.2rem 0.6rem', fontSize: '0.75rem' }}>معاينة</button>
-                </div>
-              </div>
-              {contentMode === 'code' ? (
-                <textarea value={form.content_ar||''} onChange={e => set('content_ar', e.target.value)} rows={14} style={{ ...S.inp, resize: 'vertical', fontFamily: 'monospace', fontSize: '0.85rem' }} placeholder="<p>محتوى المقال...</p>" />
-              ) : (
-                <div style={{ minHeight: 200, padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '0.5rem', border: '1px solid rgba(255,255,255,0.08)', color: '#d1d5db', lineHeight: 1.8 }}
-                  dangerouslySetInnerHTML={{ __html: form.content_ar || '<p style="color:#64748b">لا يوجد محتوى بعد</p>' }} />
-              )}
-              <p style={{ color: '#64748b', fontSize: '0.75rem', marginTop: 4 }}>💡 يمكن استخدام HTML: &lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;strong&gt;, &lt;img&gt;</p>
+              <label style={{ ...S.label, marginBottom: 6 }}>محتوى المقال *</label>
+              <RichEditor
+                value={form.content_ar || ''}
+                onChange={html => set('content_ar', html)}
+                token={token}
+                placeholder="اكتب محتوى المقال هنا..."
+                minHeight={320}
+                showPreview
+              />
             </div>
             <div style={{ gridColumn: '1/-1' }}>
               <Field label="📎 ملف مرفق (PDF، كتاب، تقرير...)">
