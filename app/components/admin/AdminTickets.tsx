@@ -51,6 +51,7 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
     feature_2: 'حقيبة الحدث والمواد',
     feature_3: 'شهادة حضور رسمية',
     info_text: '💡 هل تحتاج مساعدة؟ تواصل معنا عبر نموذج الدعم الفني',
+    reg_type_mapping: {} as Record<string, number>,
   });
 
   useEffect(() => {
@@ -336,6 +337,46 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
             <label style={S.label}>نص المعلومات الإضافية (Footer)</label>
             <textarea name="info_text" value={configForm.info_text} onChange={handleConfigChange} style={{ ...S.inp, minHeight: '80px' }} />
           </div>
+
+          {/* Reg Type → Ticket Mapping */}
+          <div style={{ borderTop: '1px solid rgba(108,99,255,0.2)', paddingTop: '1rem' }}>
+            <div style={{ fontWeight: 700, color: '#a5b4fc', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+              🔗 ربط نوع التسجيل بتذكرة محددة
+            </div>
+            <p style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: '0.75rem' }}>
+              عند قبول التسجيل وإرسال رابط الدفع، سيتم تحديد التذكرة تلقائياً بناءً على نوع التسجيل
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {[
+                { value: 'startup', label: '🚀 شركة ناشئة' },
+                { value: 'general', label: '👤 حضور عام' },
+                { value: 'investor', label: '💼 مستثمر' },
+                { value: 'speaker', label: '🎙️ متحدث' },
+                { value: 'sponsor', label: '🏅 راعي' },
+                { value: 'media', label: '📹 إعلام' },
+              ].map(rt => (
+                <div key={rt.value} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span style={{ color: '#94a3b8', fontSize: '0.85rem', minWidth: 120 }}>{rt.label}</span>
+                  <select
+                    value={configForm.reg_type_mapping?.[rt.value] || ''}
+                    onChange={e => setConfigForm(f => ({
+                      ...f,
+                      reg_type_mapping: {
+                        ...(f.reg_type_mapping || {}),
+                        [rt.value]: e.target.value ? Number(e.target.value) : undefined,
+                      }
+                    }))}
+                    style={{ ...S.inp, flex: 1 }}>
+                    <option value="">— بلا تذكرة محددة (أرخص تذكرة)</option>
+                    {tickets.map(t => (
+                      <option key={t.id} value={t.id}>{t.name_ar} — ${t.price_per_unit}</option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <button type="submit" disabled={configLoading} style={{ ...S.btn('#10b981'), opacity: configLoading ? 0.5 : 1 }} onMouseEnter={(e) => (e.currentTarget.style.background = '#059669')} onMouseLeave={(e) => (e.currentTarget.style.background = '#10b981')}>
             {configLoading ? '💾 جاري الحفظ...' : '💾 حفظ الإعدادات'}
           </button>
