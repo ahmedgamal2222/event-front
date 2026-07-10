@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { Event, Speaker, AgendaDay, Stats, Sponsor, Faq, FormConfig, SiteConfig } from '../../lib/types';
-import { fetchEvent, fetchSpeakers, fetchAgenda, fetchStats, fetchSponsors, fetchFaqs, submitRegistration, fetchVenueGallery, fetchArticles, fetchTerms, fetchPages } from '../../lib/api';
+import { fetchEvent, fetchSpeakers, fetchAgenda, fetchStats, fetchSponsors, fetchFaqs, submitRegistration, fetchVenueGallery, fetchArticles, fetchTerms, fetchPages, fetchPaymentSettingsPublic, initiatePayment, checkPaymentStatus } from '../../lib/api';
 import { VenueMedia } from '../../lib/types';
 import PixelInjector from '../components/PixelInjector';
 import TicketsSection from '../components/TicketsSection';
@@ -90,12 +90,46 @@ function StatCounter({ value, label }: { value: number; label: string }) {
   );
 }
 
+// ─── Ticket Selector for payment ─────────────────────────────────────────────
+function TicketSelector({ eventId, onSelect, primaryColor }: { eventId: number; onSelect: (ticketId: number, amount: number) => void; primaryColor: string }) {
+  const [tickets, setTickets] = useState<any[]>([]);
+  useEffect(() => {
+    import('../../lib/api').then(({ fetchTickets }) => {
+      fetchTickets(eventId).then(r => setTickets(r.data || [])).catch(() => {});
+    });
+  }, [eventId]);
+  if (!tickets.length) return <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>لا توجد تذاكر متاحة حالياً</p>;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+      {tickets.map(t => (
+        <button key={t.id} onClick={() => onSelect(t.id, t.price_per_unit)}
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.05)', border: `1px solid rgba(108,99,255,0.3)`, borderRadius: '0.6rem', cursor: 'pointer', transition: 'all 0.15s' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(108,99,255,0.15)'; e.currentTarget.style.borderColor = primaryColor; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(108,99,255,0.3)'; }}>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ color: 'white', fontWeight: 700, fontSize: '0.9rem' }}>{t.name_ar}</div>
+            {t.description && <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>{t.description}</div>}
+          </div>
+          <div style={{ color: primaryColor, fontWeight: 800, fontSize: '1.1rem', flexShrink: 0 }}>${t.price_per_unit}</div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── Registration Form ────────────────────────────────────────────────────────
 function RegistrationForm({ event, onClose, cfg, initialTab }: { event: Event; onClose: () => void; cfg: FormConfig; initialTab?: string }) {
   const enabledTypes = cfg.enabled_types || ['startup', 'general'];
   const [tab, setTab] = useState<string>(initialTab && enabledTypes.includes(initialTab) ? initialTab : (enabledTypes[0] || 'general'));
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [regData, setRegData] = useState<{ id: number; ticket_code: string; full_name: string; company_name?: string } | null>(null);
   const [error, setError] = useState('');
+  const [paymentSettings, setPaymentSettings] = useState<any>(null);
+  const [paymentStep, setPaymentStep] = useState<'none' | 'form' | 'processing' | 'done'>('none');
+  const [paymentOrder, setPaymentOrder] = useState<any>(null);
+  const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
+  const [paymentError, setPaymentError] = useState('');
   const [form, setForm] = useState({
     full_name: '', email: '', phone: '', city: '', motivation: '',
     company_name: '', sector: '', stage: '', team_size: '', website: '', description: '',
@@ -106,12 +140,17 @@ function RegistrationForm({ event, onClose, cfg, initialTab }: { event: Event; o
   const set = (k: string, v: string | boolean) => setForm(f => ({ ...f, [k]: v }));
   const primaryColor = event.primary_color || '#6C63FF';
 
+  // Load payment settings once
+  useEffect(() => {
+    fetchPaymentSettingsPublic(event.id).then(r => setPaymentSettings(r.data)).catch(() => {});
+  }, [event.id]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.agreed) { setError('يجب الموافقة على ' + cfg.terms_text); return; }
     setLoading(true); setError('');
     try {
-      await submitRegistration(event.id, {
+      const res = await submitRegistration(event.id, {
         reg_type: tab,
         full_name: form.full_name, email: form.email,
         ...(cfg.show_phone ? { phone: form.phone } : {}),
@@ -126,6 +165,7 @@ function RegistrationForm({ event, onClose, cfg, initialTab }: { event: Event; o
           team_size: form.team_size, website: form.website, description: form.description
         } : {})
       });
+      setRegData({ id: res.data?.id, ticket_code: res.data?.ticket_code, full_name: form.full_name, company_name: form.company_name });
       setSuccess(true);
     } catch (err: any) {
       setError(err.message || 'حدث خطأ. يرجى المحاولة مرة أخرى.');
@@ -133,11 +173,104 @@ function RegistrationForm({ event, onClose, cfg, initialTab }: { event: Event; o
     setLoading(false);
   };
 
+  const handlePayment = async (ticketTypeId: number, amount: number) => {
+    if (!regData) return;
+    setPaymentStep('processing'); setPaymentError('');
+    try {
+      const res = await initiatePayment(event.id, {
+        registration_id: regData.id,
+        ticket_type_id: ticketTypeId,
+        amount,
+        customer_name: regData.full_name,
+        customer_email: form.email,
+        customer_phone: form.phone || '',
+        description: `تذكرة - ${event.name_ar || event.name}`,
+        return_url: typeof window !== 'undefined' ? window.location.origin : '',
+      });
+      const data = res.data;
+      setPaymentOrder(data);
+      // If we got a payment URL → redirect
+      if (data.payment_url) {
+        window.open(data.payment_url, '_blank');
+        // Poll for status
+        pollPaymentStatus(data.order_ref);
+      } else {
+        // No URL → manual pending
+        setPaymentStep('done');
+      }
+    } catch (err: any) {
+      setPaymentError(err.message || 'فشل الاتصال ببوابة الدفع');
+      setPaymentStep('form');
+    }
+  };
+
+  const pollPaymentStatus = (orderRef: string) => {
+    let attempts = 0;
+    const interval = setInterval(async () => {
+      attempts++;
+      if (attempts > 20) { clearInterval(interval); setPaymentStep('done'); return; }
+      try {
+        const r = await checkPaymentStatus(event.id, orderRef);
+        if (r.data?.status === 'paid') {
+          clearInterval(interval);
+          setPaymentOrder((prev: any) => ({ ...prev, status: 'paid' }));
+          setPaymentStep('done');
+        }
+      } catch { /* ignore */ }
+    }, 3000);
+  };
+
+  // ── Payment step UI ──────────────────────────────────────────────────────
+  if (paymentStep === 'form' && paymentSettings?.payments_enabled) {
+    return (
+      <div className="space-y-6 text-center">
+        <div style={{ fontSize: '3rem' }}>✅</div>
+        <div>
+          <h3 className="text-xl font-bold text-white mb-2">تم التسجيل بنجاح!</h3>
+          <p className="text-[var(--text-muted)] text-sm">رقم التذكرة: <span style={{ color: primaryColor, fontWeight: 700 }}>{regData?.ticket_code}</span></p>
+        </div>
+        <div style={{ background: 'rgba(108,99,255,0.08)', border: '1px solid rgba(108,99,255,0.25)', borderRadius: '0.75rem', padding: '1.25rem' }}>
+          <h4 className="text-white font-bold mb-1">{paymentSettings.payment_title || 'إتمام الدفع'}</h4>
+          <p className="text-[var(--text-muted)] text-sm mb-4">{paymentSettings.payment_subtitle || 'اختر تذكرتك لإتمام الدفع'}</p>
+          <TicketSelector eventId={event.id} onSelect={handlePayment} primaryColor={primaryColor} />
+        </div>
+        {paymentError && <p className="text-red-400 text-sm">{paymentError}</p>}
+        <button onClick={() => { setSuccess(true); setPaymentStep('none'); }} className="text-[var(--text-muted)] text-sm underline">تخطي الدفع الآن</button>
+      </div>
+    );
+  }
+
+  if (paymentStep === 'processing') {
+    return (
+      <div className="text-center py-8 space-y-4">
+        <div className="w-12 h-12 border-2 border-t-transparent rounded-full mx-auto animate-spin" style={{ borderColor: primaryColor, borderTopColor: 'transparent' }} />
+        <p className="text-white font-semibold">جار معالجة الدفع...</p>
+        <p className="text-[var(--text-muted)] text-sm">انتظر أو إذا فتحت صفحة الدفع أكمل من هناك</p>
+        <button onClick={() => { setPaymentStep('done'); setPaymentOrder((p: any) => ({ ...p, status: 'pending' })); }}
+          className="text-[var(--text-muted)] text-sm underline">تم الدفع ← عرض التذكرة</button>
+      </div>
+    );
+  }
+
+  if (paymentStep === 'done') {
+    const paid = paymentOrder?.status === 'paid';
+    return (
+      <div className="text-center space-y-4">
+        <div style={{ fontSize: '3.5rem' }}>{paid ? '🎉' : '⏳'}</div>
+        <h3 className="text-xl font-bold text-white">{paid ? (paymentSettings?.success_message || 'تم الدفع بنجاح!') : 'طلبك قيد المراجعة'}</h3>
+        {!paid && <p className="text-[var(--text-muted)] text-sm">سيتم التواصل معك لتأكيد الدفع وإرسال تذكرتك</p>}
+        {regData?.ticket_code && <p className="text-sm" style={{ color: primaryColor }}>رقم الطلب: <strong>{paymentOrder?.order_ref || regData.ticket_code}</strong></p>}
+        <button onClick={onClose} className="btn-primary">إغلاق</button>
+      </div>
+    );
+  }
+
   if (success) return (
     <RegistrationSuccessMessage
       registrationType={tab as any}
       fullName={form.full_name}
       companyName={tab === 'startup' ? form.company_name : undefined}
+      ticketCode={regData?.ticket_code}
       onClose={onClose}
     />
   );

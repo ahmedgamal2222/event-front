@@ -366,3 +366,15 @@ export async function uploadFile(file: File, token: string): Promise<{ url: stri
   if (!data.success) throw new Error(data.error || 'Upload failed');
   return { url: data.url, filename: data.filename, originalName: data.originalName };
 }
+
+// ── Public – Payments ──────────────────────────────────────────────────────
+export const fetchPaymentSettingsPublic = (eventId: number) =>
+  apiFetch<any>(`/api/events/${eventId}/payments/settings-public`);
+
+export const initiatePayment = (eventId: number, body: any) =>
+  apiFetch<any>(`/api/events/${eventId}/payments/initiate`, {
+    method: 'POST', body: JSON.stringify(body)
+  });
+
+export const checkPaymentStatus = (eventId: number, orderRef: string) =>
+  apiFetch<any>(`/api/events/${eventId}/payments/check/${orderRef}`, undefined, true);

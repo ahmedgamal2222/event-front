@@ -21,6 +21,8 @@ import AdminPixels from '../../../app/components/admin/AdminPixels';
 import AdminEmailSettings from '../../../app/components/admin/AdminEmailSettings';
 import AdminTerms from '../../../app/components/admin/AdminTerms';
 import AdminPages from '../../../app/components/admin/AdminPages';
+import AdminPayments from '../../../app/components/admin/AdminPayments';
+import AdminCampaigns from '../../../app/components/admin/AdminCampaigns';
 import type { FormConfig, SiteConfig } from '../../../lib/types';
 
 function getToken() { return typeof window !== 'undefined' ? localStorage.getItem('admin_token') || '' : ''; }
@@ -63,6 +65,8 @@ const TABS = [
   { key: 'terms',          label: '⚖️ الشروط والأحكام', group: 'الدعم' },
   { key: 'pages',          label: '📄 الصفحات الثابتة', group: 'المحتوى' },
   { key: 'profile',        label: '👤 إعدادات الأدمن',  group: 'رئيسي' },
+  { key: 'payments',       label: '💳 المدفوعات',       group: 'المبيعات' },
+  { key: 'campaigns',      label: '📧 الحملات البريدية', group: 'الدعم' },
 ] as const;
 type Tab = typeof TABS[number]['key'];
 
@@ -312,6 +316,8 @@ export default function AdminDashboard() {
           {activeTab === 'terms'         && <AdminTerms eventId={eventId} token={token} />}
           {activeTab === 'pages'         && <AdminPages eventId={eventId} token={token} />}
           {activeTab === 'profile'       && <ProfileTab token={token} showToast={showToast} />}
+          {activeTab === 'payments'      && <AdminPayments eventId={eventId} token={token} />}
+          {activeTab === 'campaigns'     && <AdminCampaigns eventId={eventId} token={token} />}
         </div>
 
         {/* Toast Notification */}
