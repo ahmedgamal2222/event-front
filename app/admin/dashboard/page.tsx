@@ -433,7 +433,7 @@ function EventTab({ eventId, token, save, saving }: any) {
           </div>
         ))}
         
-        <HelpBox title="شرح الشعارات والصور" icon="🖼️">
+        {/* <HelpBox title="شرح الشعارات والصور" icon="🖼️">
           <div style={{ display: 'grid', gap: 10 }}>
             <div>
               <strong style={{ color: '#fff' }}>📸 صورة الغلاف:</strong> صورة خلفية الحدث الرئيسية (تظهر في البريد والتطبيق)
@@ -445,7 +445,7 @@ function EventTab({ eventId, token, save, saving }: any) {
               <strong style={{ color: '#60a5fa' }}>ملاحظة:</strong> هناك أيضاً شعار منفصل لمحتوى الصفحة الرئيسية في قسم "محتوى الصفحة" يظهر فقط للزوار
             </div>
           </div>
-        </HelpBox>
+        </HelpBox> */}
 
         {/* Cover image and logo hidden temporarily */}
         {false && <div>
