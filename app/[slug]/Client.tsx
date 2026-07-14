@@ -22,7 +22,27 @@ function EventNavBar({ eventId, primaryColor }: { eventId: number; primaryColor:
       .catch(() => {});
   }, [eventId]);
 
-  if (!nav || (!nav.prev && !nav.next)) return null;
+  if (!nav) return (
+    <div style={{ background: 'rgba(0,0,0,0.35)', borderBottom: `1px solid ${primaryColor}25`, padding: '0.5rem 1.5rem', direction: 'rtl' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
+        <Link href="/archive" style={{ fontSize: '0.78rem', color: '#64748b', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+          🗂 <span>أرشيف جميع النسخ</span>
+        </Link>
+      </div>
+    </div>
+  );
+
+  if (!nav.prev && !nav.next) return (
+    <div style={{ background: 'rgba(0,0,0,0.35)', borderBottom: `1px solid ${primaryColor}25`, padding: '0.5rem 1.5rem', direction: 'rtl' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
+        <Link href="/archive" style={{ fontSize: '0.78rem', color: '#64748b', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+          onMouseEnter={e => (e.currentTarget.style.color = '#a5b4fc')}
+          onMouseLeave={e => (e.currentTarget.style.color = '#64748b')}>
+          🗂 <span>أرشيف جميع النسخ</span>
+        </Link>
+      </div>
+    </div>
+  );
 
   const fmt = (d: string) => d ? new Date(d).getFullYear().toString() : '';
 
@@ -577,6 +597,7 @@ export default function EventLandingClient() {
     ...(faqs.length > 0 ? [{ href: '#faq', label: 'الأسئلة الشائعة' }] : []),
     { href: '#register', label: 'سجّل الآن' },
     ...(hasArticles ? [{ href: '/blog', label: 'المدونة' }] : []),
+    { href: '/archive', label: '🗂 النسخ السابقة' },
   ];
 
   const eventName = event?.name_ar || 'قمة الشركات الناشئة السورية';
@@ -622,9 +643,9 @@ export default function EventLandingClient() {
           </div>
           <div className="hidden md:flex items-center gap-6">
             {navLinks.map(l => (
-              <a key={l.href} href={l.href} className="text-sm text-[var(--text-muted)] hover:text-white transition-colors">
-                {l.label}
-              </a>
+              l.href.startsWith('/') && l.href !== '#'
+                ? <Link key={l.href} href={l.href} className="text-sm text-[var(--text-muted)] hover:text-white transition-colors">{l.label}</Link>
+                : <a key={l.href} href={l.href} className="text-sm text-[var(--text-muted)] hover:text-white transition-colors">{l.label}</a>
             ))}
           </div>
           <button onClick={() => openModal()} className="btn-primary text-sm py-2 px-4">
@@ -1011,7 +1032,8 @@ export default function EventLandingClient() {
           <div>
             <h4 className="text-white font-semibold mb-3">روابط سريعة</h4>
             <div className="flex flex-col gap-2">
-              {navLinks.map(l => <a key={l.href} href={l.href} className="text-sm text-[var(--text-muted)] hover:text-white transition-colors">{l.label}</a>)}
+              {navLinks.filter(l => !l.href.startsWith('/')).map(l => <a key={l.href} href={l.href} className="text-sm text-[var(--text-muted)] hover:text-white transition-colors">{l.label}</a>)}
+              <Link href="/archive" className="text-sm text-[var(--text-muted)] hover:text-white transition-colors">🗂 أرشيف الأحداث</Link>
             </div>
           </div>
           <div>
