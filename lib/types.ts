@@ -9,6 +9,10 @@ export interface SiteConfig {
   about_cards: Array<{ emoji: string; title: string; desc: string }>;
   logo_url?: string;
   logo_position?: 'navbar' | 'footer' | 'both';
+  // رابط الأرشيف — تحكم الأدمن
+  archive_link_enabled?: boolean;
+  archive_link_label?:   string;
+  archive_link_position?: 'navbar' | 'footer' | 'both' | 'none';
 }
 
 export interface ExtraField {

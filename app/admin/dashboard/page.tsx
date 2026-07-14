@@ -1590,6 +1590,9 @@ const DEFAULT_SITE_CFG: SiteConfig = {
   ],
   logo_url: '',
   logo_position: 'navbar',
+  archive_link_enabled: true,
+  archive_link_label: '🗂 النسخ السابقة',
+  archive_link_position: 'both',
 };
 const STAT_FIELDS = ['days_count','startup_count','speaker_count','total_registrations','approved_count','investor_count'];
 
@@ -1623,6 +1626,9 @@ function normalizeSiteConfig(raw: any): SiteConfig {
       : base.about_cards,
     logo_url: typeof raw.logo_url === 'string' ? raw.logo_url : base.logo_url,
     logo_position: ['navbar', 'footer', 'both'].includes(raw.logo_position) ? raw.logo_position : base.logo_position,
+    archive_link_enabled:  raw.archive_link_enabled  !== undefined ? !!raw.archive_link_enabled  : true,
+    archive_link_label:    typeof raw.archive_link_label === 'string' ? raw.archive_link_label : '🗂 النسخ السابقة',
+    archive_link_position: ['navbar','footer','both','none'].includes(raw.archive_link_position) ? raw.archive_link_position : 'both',
   };
 }
 
@@ -1782,6 +1788,56 @@ function SiteConfigTab({ eventId, token, save, saving }: any) {
             </select>
           </Field>
         </div>
+      </div>
+
+      {/* Archive Link Settings */}
+      <div style={S.card}>
+        <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 6 }}>🗂 رابط أرشيف الأحداث</h3>
+        <p style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: 14, lineHeight: 1.6 }}>
+          رابط يوجّه الزوار إلى صفحة <strong style={{ color: '#a5b4fc' }}>/archive</strong> التي تعرض جميع نسخ الحدث السابقة والقادمة.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '0.75rem', border: `1px solid ${sc.archive_link_enabled ? 'rgba(108,99,255,0.35)' : 'rgba(255,255,255,0.06)'}` }}>
+              <div onClick={() => set('archive_link_enabled', !sc.archive_link_enabled)}
+                style={{ width: 38, height: 22, borderRadius: 11, background: sc.archive_link_enabled ? '#6C63FF' : 'rgba(255,255,255,0.1)', position: 'relative', transition: 'background 0.2s', flexShrink: 0, border: `1px solid ${sc.archive_link_enabled ? '#6C63FF' : 'rgba(255,255,255,0.2)'}` }}>
+                <div style={{ width: 16, height: 16, borderRadius: '50%', background: 'white', position: 'absolute', top: 2, left: sc.archive_link_enabled ? 19 : 2, transition: 'left 0.2s' }} />
+              </div>
+              <div>
+                <div style={{ color: sc.archive_link_enabled ? 'white' : '#64748b', fontSize: '0.88rem', fontWeight: 600 }}>
+                  {sc.archive_link_enabled ? '✅ الرابط مفعّل' : '❌ الرابط مخفي'}
+                </div>
+                <div style={{ color: '#64748b', fontSize: '0.7rem', marginTop: 2 }}>
+                  {sc.archive_link_enabled ? 'يظهر للزوار في الموقع' : 'لن يرى الزوار أي رابط للأرشيف'}
+                </div>
+              </div>
+            </label>
+          </div>
+          <Field label="نص الرابط الذي يراه الزوار">
+            <input value={sc.archive_link_label ?? '🗂 النسخ السابقة'} onChange={e => set('archive_link_label', e.target.value)} style={S.inp} placeholder="🗂 النسخ السابقة" />
+            <div style={{ fontSize: '0.68rem', color: '#475569', marginTop: '0.25rem' }}>يمكن تضمين إيموجي في النص</div>
+          </Field>
+          <Field label="مكان ظهور الرابط">
+            <select value={sc.archive_link_position || 'both'} onChange={e => set('archive_link_position', e.target.value as any)} style={S.inp}>
+              <option value="none">🚫 مخفي (لا يظهر)</option>
+              <option value="navbar">🔝 في الـ Navbar فقط</option>
+              <option value="footer">🔙 في الـ Footer فقط</option>
+              <option value="both">↕️ في الاثنين (Navbar + Footer)</option>
+            </select>
+          </Field>
+        </div>
+        {/* Preview */}
+        {sc.archive_link_enabled && sc.archive_link_position !== 'none' && (
+          <div style={{ marginTop: 12, background: 'rgba(108,99,255,0.06)', borderRadius: 8, padding: '0.7rem 1rem', border: '1px solid rgba(108,99,255,0.15)', fontSize: '0.78rem' }}>
+            <span style={{ color: '#a5b4fc', fontWeight: 700 }}>معاينة: </span>
+            <span style={{ color: '#94a3b8' }}>سيظهر الرابط </span>
+            <strong style={{ color: '#a5b4fc' }}>"{sc.archive_link_label || '🗂 النسخ السابقة'}"</strong>
+            <span style={{ color: '#94a3b8' }}>
+              {sc.archive_link_position === 'navbar' ? ' في الـ Navbar فقط' : sc.archive_link_position === 'footer' ? ' في الـ Footer فقط' : ' في الـ Navbar والـ Footer'}
+            </span>
+            <span style={{ color: '#64748b' }}> ← يوجّه إلى /archive</span>
+          </div>
+        )}
       </div>
 
       <div style={{ paddingBottom: 8 }}><SaveBtn loading={saving} onClick={saveAll} /></div>

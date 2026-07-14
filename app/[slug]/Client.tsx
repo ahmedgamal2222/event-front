@@ -12,8 +12,10 @@ import RegistrationSuccessMessage from '../components/RegistrationSuccessMessage
 const API_EVENT_SLUG = process.env.NEXT_PUBLIC_EVENT_SLUG || 's3-summit-2026';
 
 // ─── Event Navigation Bar ──────────────────────────────────────────────────────
-function EventNavBar({ eventId, primaryColor }: { eventId: number; primaryColor: string }) {
+function EventNavBar({ eventId, primaryColor, archiveLabel, showArchive }: { eventId: number; primaryColor: string; archiveLabel?: string; showArchive?: boolean }) {
   const [nav, setNav] = useState<{ prev: any; current: any; next: any } | null>(null);
+  const label = archiveLabel || '🗂 جميع النسخ';
+  const show  = showArchive !== false; // default true
 
   useEffect(() => {
     if (!eventId) return;
@@ -22,11 +24,13 @@ function EventNavBar({ eventId, primaryColor }: { eventId: number; primaryColor:
       .catch(() => {});
   }, [eventId]);
 
+  if (!show) return null;
+
   if (!nav) return (
     <div style={{ background: 'rgba(0,0,0,0.35)', borderBottom: `1px solid ${primaryColor}25`, padding: '0.5rem 1.5rem', direction: 'rtl' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
         <Link href="/archive" style={{ fontSize: '0.78rem', color: '#64748b', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-          🗂 <span>أرشيف جميع النسخ</span>
+          {label}
         </Link>
       </div>
     </div>
@@ -38,7 +42,7 @@ function EventNavBar({ eventId, primaryColor }: { eventId: number; primaryColor:
         <Link href="/archive" style={{ fontSize: '0.78rem', color: '#64748b', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
           onMouseEnter={e => (e.currentTarget.style.color = '#a5b4fc')}
           onMouseLeave={e => (e.currentTarget.style.color = '#64748b')}>
-          🗂 <span>أرشيف جميع النسخ</span>
+          {label}
         </Link>
       </div>
     </div>
@@ -68,7 +72,7 @@ function EventNavBar({ eventId, primaryColor }: { eventId: number; primaryColor:
           style={{ fontSize: '0.78rem', color: '#64748b', textDecoration: 'none', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '2rem', transition: 'all 0.15s' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${primaryColor}60`; (e.currentTarget as HTMLElement).style.color = '#a5b4fc'; }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLElement).style.color = '#64748b'; }}>
-          🗂 جميع النسخ
+          {label}
         </Link>
 
         {/* Next event */}
@@ -597,7 +601,10 @@ export default function EventLandingClient() {
     ...(faqs.length > 0 ? [{ href: '#faq', label: 'الأسئلة الشائعة' }] : []),
     { href: '#register', label: 'سجّل الآن' },
     ...(hasArticles ? [{ href: '/blog', label: 'المدونة' }] : []),
-    { href: '/archive', label: '🗂 النسخ السابقة' },
+    // رابط الأرشيف — يُضاف للـ navbar حسب إعدادات الأدمن
+    ...(siteCfg.archive_link_enabled !== false && (siteCfg.archive_link_position === 'navbar' || siteCfg.archive_link_position === 'both' || siteCfg.archive_link_position === undefined)
+      ? [{ href: '/archive', label: siteCfg.archive_link_label || '🗂 النسخ السابقة' }]
+      : []),
   ];
 
   const eventName = event?.name_ar || 'قمة الشركات الناشئة السورية';
@@ -655,7 +662,14 @@ export default function EventLandingClient() {
       </nav>
 
       {/* ── Event Navigation Bar (prev / next events) ──────────────────────── */}
-      {event && <EventNavBar eventId={event.id} primaryColor={primaryColor} />}
+      {event && (
+        <EventNavBar
+          eventId={event.id}
+          primaryColor={primaryColor}
+          archiveLabel={siteCfg.archive_link_label}
+          showArchive={siteCfg.archive_link_enabled !== false && siteCfg.archive_link_position !== 'none'}
+        />
+      )}
 
       {/* ── Hero ─────────────────────────────────────────────────────────────── */}
       <section className="relative pt-32 pb-20 px-6 overflow-hidden">
@@ -1033,7 +1047,12 @@ export default function EventLandingClient() {
             <h4 className="text-white font-semibold mb-3">روابط سريعة</h4>
             <div className="flex flex-col gap-2">
               {navLinks.filter(l => !l.href.startsWith('/')).map(l => <a key={l.href} href={l.href} className="text-sm text-[var(--text-muted)] hover:text-white transition-colors">{l.label}</a>)}
-              <Link href="/archive" className="text-sm text-[var(--text-muted)] hover:text-white transition-colors">🗂 أرشيف الأحداث</Link>
+              {/* رابط الأرشيف — حسب إعدادات الأدمن */}
+              {siteCfg.archive_link_enabled !== false && (siteCfg.archive_link_position === 'footer' || siteCfg.archive_link_position === 'both' || siteCfg.archive_link_position === undefined) && (
+                <Link href="/archive" className="text-sm text-[var(--text-muted)] hover:text-white transition-colors">
+                  {siteCfg.archive_link_label || '🗂 أرشيف الأحداث'}
+                </Link>
+              )}
             </div>
           </div>
           <div>
