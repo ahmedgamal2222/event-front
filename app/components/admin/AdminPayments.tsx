@@ -59,7 +59,15 @@ export default function AdminPayments({ eventId, token }: { eventId: number; tok
   useEffect(() => {
     fetch(`${API_BASE}/api/events/${eventId}/payments/settings`, {
       headers: { Authorization: `Bearer ${token}` },
-    }).then(r => r.json()).then(d => { if (d.data) setSettings((s: any) => ({ ...s, ...d.data })); }).catch(() => {});
+    }).then(r => r.json()).then(d => {
+      if (d.data) {
+        const defaults = {
+          gateway: 'whatsapp',
+          whatsapp_message_template: `مرحباً،\nأريد إتمام دفع تسجيلي في الحدث.\nالاسم: {name}\nرقم التذكرة: {order_ref}\nبانتظار تأكيدكم، شكراً.`,
+        };
+        setSettings((s: any) => ({ ...s, ...defaults, ...d.data }));
+      }
+    }).catch(() => {});
 
     fetch(`${API_BASE}/api/events/${eventId}/tickets-design/design`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -170,9 +178,16 @@ export default function AdminPayments({ eventId, token }: { eventId: number; tok
       {/* ── Settings Tab ── */}
       {tab === 'settings' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+          {/* Notice: Sham Cash disabled */}
+          <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '0.6rem', padding: '0.75rem 1rem', display: 'flex', gap: '0.5rem', alignItems: 'flex-start', fontSize: '0.85rem', color: '#fcd34d' }}>
+            <span style={{ fontSize: '1.1rem' }}>⚠️</span>
+            <div>شام كاش معطّل مؤقتاً. طريقة الدفع الحالية: <strong>واتساب (تأكيد يدوي)</strong></div>
+          </div>
+
           <div style={S.card}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ color: 'white', margin: 0, fontWeight: 700 }}>🔘 تفعيل الدفع الإلكتروني</h3>
+              <h3 style={{ color: 'white', margin: 0, fontWeight: 700 }}>🔘 تفعيل الدفع</h3>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                 <input type="checkbox" checked={!!settings.payments_enabled}
                   onChange={e => setSettings((s: any) => ({ ...s, payments_enabled: e.target.checked ? 1 : 0 }))}
@@ -183,46 +198,92 @@ export default function AdminPayments({ eventId, token }: { eventId: number; tok
               </label>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-              <div><label style={S.label}>بوابة الدفع</label>
-                <select style={S.inp} value={settings.gateway} onChange={e => setSettings((s: any) => ({ ...s, gateway: e.target.value }))}>
-                  <option value="shamcash">🏦 شام كاش (Sham Cash)</option>
-                  <option value="manual">📲 تحويل يدوي</option>
-                </select></div>
-              <div><label style={S.label}>العملة</label>
-                <select style={S.inp} value={settings.currency} onChange={e => setSettings((s: any) => ({ ...s, currency: e.target.value }))}>
+              <div>
+                <label style={S.label}>طريقة الدفع</label>
+                <select style={S.inp} value={settings.gateway || 'whatsapp'} onChange={e => setSettings((s: any) => ({ ...s, gateway: e.target.value }))}>
+                  <option value="whatsapp">📱 واتساب (تأكيد يدوي)</option>
+                  <option value="manual">📋 تحويل يدوي بدون واتساب</option>
+                  <option value="shamcash" disabled>🏦 شام كاش (غير متاح حالياً)</option>
+                </select>
+              </div>
+              <div>
+                <label style={S.label}>العملة</label>
+                <select style={S.inp} value={settings.currency || 'USD'} onChange={e => setSettings((s: any) => ({ ...s, currency: e.target.value }))}>
                   <option value="USD">$ دولار أمريكي</option>
                   <option value="SYP">ل.س ليرة سورية</option>
                   <option value="SAR">﷼ ريال سعودي</option>
-                </select></div>
+                  <option value="TRY">₺ ليرة تركية</option>
+                </select>
+              </div>
             </div>
           </div>
 
-          {/* Sham Cash credentials */}
-          {settings.gateway === 'shamcash' && (
+          {/* WhatsApp settings */}
+          {(settings.gateway === 'whatsapp' || !settings.gateway || settings.gateway === 'shamcash') && (
             <div style={S.card}>
-              <h3 style={{ color: '#6C63FF', margin: '0 0 1rem', fontWeight: 700, fontSize: '1rem' }}>🏦 بيانات شام كاش</h3>
-              <div style={{ background: 'rgba(108,99,255,0.06)', border: '1px solid rgba(108,99,255,0.2)', borderRadius: '0.5rem', padding: '0.75rem', marginBottom: '1rem', fontSize: '0.82rem', color: '#94a3b8' }}>
-                💡 احصل على بيانات الـ API من لوحة تحكم شام كاش للتجار على <strong style={{ color: '#a5b4fc' }}>shamcash.com/merchant</strong>
-              </div>
+              <h3 style={{ color: '#25D366', margin: '0 0 1rem', fontWeight: 700, fontSize: '1rem' }}>📱 إعدادات واتساب</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                <div><label style={S.label}>Merchant ID</label>
-                  <input style={S.inp} value={settings.shamcash_merchant_id || ''} onChange={e => setSettings((s: any) => ({ ...s, shamcash_merchant_id: e.target.value }))} placeholder="مثال: MC-12345" dir="ltr" /></div>
-                <div><label style={S.label}>API Key</label>
-                  <input style={S.inp} type="password" value={settings.shamcash_api_key || ''} onChange={e => setSettings((s: any) => ({ ...s, shamcash_api_key: e.target.value }))} placeholder="sk_live_..." dir="ltr" /></div>
-                <div><label style={S.label}>Secret Key (للـ Webhook)</label>
-                  <input style={S.inp} type="password" value={settings.shamcash_secret_key || ''} onChange={e => setSettings((s: any) => ({ ...s, shamcash_secret_key: e.target.value }))} placeholder="whsec_..." dir="ltr" /></div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: '#94a3b8', fontSize: '0.85rem' }}>
-                  <input type="checkbox" checked={!!settings.shamcash_sandbox}
-                    onChange={e => setSettings((s: any) => ({ ...s, shamcash_sandbox: e.target.checked ? 1 : 0 }))}
-                    style={{ accentColor: '#f59e0b' }} />
-                  وضع التجربة (Sandbox) — فعّله للاختبار، أوقفه للإنتاج
-                </label>
-              </div>
-              <div style={{ marginTop: '1rem', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '0.5rem', padding: '0.75rem', fontSize: '0.8rem', color: '#fcd34d' }}>
-                🔗 رابط الـ Webhook لضبطه في شام كاش:<br />
-                <code style={{ fontSize: '0.75rem', wordBreak: 'break-all', color: '#a5b4fc' }}>
-                  https://event-api.info1703.workers.dev/api/events/{eventId}/payments/webhook
-                </code>
+                <div>
+                  <label style={S.label}>رقم واتساب (مع كود الدولة)</label>
+                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                    <span style={{ color: '#94a3b8', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>مثال:</span>
+                    <input style={S.inp} value={settings.whatsapp_number || ''} dir="ltr"
+                      onChange={e => setSettings((s: any) => ({ ...s, whatsapp_number: e.target.value.replace(/\s/g, '') }))}
+                      placeholder="+963912345678" />
+                  </div>
+                  <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '0.3rem 0 0' }}>
+                    أدخل الرقم مع كود الدولة (+ ثم الكود ثم الرقم) بدون مسافات
+                  </p>
+                </div>
+                <div>
+                  <label style={S.label}>نص رسالة الدفع التلقائية</label>
+                  <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '0 0 0.5rem' }}>
+                    هذا النص سيُرسل عبر واتساب تلقائياً. يمكنك تعديله بأي شكل تريد.
+                  </p>
+                  <textarea rows={6} style={{ ...S.inp, resize: 'vertical', fontSize: '0.88rem', lineHeight: 1.6 }}
+                    value={settings.whatsapp_message_template || ''}
+                    onChange={e => setSettings((s: any) => ({ ...s, whatsapp_message_template: e.target.value }))}
+                    dir="rtl" />
+                  <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>أضف تلقائياً:</span>
+                    {[
+                      { label: 'اسم المسجل', tag: '{name}' },
+                      { label: 'رقم التذكرة', tag: '{order_ref}' },
+                      { label: 'المبلغ', tag: '{amount}' },
+                    ].map(item => (
+                      <button key={item.tag} type="button"
+                        onClick={() => setSettings((s: any) => ({ ...s, whatsapp_message_template: (s.whatsapp_message_template || '') + item.tag }))}
+                        style={{ padding: '0.15rem 0.5rem', background: 'rgba(37,211,102,0.1)', border: '1px solid rgba(37,211,102,0.3)', borderRadius: '0.3rem', color: '#4ade80', fontSize: '0.72rem', cursor: 'pointer' }}>
+                        + {item.label}
+                      </button>
+                    ))}
+                    <button type="button"
+                      onClick={() => setSettings((s: any) => ({ ...s, whatsapp_message_template: `مرحباً،\nأريد إتمام دفع تسجيلي في الحدث.\nالاسم: {name}\nرقم التذكرة: {order_ref}\nبانتظار تأكيدكم، شكراً.` }))}
+                      style={{ padding: '0.15rem 0.5rem', background: 'rgba(108,99,255,0.12)', border: '1px solid rgba(108,99,255,0.3)', borderRadius: '0.3rem', color: '#a5b4fc', fontSize: '0.72rem', cursor: 'pointer' }}>
+                      ↺ استعادة الافتراضي
+                    </button>
+                  </div>
+                  {/* Live preview */}
+                  {settings.whatsapp_number && settings.whatsapp_message_template && (
+                    <div style={{ marginTop: '0.75rem', background: '#075e54', borderRadius: '0.5rem', padding: '0.75rem', fontSize: '0.82rem' }}>
+                      <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', marginBottom: '0.4rem' }}>👁 معاينة الرسالة:</div>
+                      <div style={{ background: '#dcf8c6', color: '#000', borderRadius: '8px 0 8px 8px', padding: '0.5rem 0.75rem', fontSize: '0.82rem', lineHeight: 1.6, direction: 'rtl', whiteSpace: 'pre-wrap', maxWidth: 280 }}>
+                        {(settings.whatsapp_message_template || '')
+                          .replace('{name}', 'محمد أحمد')
+                          .replace('{order_ref}', 'TKT-ABC123')
+                          .replace('{amount}', '50')
+                          .replace('{currency}', settings.currency || 'USD')}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {settings.whatsapp_number && (
+                  <div style={{ background: 'rgba(37,211,102,0.06)', border: '1px solid rgba(37,211,102,0.25)', borderRadius: '0.5rem', padding: '0.75rem', fontSize: '0.82rem', color: '#86efac' }}>
+                    ✅ رابط واتساب: <a href={`https://wa.me/${settings.whatsapp_number.replace(/\+/g, '')}`} target="_blank" rel="noopener noreferrer" style={{ color: '#4ade80', direction: 'ltr', display: 'inline-block' }}>
+                      wa.me/{settings.whatsapp_number.replace(/\+/g, '')}
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -235,7 +296,7 @@ export default function AdminPayments({ eventId, token }: { eventId: number; tok
                 <input style={S.inp} value={settings.payment_title || ''} onChange={e => setSettings((s: any) => ({ ...s, payment_title: e.target.value }))} /></div>
               <div><label style={S.label}>النص التوضيحي</label>
                 <input style={S.inp} value={settings.payment_subtitle || ''} onChange={e => setSettings((s: any) => ({ ...s, payment_subtitle: e.target.value }))} /></div>
-              <div><label style={S.label}>رسالة النجاح بعد الدفع</label>
+              <div><label style={S.label}>رسالة بعد إرسال طلب الدفع</label>
                 <input style={S.inp} value={settings.success_message || ''} onChange={e => setSettings((s: any) => ({ ...s, success_message: e.target.value }))} /></div>
             </div>
           </div>

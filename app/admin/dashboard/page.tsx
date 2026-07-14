@@ -24,6 +24,7 @@ import AdminPages from '../../../app/components/admin/AdminPages';
 import AdminPayments from '../../../app/components/admin/AdminPayments';
 import AdminCampaigns from '../../../app/components/admin/AdminCampaigns';
 import RichEditor from '../../../app/components/admin/RichEditor';
+import AdminCountries from '../../../app/components/admin/AdminCountries';
 import type { FormConfig, SiteConfig } from '../../../lib/types';
 
 function getToken() { return typeof window !== 'undefined' ? localStorage.getItem('admin_token') || '' : ''; }
@@ -68,6 +69,7 @@ const TABS = [
   { key: 'profile',        label: '👤 إعدادات الأدمن',  group: 'رئيسي' },
   { key: 'payments',       label: '💳 المدفوعات',       group: 'المبيعات' },
   { key: 'campaigns',      label: '📧 الحملات البريدية', group: 'الدعم' },
+  { key: 'countries',      label: '🌍 قائمة الدول',     group: 'الحدث' },
 ] as const;
 type Tab = typeof TABS[number]['key'];
 
@@ -319,6 +321,7 @@ export default function AdminDashboard() {
           {activeTab === 'profile'       && <ProfileTab token={token} showToast={showToast} />}
           {activeTab === 'payments'      && <AdminPayments eventId={eventId} token={token} />}
           {activeTab === 'campaigns'     && <AdminCampaigns eventId={eventId} token={token} />}
+          {activeTab === 'countries'     && <AdminCountries eventId={eventId} token={token} />}
         </div>
 
         {/* Toast Notification */}

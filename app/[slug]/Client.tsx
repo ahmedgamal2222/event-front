@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { Event, Speaker, AgendaDay, Stats, Sponsor, Faq, FormConfig, SiteConfig } from '../../lib/types';
-import { fetchEvent, fetchSpeakers, fetchAgenda, fetchStats, fetchSponsors, fetchFaqs, submitRegistration, fetchVenueGallery, fetchArticles, fetchTerms, fetchPages, fetchPaymentSettingsPublic, initiatePayment, checkPaymentStatus } from '../../lib/api';
+import { fetchEvent, fetchSpeakers, fetchAgenda, fetchStats, fetchSponsors, fetchFaqs, submitRegistration, fetchVenueGallery, fetchArticles, fetchTerms, fetchPages, fetchPaymentSettingsPublic, fetchCountries } from '../../lib/api';
 import { VenueMedia } from '../../lib/types';
 import PixelInjector from '../components/PixelInjector';
 import TicketsSection from '../components/TicketsSection';
@@ -91,6 +91,20 @@ function StatCounter({ value, label }: { value: number; label: string }) {
 }
 
 // ─── Ticket Selector for payment ─────────────────────────────────────────────
+// Country Select component — loads from API
+function CountrySelect({ eventId, value, onChange, required }: { eventId: number; value: string; onChange: (v: string) => void; required?: boolean }) {
+  const [countries, setCountries] = useState<{ id: number; name_ar: string }[]>([]);
+  useEffect(() => {
+    fetchCountries(eventId).then(r => setCountries(r.data || [])).catch(() => {});
+  }, [eventId]);
+  return (
+    <select className="input-field" required={required} value={value} onChange={e => onChange(e.target.value)}>
+      <option value="">اختر الدولة</option>
+      {countries.map(c => <option key={c.id} value={c.name_ar}>{c.name_ar}</option>)}
+    </select>
+  );
+}
+
 function TicketSelector({ eventId, onSelect, primaryColor }: { eventId: number; onSelect: (ticketId: number, amount: number) => void; primaryColor: string }) {
   const [tickets, setTickets] = useState<any[]>([]);
   useEffect(() => {
@@ -126,12 +140,8 @@ function RegistrationForm({ event, onClose, cfg, initialTab }: { event: Event; o
   const [regData, setRegData] = useState<{ id: number; ticket_code: string; full_name: string; company_name?: string } | null>(null);
   const [error, setError] = useState('');
   const [paymentSettings, setPaymentSettings] = useState<any>(null);
-  const [paymentStep, setPaymentStep] = useState<'none' | 'form' | 'processing' | 'done'>('none');
-  const [paymentOrder, setPaymentOrder] = useState<any>(null);
-  const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
-  const [paymentError, setPaymentError] = useState('');
   const [form, setForm] = useState({
-    full_name: '', email: '', phone: '', city: '', motivation: '',
+    full_name: '', email: '', phone: '', city: '', country: '', motivation: '',
     company_name: '', sector: '', stage: '', team_size: '', website: '', description: '',
     work_field: '', participation_reason: '',
     agreed: false,
@@ -155,6 +165,7 @@ function RegistrationForm({ event, onClose, cfg, initialTab }: { event: Event; o
         full_name: form.full_name, email: form.email,
         ...(cfg.show_phone ? { phone: form.phone } : {}),
         ...(cfg.show_city ? { city: form.city } : {}),
+        ...(form.city === 'خارج سوريا' && form.country ? { country: form.country } : {}),
         ...(cfg.show_motivation ? { motivation: form.motivation } : {}),
         // extra_fields for this tab
         ...Object.fromEntries(
@@ -173,107 +184,58 @@ function RegistrationForm({ event, onClose, cfg, initialTab }: { event: Event; o
     setLoading(false);
   };
 
-  const handlePayment = async (ticketTypeId: number, amount: number) => {
-    if (!regData) return;
-    setPaymentStep('processing'); setPaymentError('');
-    try {
-      const res = await initiatePayment(event.id, {
-        registration_id: regData.id,
-        ticket_type_id: ticketTypeId,
-        amount,
-        customer_name: regData.full_name,
-        customer_email: form.email,
-        customer_phone: form.phone || '',
-        description: `تذكرة - ${event.name_ar || event.name}`,
-        return_url: typeof window !== 'undefined' ? window.location.origin : '',
-      });
-      const data = res.data;
-      setPaymentOrder(data);
-      // If we got a payment URL → redirect
-      if (data.payment_url) {
-        window.open(data.payment_url, '_blank');
-        // Poll for status
-        pollPaymentStatus(data.order_ref);
-      } else {
-        // No URL → manual pending
-        setPaymentStep('done');
-      }
-    } catch (err: any) {
-      setPaymentError(err.message || 'فشل الاتصال ببوابة الدفع');
-      setPaymentStep('form');
+  if (success) {
+    // Build WhatsApp link if payments enabled + whatsapp gateway
+    const showWhatsApp = paymentSettings?.payments_enabled
+      && paymentSettings?.whatsapp_number
+      && (paymentSettings?.gateway === 'whatsapp' || !paymentSettings?.gateway);
+
+    const waMessage = paymentSettings?.whatsapp_message_template
+      ? paymentSettings.whatsapp_message_template
+          .replace('{name}', form.full_name)
+          .replace('{order_ref}', regData?.ticket_code || '')
+          .replace('{amount}', '')
+          .replace('{currency}', paymentSettings?.currency || 'USD')
+      : `مرحباً، أريد إتمام دفع التسجيل في الحدث.%0Aالاسم: ${form.full_name}%0Aرقم التذكرة: ${regData?.ticket_code || ''}`;
+
+    const waNumber = paymentSettings?.whatsapp_number?.replace(/[^0-9]/g, '') || '';
+    const waUrl = `https://wa.me/${waNumber}?text=${waMessage}`;
+
+    if (showWhatsApp) {
+      return (
+        <div className="text-center space-y-5">
+          <div style={{ fontSize: '3rem' }}>✅</div>
+          <div>
+            <h3 className="text-xl font-bold text-white mb-2">تم التسجيل بنجاح!</h3>
+            <p className="text-[var(--text-muted)] text-sm">رقم التذكرة: <span style={{ color: primaryColor, fontWeight: 700 }}>{regData?.ticket_code}</span></p>
+          </div>
+          <div style={{ background: 'rgba(37,211,102,0.08)', border: '1px solid rgba(37,211,102,0.3)', borderRadius: '0.75rem', padding: '1.25rem', direction: 'rtl' }}>
+            <p style={{ color: '#4ade80', fontWeight: 700, marginBottom: '0.5rem' }}>💳 لإتمام الدفع</p>
+            <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '1rem' }}>
+              {paymentSettings.payment_subtitle || 'أرسل صورة الفاتورة عبر واتساب لتأكيد تسجيلك'}
+            </p>
+            <a href={waUrl} target="_blank" rel="noopener noreferrer"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.75rem', background: '#25D366', color: 'white', borderRadius: '0.6rem', textDecoration: 'none', fontWeight: 700, fontSize: '1rem' }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.117.554 4.107 1.523 5.83L0 24l6.336-1.5C8.024 23.45 9.972 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.89 0-3.663-.522-5.177-1.43L3 22l1.44-4.705A9.945 9.945 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+              تواصل عبر واتساب
+            </a>
+          </div>
+          <p style={{ color: '#64748b', fontSize: '0.78rem' }}>سيقوم الفريق بتأكيد دفعك خلال 24 ساعة وإرسال تذكرتك على بريدك</p>
+          <button onClick={onClose} className="btn-outline text-sm">إغلاق</button>
+        </div>
+      );
     }
-  };
 
-  const pollPaymentStatus = (orderRef: string) => {
-    let attempts = 0;
-    const interval = setInterval(async () => {
-      attempts++;
-      if (attempts > 20) { clearInterval(interval); setPaymentStep('done'); return; }
-      try {
-        const r = await checkPaymentStatus(event.id, orderRef);
-        if (r.data?.status === 'paid') {
-          clearInterval(interval);
-          setPaymentOrder((prev: any) => ({ ...prev, status: 'paid' }));
-          setPaymentStep('done');
-        }
-      } catch { /* ignore */ }
-    }, 3000);
-  };
-
-  // ── Payment step UI ──────────────────────────────────────────────────────
-  if (paymentStep === 'form' && paymentSettings?.payments_enabled) {
     return (
-      <div className="space-y-6 text-center">
-        <div style={{ fontSize: '3rem' }}>✅</div>
-        <div>
-          <h3 className="text-xl font-bold text-white mb-2">تم التسجيل بنجاح!</h3>
-          <p className="text-[var(--text-muted)] text-sm">رقم التذكرة: <span style={{ color: primaryColor, fontWeight: 700 }}>{regData?.ticket_code}</span></p>
-        </div>
-        <div style={{ background: 'rgba(108,99,255,0.08)', border: '1px solid rgba(108,99,255,0.25)', borderRadius: '0.75rem', padding: '1.25rem' }}>
-          <h4 className="text-white font-bold mb-1">{paymentSettings.payment_title || 'إتمام الدفع'}</h4>
-          <p className="text-[var(--text-muted)] text-sm mb-4">{paymentSettings.payment_subtitle || 'اختر تذكرتك لإتمام الدفع'}</p>
-          <TicketSelector eventId={event.id} onSelect={handlePayment} primaryColor={primaryColor} />
-        </div>
-        {paymentError && <p className="text-red-400 text-sm">{paymentError}</p>}
-        <button onClick={() => { setSuccess(true); setPaymentStep('none'); }} className="text-[var(--text-muted)] text-sm underline">تخطي الدفع الآن</button>
-      </div>
+      <RegistrationSuccessMessage
+        registrationType={tab as any}
+        fullName={form.full_name}
+        companyName={tab === 'startup' ? form.company_name : undefined}
+        ticketCode={regData?.ticket_code}
+        onClose={onClose}
+      />
     );
   }
-
-  if (paymentStep === 'processing') {
-    return (
-      <div className="text-center py-8 space-y-4">
-        <div className="w-12 h-12 border-2 border-t-transparent rounded-full mx-auto animate-spin" style={{ borderColor: primaryColor, borderTopColor: 'transparent' }} />
-        <p className="text-white font-semibold">جار معالجة الدفع...</p>
-        <p className="text-[var(--text-muted)] text-sm">انتظر أو إذا فتحت صفحة الدفع أكمل من هناك</p>
-        <button onClick={() => { setPaymentStep('done'); setPaymentOrder((p: any) => ({ ...p, status: 'pending' })); }}
-          className="text-[var(--text-muted)] text-sm underline">تم الدفع ← عرض التذكرة</button>
-      </div>
-    );
-  }
-
-  if (paymentStep === 'done') {
-    const paid = paymentOrder?.status === 'paid';
-    return (
-      <div className="text-center space-y-4">
-        <div style={{ fontSize: '3.5rem' }}>{paid ? '🎉' : '⏳'}</div>
-        <h3 className="text-xl font-bold text-white">{paid ? (paymentSettings?.success_message || 'تم الدفع بنجاح!') : 'طلبك قيد المراجعة'}</h3>
-        {!paid && <p className="text-[var(--text-muted)] text-sm">سيتم التواصل معك لتأكيد الدفع وإرسال تذكرتك</p>}
-        {regData?.ticket_code && <p className="text-sm" style={{ color: primaryColor }}>رقم الطلب: <strong>{paymentOrder?.order_ref || regData.ticket_code}</strong></p>}
-        <button onClick={onClose} className="btn-primary">إغلاق</button>
-      </div>
-    );
-  }
-
-  if (success) return (
-    <RegistrationSuccessMessage
-      registrationType={tab as any}
-      fullName={form.full_name}
-      companyName={tab === 'startup' ? form.company_name : undefined}
-      ticketCode={regData?.ticket_code}
-      onClose={onClose}
-    />
-  );
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -313,6 +275,13 @@ function RegistrationForm({ event, onClose, cfg, initialTab }: { event: Event; o
               <option value="">اختر المدينة</option>
               {(cfg.cities || []).map(c => <option key={c} value={c}>{c}</option>)}
             </select>
+          </div>
+        )}
+        {/* Country selector when city = خارج سوريا */}
+        {cfg.show_city && form.city === 'خارج سوريا' && (
+          <div>
+            <label className="block text-sm text-[var(--text-muted)] mb-1">الدولة *</label>
+            <CountrySelect eventId={event.id} value={form.country || ''} onChange={v => set('country', v)} required />
           </div>
         )}
         {cfg.show_motivation && (

@@ -378,3 +378,20 @@ export const initiatePayment = (eventId: number, body: any) =>
 
 export const checkPaymentStatus = (eventId: number, orderRef: string) =>
   apiFetch<any>(`/api/events/${eventId}/payments/check/${orderRef}`, undefined, true);
+
+// ── Public – Countries ─────────────────────────────────────────────────────
+export const fetchCountries = (eventId: number) =>
+  apiFetch<any>(`/api/events/${eventId}/countries`);
+
+// ── Admin – Countries ──────────────────────────────────────────────────────
+export const fetchCountriesAdmin = (eventId: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/countries/all`, { headers: getAuthHeaders(token) });
+
+export const createCountry = (eventId: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/countries`, { method: 'POST', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+
+export const updateCountry = (eventId: number, id: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/countries/${id}`, { method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+
+export const deleteCountry = (eventId: number, id: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/countries/${id}`, { method: 'DELETE', headers: getAuthHeaders(token) });
