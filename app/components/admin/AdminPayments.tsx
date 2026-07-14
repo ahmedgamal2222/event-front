@@ -462,103 +462,246 @@ export default function AdminPayments({ eventId, token }: { eventId: number; tok
 
       {/* ── Ticket Design Tab ── */}
       {tab === 'design' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            {/* Design form */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {/* Header row */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div>
+              <div style={{ fontWeight: 700, color: 'white', fontSize: '1.05rem' }}>🎨 تصميم التذكرة</div>
+              <div style={{ color: '#64748b', fontSize: '0.78rem', marginTop: 2 }}>خصّص شكل التذكرة — تُرسل للمسجّل عبر البريد عند تأكيد الدفع</div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <a href={`${API_BASE}/api/events/${eventId}/tickets-design/preview`} target="_blank" rel="noopener noreferrer"
+                style={{ ...S.btn('rgba(255,255,255,0.07)'), color: '#a5b4fc', textDecoration: 'none', border: '1px solid rgba(108,99,255,0.3)', padding: '0.45rem 1rem' }}>
+                🔗 فتح معاينة كاملة
+              </a>
+              <button style={{ ...S.btn(), padding: '0.45rem 1.25rem' }} onClick={saveDesign} disabled={loading}>
+                {loading ? '⏳ حفظ...' : '💾 حفظ التصميم'}
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.25rem', alignItems: 'start' }}>
+            {/* ── Controls panel ── */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+
+              {/* Colors */}
               <div style={S.card}>
-                <div style={{ fontWeight: 700, color: '#a5b4fc', marginBottom: '0.75rem' }}>🎨 الألوان</div>
-                {[
-                  { key: 'bg_color', label: 'لون الخلفية' },
-                  { key: 'primary_color', label: 'اللون الرئيسي' },
-                  { key: 'text_color', label: 'لون النص' },
-                  { key: 'accent_color', label: 'اللون المميز' },
-                ].map(f => (
-                  <div key={f.key} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                    <input type="color" value={design[f.key] || '#000000'}
-                      onChange={e => setDesign((d: any) => ({ ...d, [f.key]: e.target.value }))}
-                      style={{ width: 36, height: 36, borderRadius: '0.3rem', border: 'none', cursor: 'pointer', background: 'none' }} />
-                    <div>
-                      <div style={{ color: '#94a3b8', fontSize: '0.72rem' }}>{f.label}</div>
-                      <div style={{ color: 'white', fontSize: '0.78rem', fontFamily: 'monospace' }}>{design[f.key]}</div>
+                <div style={{ fontWeight: 700, color: '#a5b4fc', marginBottom: '0.85rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  🎨 الألوان
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+                  {[
+                    { key: 'bg_color',      label: 'الخلفية',    hint: 'لون جسم التذكرة' },
+                    { key: 'primary_color', label: 'الرئيسي',    hint: 'شريط الهيدر والأزرار' },
+                    { key: 'text_color',    label: 'النص',       hint: 'لون الاسم والقيم' },
+                    { key: 'accent_color',  label: 'المميز',     hint: 'التسميات والأيقونات' },
+                  ].map(f => (
+                    <div key={f.key} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '0.5rem', padding: '0.6rem', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <label style={{ color: '#94a3b8', fontSize: '0.68rem', display: 'block', marginBottom: '0.4rem', fontWeight: 600 }}>{f.label}</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div style={{ position: 'relative', width: 32, height: 32, flexShrink: 0 }}>
+                          <div style={{ width: 32, height: 32, borderRadius: '0.35rem', background: design[f.key] || '#000', border: '2px solid rgba(255,255,255,0.15)', cursor: 'pointer' }} />
+                          <input type="color" value={design[f.key] || '#000000'}
+                            onChange={e => setDesign((d: any) => ({ ...d, [f.key]: e.target.value }))}
+                            style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }} />
+                        </div>
+                        <span style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: 'white' }}>{design[f.key]}</span>
+                      </div>
                     </div>
+                  ))}
+                </div>
+
+                {/* Color presets */}
+                <div style={{ marginTop: '0.85rem' }}>
+                  <div style={{ color: '#64748b', fontSize: '0.68rem', marginBottom: '0.4rem', fontWeight: 600 }}>قوالب جاهزة</div>
+                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    {[
+                      { name: 'بنفسجي غامق', bg: '#0f0c24', primary: '#6C63FF', text: '#ffffff', accent: '#a5b4fc' },
+                      { name: 'أزرق ليلي',   bg: '#0a1628', primary: '#3b82f6', text: '#ffffff', accent: '#93c5fd' },
+                      { name: 'أخضر زمردي',  bg: '#0a1f1a', primary: '#10b981', text: '#ffffff', accent: '#6ee7b7' },
+                      { name: 'ذهبي ملكي',   bg: '#1a1200', primary: '#d97706', text: '#ffffff', accent: '#fcd34d' },
+                      { name: 'أحمر دامسق',  bg: '#1a0808', primary: '#dc2626', text: '#ffffff', accent: '#fca5a5' },
+                    ].map(p => (
+                      <button key={p.name} title={p.name}
+                        onClick={() => setDesign((d: any) => ({ ...d, bg_color: p.bg, primary_color: p.primary, text_color: p.text, accent_color: p.accent }))}
+                        style={{ width: 22, height: 22, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.2)', cursor: 'pointer',
+                          background: `linear-gradient(135deg, ${p.bg} 50%, ${p.primary} 50%)` }} />
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
+
+              {/* Logo */}
               <div style={S.card}>
-                <div style={{ fontWeight: 700, color: '#a5b4fc', marginBottom: '0.75rem' }}>📝 النصوص</div>
-                {[
-                  { key: 'header_title', label: 'العنوان الرئيسي' },
-                  { key: 'header_subtitle', label: 'العنوان الفرعي' },
-                  { key: 'footer_text', label: 'نص الفوتر' },
-                  { key: 'footer_note', label: 'ملاحظة (اختياري)' },
-                  { key: 'email_subject', label: 'موضوع البريد' },
-                  { key: 'email_intro', label: 'مقدمة البريد' },
-                ].map(f => (
-                  <div key={f.key} style={{ marginBottom: '0.6rem' }}>
-                    <label style={S.label}>{f.label}</label>
-                    <input style={S.inp} value={design[f.key] || ''}
-                      onChange={e => setDesign((d: any) => ({ ...d, [f.key]: e.target.value }))} />
+                <div style={{ fontWeight: 700, color: '#a5b4fc', marginBottom: '0.75rem', fontSize: '0.85rem' }}>🖼 الشعار (Logo)</div>
+                <label style={S.label}>رابط صورة الشعار</label>
+                <input style={S.inp} value={design.logo_url || ''} placeholder="https://..."
+                  onChange={e => setDesign((d: any) => ({ ...d, logo_url: e.target.value }))} dir="ltr" />
+                <div style={{ color: '#475569', fontSize: '0.7rem', marginTop: '0.35rem' }}>يظهر في أعلى التذكرة. اتركه فارغاً لإخفائه</div>
+              </div>
+
+              {/* Texts */}
+              <div style={S.card}>
+                <div style={{ fontWeight: 700, color: '#a5b4fc', marginBottom: '0.75rem', fontSize: '0.85rem' }}>📝 النصوص</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+                  {[
+                    { key: 'header_subtitle', label: 'العنوان الفرعي للتذكرة', placeholder: 'تذكرة الحضور الرسمية' },
+                    { key: 'footer_text', label: 'تعليمات الدخول', placeholder: 'أبرز هذه التذكرة عند الدخول' },
+                    { key: 'footer_note', label: 'ملاحظة إضافية (اختياري)', placeholder: '' },
+                  ].map(f => (
+                    <div key={f.key}>
+                      <label style={S.label}>{f.label}</label>
+                      <input style={S.inp} value={design[f.key] || ''} placeholder={f.placeholder}
+                        onChange={e => setDesign((d: any) => ({ ...d, [f.key]: e.target.value }))} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Email */}
+              <div style={S.card}>
+                <div style={{ fontWeight: 700, color: '#a5b4fc', marginBottom: '0.75rem', fontSize: '0.85rem' }}>📧 إعدادات البريد</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+                  <div>
+                    <label style={S.label}>موضوع الرسالة</label>
+                    <input style={S.inp} value={design.email_subject || ''} onChange={e => setDesign((d: any) => ({ ...d, email_subject: e.target.value }))} />
                   </div>
-                ))}
+                  <div>
+                    <label style={S.label}>مقدمة الرسالة (تظهر فوق التذكرة)</label>
+                    <textarea rows={3} style={{ ...S.inp, resize: 'vertical' }} value={design.email_intro || ''}
+                      onChange={e => setDesign((d: any) => ({ ...d, email_intro: e.target.value }))} />
+                  </div>
+                </div>
               </div>
+
+              {/* Display options */}
               <div style={S.card}>
-                <div style={{ fontWeight: 700, color: '#a5b4fc', marginBottom: '0.75rem' }}>👁️ خيارات العرض</div>
+                <div style={{ fontWeight: 700, color: '#a5b4fc', marginBottom: '0.75rem', fontSize: '0.85rem' }}>👁 حقول تظهر في التذكرة</div>
                 {[
-                  { key: 'show_event_date', label: 'تاريخ الحدث' },
-                  { key: 'show_venue', label: 'مكان الحدث' },
-                  { key: 'show_registration_type', label: 'نوع التسجيل' },
-                  { key: 'show_ticket_number', label: 'رقم التذكرة' },
+                  { key: 'show_event_date',        label: '📅 تاريخ الحدث' },
+                  { key: 'show_venue',             label: '📍 مكان الحدث' },
+                  { key: 'show_registration_type', label: '🏷 نوع التسجيل' },
+                  { key: 'show_ticket_number',     label: '🔢 رقم التذكرة' },
                 ].map(f => (
-                  <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', marginBottom: '0.4rem', color: '#94a3b8', fontSize: '0.85rem' }}>
-                    <input type="checkbox" checked={!!design[f.key]}
-                      onChange={e => setDesign((d: any) => ({ ...d, [f.key]: e.target.checked ? 1 : 0 }))}
-                      style={{ accentColor: '#6C63FF' }} />
-                    {f.label}
+                  <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', padding: '0.3rem 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div onClick={() => setDesign((d: any) => ({ ...d, [f.key]: d[f.key] ? 0 : 1 }))}
+                      style={{ width: 36, height: 20, borderRadius: 10, background: design[f.key] ? '#6C63FF' : 'rgba(255,255,255,0.1)',
+                        position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+                        border: `1px solid ${design[f.key] ? '#6C63FF' : 'rgba(255,255,255,0.15)'}` }}>
+                      <div style={{ width: 14, height: 14, borderRadius: '50%', background: 'white',
+                        position: 'absolute', top: 2, left: design[f.key] ? 19 : 2, transition: 'left 0.2s' }} />
+                    </div>
+                    <span style={{ fontSize: '0.82rem', color: design[f.key] ? 'white' : '#64748b' }}>{f.label}</span>
                   </label>
                 ))}
               </div>
-              <button style={{ ...S.btn(), padding: '0.6rem 2rem' }} onClick={saveDesign} disabled={loading}>
-                {loading ? '...' : '💾 حفظ التصميم'}
-              </button>
             </div>
 
-            {/* Preview */}
-            <div>
-              <div style={{ fontWeight: 700, color: '#a5b4fc', marginBottom: '0.75rem', fontSize: '0.85rem' }}>👁️ معاينة التذكرة</div>
-              <div style={{ background: design.bg_color, borderRadius: 12, overflow: 'hidden', border: `1px solid ${design.primary_color}50`, fontSize: '0.8rem' }}>
-                <div style={{ background: `linear-gradient(135deg, ${design.primary_color}, ${design.primary_color}cc)`, padding: '20px', textAlign: 'center' }}>
-                  {design.logo_url && <img src={design.logo_url} alt="" style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', margin: '0 auto 8px', display: 'block' }} />}
-                  <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'white' }}>{design.header_title}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)', marginTop: 3 }}>{design.header_subtitle}</div>
-                </div>
-                <div style={{ padding: '20px' }}>
-                  <div style={{ fontWeight: 700, color: design.text_color, fontSize: '1rem', marginBottom: 4 }}>محمد أحمد</div>
-                  <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontSize: '0.7rem', background: design.primary_color + '25', color: design.accent_color, border: `1px solid ${design.primary_color}50`, marginBottom: 12 }}>🚀 شركة ناشئة</span>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
-                    {design.show_event_date && <div style={{ background: 'rgba(255,255,255,0.04)', padding: '8px', borderRadius: 8 }}>
-                      <div style={{ color: design.accent_color, fontSize: '0.62rem', marginBottom: 2 }}>📅 التاريخ</div>
-                      <div style={{ color: design.text_color, fontSize: '0.78rem', fontWeight: 600 }}>ديسمبر 2026</div>
-                    </div>}
-                    {design.show_venue && <div style={{ background: 'rgba(255,255,255,0.04)', padding: '8px', borderRadius: 8 }}>
-                      <div style={{ color: design.accent_color, fontSize: '0.62rem', marginBottom: 2 }}>📍 المكان</div>
-                      <div style={{ color: design.text_color, fontSize: '0.78rem', fontWeight: 600 }}>دمشق</div>
-                    </div>}
+            {/* ── Live Preview ── */}
+            <div style={{ position: 'sticky', top: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                <div style={{ fontWeight: 700, color: '#a5b4fc', fontSize: '0.85rem' }}>👁 معاينة مباشرة</div>
+                <span style={{ fontSize: '0.7rem', color: '#475569', background: 'rgba(255,255,255,0.04)', padding: '0.2rem 0.6rem', borderRadius: '0.3rem' }}>تتحدث تلقائياً</span>
+              </div>
+
+              {/* Ticket preview - mirrors buildTicketHtml */}
+              <div style={{
+                background: design.bg_color || '#0f0c24',
+                borderRadius: 16,
+                overflow: 'hidden',
+                boxShadow: `0 24px 60px rgba(0,0,0,0.6), 0 0 0 1px ${design.primary_color || '#6C63FF'}35`,
+                direction: 'rtl',
+                fontFamily: "'Segoe UI', Tahoma, Arial, sans-serif",
+              }}>
+                {/* Header */}
+                <div style={{
+                  background: `linear-gradient(135deg, ${design.primary_color || '#6C63FF'} 0%, ${design.primary_color || '#6C63FF'}aa 100%)`,
+                  padding: '20px 22px',
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 14,
+                }}>
+                  {design.logo_url ? (
+                    <img src={design.logo_url} alt="" style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', border: '2px solid rgba(255,255,255,0.25)', flexShrink: 0 }} />
+                  ) : (
+                    <div style={{ width: 56, height: 56, borderRadius: 10, background: 'rgba(255,255,255,0.12)', border: '2px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', flexShrink: 0 }}>🎫</div>
+                  )}
+                  <div>
+                    <div style={{ color: 'white', fontWeight: 900, fontSize: '1.2rem', lineHeight: 1.2 }}>{design.header_title || 'اسم الحدث'}</div>
+                    <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.75rem', marginTop: 4 }}>{design.header_subtitle || 'تذكرة الحضور الرسمية'}</div>
                   </div>
-                  <div style={{ textAlign: 'center', padding: '8px 0' }}>
-                    <div style={{ width: 80, height: 80, background: 'white', borderRadius: 8, margin: '0 auto 6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', color: '#333' }}>QR Code</div>
-                    <div style={{ fontFamily: 'monospace', fontSize: '0.65rem', color: design.accent_color }}>ORD-XXXX-YYYY</div>
+                </div>
+
+                {/* Wave */}
+                <div style={{ height: 16, background: design.bg_color || '#0f0c24', WebkitMask: 'radial-gradient(circle at 50% 0%, transparent 10px, black 11px)', mask: 'radial-gradient(circle at 50% 0%, transparent 10px, black 11px)' }} />
+
+                {/* Body */}
+                <div style={{ padding: '16px 22px' }}>
+                  {/* Attendee */}
+                  <div style={{ fontWeight: 800, fontSize: '1.1rem', color: design.text_color || '#ffffff', marginBottom: 4 }}>أحمد محمد الشريف</div>
+                  <div style={{ fontSize: '0.72rem', color: design.accent_color || '#a5b4fc', marginBottom: 12 }}>🏢 شركة المثال للتقنية</div>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 20, fontSize: '0.68rem', fontWeight: 700, background: '#f59e0b20', color: '#f59e0b', border: '1px solid #f59e0b40', marginBottom: 14 }}>🚀 شركة ناشئة</div>
+
+                  {/* Info grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
+                    {design.show_event_date ? (
+                      <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '9px 12px', border: '1px solid rgba(255,255,255,0.07)' }}>
+                        <div style={{ fontSize: '0.58rem', color: (design.accent_color || '#a5b4fc') + '99', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 2 }}>📅 تاريخ الحدث</div>
+                        <div style={{ fontSize: '0.78rem', color: design.text_color || '#fff', fontWeight: 700 }}>الجمعة ١٥ مايو ٢٠٢٦</div>
+                      </div>
+                    ) : null}
+                    {design.show_venue ? (
+                      <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '9px 12px', border: '1px solid rgba(255,255,255,0.07)' }}>
+                        <div style={{ fontSize: '0.58rem', color: (design.accent_color || '#a5b4fc') + '99', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 2 }}>📍 المكان</div>
+                        <div style={{ fontSize: '0.78rem', color: design.text_color || '#fff', fontWeight: 700 }}>دمشق، سوريا</div>
+                      </div>
+                    ) : null}
+                    {design.show_ticket_number ? (
+                      <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '9px 12px', border: '1px solid rgba(255,255,255,0.07)' }}>
+                        <div style={{ fontSize: '0.58rem', color: (design.accent_color || '#a5b4fc') + '99', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 2 }}>🎫 رقم التذكرة</div>
+                        <div style={{ fontSize: '0.7rem', color: design.text_color || '#fff', fontWeight: 700, fontFamily: 'monospace' }}>TKT-PREVIEW-001</div>
+                      </div>
+                    ) : null}
+                    <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '9px 12px', border: '1px solid rgba(255,255,255,0.07)' }}>
+                      <div style={{ fontSize: '0.58rem', color: (design.accent_color || '#a5b4fc') + '99', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 2 }}>💳 القيمة</div>
+                      <div style={{ fontSize: '0.78rem', color: design.text_color || '#fff', fontWeight: 700 }}>50 USD</div>
+                    </div>
+                  </div>
+
+                  {/* Perforated line */}
+                  <div style={{ borderTop: `2px dashed ${design.primary_color || '#6C63FF'}30`, margin: '0 -2px 14px', position: 'relative' }} />
+                </div>
+
+                {/* QR Stub */}
+                <div style={{ background: 'rgba(0,0,0,0.2)', borderTop: `1px solid ${design.primary_color || '#6C63FF'}18`, padding: '16px 22px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{ background: 'white', borderRadius: 8, padding: 6, flexShrink: 0 }}>
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=PREVIEW&bgcolor=ffffff&color=000000&margin=4" alt="QR" style={{ width: 90, height: 90, display: 'block' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontFamily: 'monospace', fontSize: '0.62rem', color: design.accent_color || '#a5b4fc', letterSpacing: '0.08em', marginBottom: 6, wordBreak: 'break-all' }}>TKT-PREVIEW-001</div>
+                    <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>{design.footer_text || 'أبرز هذه التذكرة عند الدخول'}</div>
+                    <div style={{ fontSize: '0.65rem', color: design.primary_color || '#6C63FF', fontWeight: 700, marginTop: 5 }}>امسح رمز QR للتحقق ←</div>
                   </div>
                 </div>
-                <div style={{ borderTop: `1px solid rgba(255,255,255,0.06)`, padding: '10px 16px', textAlign: 'center' }}>
-                  <div style={{ color: design.accent_color, fontSize: '0.72rem', fontWeight: 600 }}>{design.footer_text}</div>
-                  {design.footer_note && <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.62rem', marginTop: 3 }}>{design.footer_note}</div>}
+
+                {/* Footer */}
+                <div style={{ background: `linear-gradient(90deg, ${design.primary_color || '#6C63FF'}15, transparent, ${design.primary_color || '#6C63FF'}15)`, borderTop: `1px solid ${design.primary_color || '#6C63FF'}18`, padding: '10px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.72rem', color: design.accent_color || '#a5b4fc', fontWeight: 600 }}>{design.header_title || 'اسم الحدث'}</span>
+                  <span style={{ fontFamily: 'monospace', fontSize: '0.6rem', color: 'rgba(255,255,255,0.2)' }}>TKT-PREVIEW-001</span>
                 </div>
               </div>
+
+              {/* Open full preview */}
+              <a href={`${API_BASE}/api/events/${eventId}/tickets-design/preview`} target="_blank" rel="noopener noreferrer"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginTop: '0.75rem', padding: '0.55rem', background: 'rgba(108,99,255,0.07)', border: '1px solid rgba(108,99,255,0.2)', borderRadius: '0.5rem', textDecoration: 'none', color: '#a5b4fc', fontSize: '0.8rem', fontWeight: 600 }}>
+                🔍 فتح معاينة التذكرة الكاملة في تبويب جديد
+              </a>
             </div>
           </div>
         </div>
       )}
+
     </div>
   );
 }
