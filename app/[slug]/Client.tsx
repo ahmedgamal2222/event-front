@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { Event, Speaker, AgendaDay, Stats, Sponsor, Faq, FormConfig, SiteConfig } from '../../lib/types';
-import { fetchEvent, fetchSpeakers, fetchAgenda, fetchStats, fetchSponsors, fetchFaqs, submitRegistration, fetchVenueGallery, fetchArticles, fetchTerms, fetchPages, fetchPaymentSettingsPublic, fetchCountries } from '../../lib/api';
+import { fetchEvent, fetchSpeakers, fetchAgenda, fetchStats, fetchSponsors, fetchFaqs, submitRegistration, fetchVenueGallery, fetchArticles, fetchTerms, fetchPages, fetchPaymentSettingsPublic, fetchCountries, fetchEventNavigation } from '../../lib/api';
 import { VenueMedia } from '../../lib/types';
 import PixelInjector from '../components/PixelInjector';
 import TicketsSection from '../components/TicketsSection';
@@ -9,6 +10,64 @@ import SupportWidget from '../components/SupportWidget';
 import RegistrationSuccessMessage from '../components/RegistrationSuccessMessage';
 
 const API_EVENT_SLUG = process.env.NEXT_PUBLIC_EVENT_SLUG || 's3-summit-2026';
+
+// ─── Event Navigation Bar ──────────────────────────────────────────────────────
+function EventNavBar({ eventId, primaryColor }: { eventId: number; primaryColor: string }) {
+  const [nav, setNav] = useState<{ prev: any; current: any; next: any } | null>(null);
+
+  useEffect(() => {
+    if (!eventId) return;
+    fetchEventNavigation(eventId)
+      .then(r => setNav(r.data))
+      .catch(() => {});
+  }, [eventId]);
+
+  if (!nav || (!nav.prev && !nav.next)) return null;
+
+  const fmt = (d: string) => d ? new Date(d).getFullYear().toString() : '';
+
+  return (
+    <div style={{ background: 'rgba(0,0,0,0.4)', borderBottom: `1px solid ${primaryColor}30`, padding: '0.6rem 1.5rem', direction: 'rtl' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+        {/* Prev event */}
+        {nav.prev ? (
+          <Link href={`/${nav.prev.slug}`}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', color: '#94a3b8', fontSize: '0.82rem', transition: 'color 0.15s' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'white')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}>
+            <span style={{ fontSize: '1rem' }}>←</span>
+            <div>
+              <div style={{ fontSize: '0.68rem', color: '#475569' }}>الحدث السابق</div>
+              <div style={{ fontWeight: 600 }}>{nav.prev.name_ar || nav.prev.name} {nav.prev.edition_number ? `(${nav.prev.edition_number})` : fmt(nav.prev.start_date)}</div>
+            </div>
+          </Link>
+        ) : <div />}
+
+        {/* Archive link */}
+        <Link href="/archive"
+          style={{ fontSize: '0.78rem', color: '#64748b', textDecoration: 'none', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '2rem', transition: 'all 0.15s' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${primaryColor}60`; (e.currentTarget as HTMLElement).style.color = '#a5b4fc'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLElement).style.color = '#64748b'; }}>
+          🗂 جميع النسخ
+        </Link>
+
+        {/* Next event */}
+        {nav.next ? (
+          <Link href={`/${nav.next.slug}`}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', color: '#94a3b8', fontSize: '0.82rem', transition: 'color 0.15s', textAlign: 'left' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'white')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '0.68rem', color: '#475569' }}>الحدث التالي</div>
+              <div style={{ fontWeight: 600 }}>{nav.next.name_ar || nav.next.name} {nav.next.edition_number ? `(${nav.next.edition_number})` : fmt(nav.next.start_date)}</div>
+            </div>
+            <span style={{ fontSize: '1rem' }}>→</span>
+          </Link>
+        ) : <div />}
+      </div>
+    </div>
+  );
+}
 
 // ─── Session type colors & labels ──────────────────────────────────────────────
 const SESSION_STYLES: Record<string, { bg: string; label: string }> = {
@@ -573,6 +632,9 @@ export default function EventLandingClient() {
           </button>
         </div>
       </nav>
+
+      {/* ── Event Navigation Bar (prev / next events) ──────────────────────── */}
+      {event && <EventNavBar eventId={event.id} primaryColor={primaryColor} />}
 
       {/* ── Hero ─────────────────────────────────────────────────────────────── */}
       <section className="relative pt-32 pb-20 px-6 overflow-hidden">

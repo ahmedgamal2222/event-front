@@ -25,6 +25,7 @@ import AdminPayments from '../../../app/components/admin/AdminPayments';
 import AdminCampaigns from '../../../app/components/admin/AdminCampaigns';
 import RichEditor from '../../../app/components/admin/RichEditor';
 import AdminCountries from '../../../app/components/admin/AdminCountries';
+import AdminEvents from '../../../app/components/admin/AdminEvents';
 import type { FormConfig, SiteConfig } from '../../../lib/types';
 
 function getToken() { return typeof window !== 'undefined' ? localStorage.getItem('admin_token') || '' : ''; }
@@ -45,6 +46,7 @@ const SPONSOR_TIERS = ['platinum','gold','silver','bronze','media'];
 const TABS = [
   // القسم الرئيسي
   { key: 'overview',       label: '📊 نظرة عامة',       group: 'رئيسي' },
+  { key: 'events_mgmt',    label: '🗂 الأحداث والأرشيف', group: 'رئيسي' },
   // إدارة الحدث
   { key: 'event',          label: '⚙️ معلومات الحدث',   group: 'الحدث' },
   { key: 'video',          label: '🎬 الفيديو التعريفي', group: 'الحدث' },
@@ -322,6 +324,7 @@ export default function AdminDashboard() {
           {activeTab === 'payments'      && <AdminPayments eventId={eventId} token={token} />}
           {activeTab === 'campaigns'     && <AdminCampaigns eventId={eventId} token={token} />}
           {activeTab === 'countries'     && <AdminCountries eventId={eventId} token={token} />}
+          {activeTab === 'events_mgmt'   && <AdminEvents token={token} />}
         </div>
 
         {/* Toast Notification */}

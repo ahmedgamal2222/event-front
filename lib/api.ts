@@ -379,6 +379,42 @@ export const initiatePayment = (eventId: number, body: any) =>
 export const checkPaymentStatus = (eventId: number, orderRef: string) =>
   apiFetch<any>(`/api/events/${eventId}/payments/check/${orderRef}`, undefined, true);
 
+// ── Public – Archive & Navigation ─────────────────────────────────────────
+export const fetchEventArchive = () =>
+  apiFetch<any>('/api/events/archive');
+
+export const fetchEventNavigation = (eventId: number) =>
+  apiFetch<any>(`/api/events/${eventId}/navigation`);
+
+export const fetchEventFullArchive = (eventId: number) =>
+  apiFetch<any>(`/api/events/${eventId}/full-archive`);
+
+// ── Admin – Event Visibility ───────────────────────────────────────────────
+export const updateEventVisibility = (id: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${id}/visibility`, {
+    method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token)
+  });
+
+// ── Admin – Payment Message Fields ────────────────────────────────────────
+export const fetchPaymentMessageFields = (eventId: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/payments/message-fields`, {
+    headers: getAuthHeaders(token)
+  });
+
+export const updatePaymentMessageFields = (eventId: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/payments/message-fields`, {
+    method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token)
+  });
+
+// ── Admin – Ticket Issuance ────────────────────────────────────────────────
+export const issueTicket = (eventId: number, registrationId: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/tickets-design/issue/${registrationId}`, {
+    method: 'POST', headers: getAuthHeaders(token)
+  });
+
+export const getTicketPreviewUrl = (eventId: number) =>
+  `${API_BASE}/api/events/${eventId}/tickets-design/preview`;
+
 // ── Public – Countries ─────────────────────────────────────────────────────
 export const fetchCountries = (eventId: number) =>
   apiFetch<any>(`/api/events/${eventId}/countries`);
