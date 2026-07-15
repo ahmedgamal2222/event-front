@@ -367,6 +367,20 @@ export async function uploadFile(file: File, token: string): Promise<{ url: stri
   return { url: data.url, filename: data.filename, originalName: data.originalName };
 }
 
+// ── Admin – Universal Media Upload (images + videos + files) ──────────────
+export async function uploadMedia(file: File, token: string): Promise<{ url: string; filename: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`${API_BASE}/api/uploads/media`, {
+    method: 'POST',
+    body: formData,
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Upload failed');
+  return { url: data.url, filename: data.filename || data.key };
+}
+
 // ── Public – Payments ──────────────────────────────────────────────────────
 export const fetchPaymentSettingsPublic = (eventId: number) =>
   apiFetch<any>(`/api/events/${eventId}/payments/settings-public`);

@@ -976,19 +976,51 @@ export default function EventLandingClient() {
       {/* ── Sponsors ──────────────────────────────────────────────────────────── */}
       {sponsors.length > 0 && (
         <section id="sponsors" className="py-16 px-6" style={{ background: 'rgba(108,99,255,0.03)' }}>
-          <div className="max-w-4xl mx-auto text-center">
+          <div className="max-w-5xl mx-auto text-center">
             <div className="section-badge">الشركاء والرعاة</div>
             <h2 className="section-title mb-10">شركاء القمة</h2>
-            <div className="flex flex-wrap gap-8 justify-center items-center">
-              {sponsors.map(sp => (
-                <div key={sp.id} className="card px-8 py-4 flex items-center justify-center">
-                  {sp.logo_url ? (
-                    <img src={sp.logo_url} alt={sp.name} className="h-10 object-contain opacity-70 hover:opacity-100 transition-opacity" />
-                  ) : (
-                    <span className="text-white font-bold">{sp.name}</span>
-                  )}
-                </div>
-              ))}
+            <div className="flex flex-wrap gap-6 justify-center items-stretch">
+              {sponsors.map(sp => {
+                const tierColors: Record<string, string> = {
+                  platinum: '#e5e7eb', gold: '#fcd34d', silver: '#94a3b8',
+                  bronze: '#b45309', media: '#0ea5e9',
+                };
+                const tierAr: Record<string, string> = {
+                  platinum: 'بلاتيني', gold: 'ذهبي', silver: 'فضي',
+                  bronze: 'برونزي', media: 'إعلامي',
+                };
+                const tierColor = tierColors[sp.tier] || '#94a3b8';
+                return (
+                  <div key={sp.id} className="card flex flex-col items-center gap-3 px-6 py-5"
+                    style={{ minWidth: 160, maxWidth: 200, flex: '0 0 auto', transition: 'transform 0.2s, border-color 0.2s' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)'; (e.currentTarget as HTMLElement).style.borderColor = `${tierColor}50`; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; (e.currentTarget as HTMLElement).style.borderColor = ''; }}>
+                    {/* Logo */}
+                    {sp.logo_url ? (
+                      <img src={sp.logo_url} alt={sp.name} style={{ height: 52, maxWidth: 140, objectFit: 'contain' }} />
+                    ) : (
+                      <div style={{ width: 52, height: 52, borderRadius: '50%', background: `${tierColor}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>🏅</div>
+                    )}
+                    {/* Name */}
+                    <span className="text-white font-bold text-sm text-center">{sp.name}</span>
+                    {/* Tier badge */}
+                    {sp.tier && (
+                      <span style={{ fontSize: '0.68rem', padding: '0.15rem 0.6rem', borderRadius: 20, background: `${tierColor}18`, color: tierColor, border: `1px solid ${tierColor}35`, fontWeight: 700 }}>
+                        {tierAr[sp.tier] || sp.tier}
+                      </span>
+                    )}
+                    {/* Website */}
+                    {sp.website && (
+                      <a href={sp.website} target="_blank" rel="noopener noreferrer"
+                        style={{ fontSize: '0.7rem', color: primaryColor, textDecoration: 'none', opacity: 0.8 }}
+                        onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                        onMouseLeave={e => (e.currentTarget.style.opacity = '0.8')}>
+                        {sp.website.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]}
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>

@@ -9,7 +9,7 @@ import {
   fetchFaqs, createFaq, deleteFaq,
   fetchAgenda, createAgendaDay, updateAgendaDay,
   createAgendaSession, updateAgendaSession, deleteAgendaSession,
-  uploadImage, uploadFile, deleteImage,
+  uploadImage, uploadFile, uploadMedia, deleteImage,
   fetchVenueGalleryAdmin, createVenueMedia, updateVenueMedia, deleteVenueMedia,
   clearApiCacheFor,
   fetchArticlesAdmin, createArticle, updateArticle, deleteArticle,
@@ -169,6 +169,53 @@ function ImageUploadField({ onUploaded, maxSizeMB = 3, token }: { onUploaded: (v
         <input type="file" accept="image/*" onChange={onChange} disabled={uploading} style={{ display: 'none' }} />
       </label>
       <span style={{ color: '#94a3b8', fontSize: '0.72rem' }}>JPG/PNG/WebP حتى {maxSizeMB}MB</span>
+    </div>
+  );
+}
+
+// ── MediaUploadField — for images AND videos (venue gallery) ──────────────────
+function MediaUploadField({ mediaType, onUploaded, token }: { mediaType: 'image' | 'video'; onUploaded: (url: string) => void; token: string }) {
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState('');
+
+  const onChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const isVideo = file.type.startsWith('video/') || mediaType === 'video';
+    const maxMB = isVideo ? 200 : 15;
+    if (file.size > maxMB * 1024 * 1024) {
+      alert(`حجم الملف كبير جداً. الحد الأقصى: ${maxMB}MB`);
+      e.target.value = '';
+      return;
+    }
+
+    setUploading(true);
+    setProgress(isVideo ? '⏳ جار رفع الفيديو (قد يستغرق بعض الوقت)...' : '⏳ جار الرفع...');
+    try {
+      const { url } = await uploadMedia(file, token);
+      onUploaded(url);
+      setProgress('');
+    } catch (err: any) {
+      alert('فشل الرفع: ' + (err.message || 'خطأ غير معروف'));
+      setProgress('');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const accept = mediaType === 'video' ? 'video/mp4,video/webm,video/mov,video/avi,video/*' : 'image/*';
+  const label  = mediaType === 'video' ? '🎬 رفع فيديو من الجهاز' : '🖼️ رفع صورة من الجهاز';
+  const hint   = mediaType === 'video' ? 'MP4/WebM/MOV حتى 200MB' : 'JPG/PNG/WebP حتى 15MB';
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+      <label style={{ ...S.btn(mediaType === 'video' ? '#0c4a6e' : '#1a2744'), margin: 0, cursor: uploading ? 'not-allowed' : 'pointer', opacity: uploading ? 0.6 : 1, display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+        {uploading ? (progress || '⏳ جار الرفع...') : label}
+        <input type="file" accept={accept} onChange={onChange} disabled={uploading} style={{ display: 'none' }} />
+      </label>
+      <span style={{ color: '#64748b', fontSize: '0.7rem' }}>{hint}</span>
     </div>
   );
 }
@@ -1146,8 +1193,13 @@ function VenueGalleryTab({ eventId, token, showToast }: any) {
               <Field label="رابط الصورة/الفيديو *">
                 <input value={form.media_url} onChange={e => set('media_url', e.target.value)} style={S.inp} placeholder="https://..." />
               </Field>
-              <div style={{ marginTop: 6 }}>
-                <ImageUploadField onUploaded={(v) => set('media_url', v)} maxSizeMB={5} token={token} />
+              {/* Unified media upload — supports both images and videos */}
+              <div style={{ marginTop: 6, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <MediaUploadField
+                  mediaType={form.media_type}
+                  onUploaded={(v) => set('media_url', v)}
+                  token={token}
+                />
               </div>
             </div>
             <Field label="العنوان (اختياري)"><input value={form.title||''} onChange={e => set('title', e.target.value)} style={S.inp} placeholder="القاعة الرئيسية..." /></Field>
