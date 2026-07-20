@@ -1,6 +1,6 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   fetchStats, fetchRegistrations, updateRegistration, deleteRegistration,
   fetchEvent, updateEvent,
@@ -232,18 +232,48 @@ function MediaUploadField({ mediaType, onUploaded, token }: { mediaType: 'image'
   );
 }
 
+// Suspense wrapper required because useSearchParams() needs a Suspense boundary
 export default function AdminDashboard() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: '100vh', background: '#0d0b1a', display: 'flex', alignItems: 'center', justifyContent: 'center', direction: 'rtl' }}>
+        <div style={{ textAlign: 'center', color: '#94a3b8' }}>
+          <div style={{ fontSize: '2rem', marginBottom: '1rem', animation: 'spin 1s linear infinite' }}>⟳</div>
+          <p>جاري التحميل...</p>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      </div>
+    }>
+      <AdminDashboardInner />
+    </Suspense>
+  );
+}
+
+function AdminDashboardInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [token, setToken] = useState('');
   const [events, setEvents] = useState<any[]>([]);
-  const [eventId, setEventId] = useState(0); // 0 = not yet loaded — prevents fetching event 1 before list arrives
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState('');
 
-  // Derived: slug of the currently selected event
-  const eventSlug = events.find(e => e.id === eventId)?.slug ;
-  const eventLabel = events.find(e => e.id === eventId)?.name_ar || events.find(e => e.id === eventId)?.name || '';
+  // eventId is derived from URL (?event=N) — the URL is the single source of truth.
+  // This eliminates all stale-closure issues: every render reads directly from URL.
+  const urlEventId = Number(searchParams.get('event') || '0');
+
+  // The currently selected event object
+  const currentEvent = events.find(e => e.id === urlEventId);
+  const eventId = currentEvent?.id || 0;
+  const eventSlug = currentEvent?.slug || '';
+  const eventLabel = currentEvent?.name_ar || currentEvent?.name || '';
+
+  // Navigate to a different event — changes URL, React re-renders with new eventId
+  const switchEvent = (newId: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('event', String(newId));
+    router.replace(`/admin/dashboard?${params.toString()}`, { scroll: false });
+  };
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
 
@@ -251,19 +281,37 @@ export default function AdminDashboard() {
     const t = getToken();
     if (!t) { router.replace('/admin'); return; }
     setToken(t);
-    // Load all events for selector
-    fetch(`${API_BASE}/api/events/all`, { headers: { Authorization: `Bearer ${t}` } })
-      .then(r => r.json())
-      .then(d => {
+    // Load all events — try admin endpoint first, fall back to public
+    const loadEvents = async () => {
+      try {
+        const r = await fetch(`${API_BASE}/api/events/all`, { headers: { Authorization: `Bearer ${t}` } });
+        const d = await r.json();
         if (d.success && d.data?.length > 0) {
           setEvents(d.data);
-          // Default to first published/draft event (not archived)
-          const active = d.data.find((e: any) => ['published','draft','open','live'].includes(e.status));
-          if (active) setEventId(active.id);
-          else setEventId(d.data[0].id);
+          // Only set default event if none is selected in the URL yet
+          if (!searchParams.get('event')) {
+            const active = d.data.find((e: any) => ['published','draft','open','live'].includes(e.status));
+            switchEvent(active?.id || d.data[0].id);
+          }
+          return;
         }
-      })
-      .catch(() => {});
+      } catch {}
+      // Fallback: try public events endpoint
+      try {
+        const r2 = await fetch(`${API_BASE}/api/events`);
+        const d2 = await r2.json();
+        if (d2.success && d2.data?.length > 0) {
+          setEvents(d2.data);
+          if (!searchParams.get('event')) {
+            switchEvent(d2.data[0].id);
+          }
+          return;
+        }
+      } catch {}
+      // Last resort
+      if (!searchParams.get('event')) switchEvent(1);
+    };
+    loadEvents();
   }, []);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
@@ -315,11 +363,7 @@ export default function AdminDashboard() {
                   value={eventId}
                   onChange={e => {
                     const newId = Number(e.target.value);
-                    // Clear cache for old event so tabs get fresh data
-                    if (eventId > 0) {
-                      clearApiCacheFor(`/api/events/${eventId}`);
-                    }
-                    setEventId(newId);
+                    switchEvent(newId);
                   }}
                   style={{
                     width: '100%',
@@ -444,18 +488,19 @@ export default function AdminDashboard() {
 
         {/* Content Area */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '2rem' }}>
-          {/* Don't render tabs until a valid event is selected */}
+          {/* Loading state while events haven't loaded yet */}
           {eventId === 0 && (
             <div style={{ textAlign: 'center', paddingTop: '4rem', color: '#94a3b8' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⏳</div>
-              <p>جاري تحميل الأحداث...</p>
+              <div style={{ fontSize: '2rem', marginBottom: '0.5rem', animation: 'spin 1s linear infinite' }}>⟳</div>
+              <p>جاري تحميل بيانات الأحداث...</p>
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
             </div>
           )}
           {eventId > 0 && <>
           {activeTab === 'overview'      && <OverviewTab key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'event'         && <EventTab key={eventId} eventId={eventId} eventSlug={eventSlug} token={token} save={save} saving={saving} />}
           {activeTab === 'video'         && <VideoTab key={eventId} eventId={eventId} eventSlug={eventSlug} token={token} save={save} saving={saving} />}
-          {activeTab === 'registrations' && <RegistrationsTab key={eventId} eventId={eventId} eventSlug={eventSlug} token={token} router={router} />}
+          {activeTab === 'registrations' && <RegistrationsTab key={eventId} eventId={eventId} eventSlug={eventSlug} token={token} router={router} showToast={showToast} />}
           {activeTab === 'speakers'      && <SpeakersTab key={eventId} eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
           {activeTab === 'venue'         && <VenueGalleryTab key={eventId} eventId={eventId} token={token} showToast={showToast} />}
           {activeTab === 'agenda'        && <AgendaTab key={eventId} eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
@@ -531,8 +576,8 @@ function EventTab({ eventId, eventSlug, token, save, saving }: any) {
   const [form, setForm] = useState<any>({});
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
-    if (!token || !eventSlug) return;
-    fetchEvent(eventSlug).then((r: any) => { setForm(r.data); setLoaded(true); }).catch(() => {});
+    if (!token) return; const slug = eventSlug || 's3-summit-2026';
+    fetchEvent(slug).then((r: any) => { setForm(r.data); setLoaded(true); }).catch(() => {});
   }, [token, eventSlug]);
   if (!loaded) return <p style={{ color: '#94a3b8' }}>جار التحميل...</p>;
   const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
@@ -643,7 +688,7 @@ function EventTab({ eventId, eventSlug, token, save, saving }: any) {
 
 // ── Registrations ─────────────────────────────────────────────────────────────
 // ── Registrations ─────────────────────────────────────────────────────────────
-function RegistrationsTab({ eventId, eventSlug, token, router }: any) {
+function RegistrationsTab({ eventId, eventSlug, token, router, showToast }: any) {
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -657,8 +702,8 @@ function RegistrationsTab({ eventId, eventSlug, token, router }: any) {
 
   // Load form config - reload every time registrations tab is opened
   const loadCfg = () => {
-    if (!token || !eventSlug) return;
-    fetchEvent(eventSlug).then((r: any) => {
+    if (!token) return; const slug = eventSlug || 's3-summit-2026';
+    fetchEvent(slug).then((r: any) => {
       if (r.data?.form_config) {
         try { setCfg(JSON.parse(r.data.form_config)); } catch { setCfg(null); }
       }
@@ -701,24 +746,35 @@ function RegistrationsTab({ eventId, eventSlug, token, router }: any) {
       await updateRegistration(eventId, id, { status }, token);
       clearApiCacheFor(`/api/events/${eventId}/registrations`);
 
-      // When marked as paid → auto-create a payment record in payment_orders
+      // When marked as paid → ask for amount then create payment record
       if (status === 'paid') {
         const reg = registrations.find(r => r.id === id) || selected;
         if (reg) {
-          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'}/api/events/${eventId}/payments/orders`, {
+          const amountStr = window.prompt(
+            `أدخل المبلغ المدفوع بالـ USD لـ ${reg.full_name || reg.name || ''}:`,
+            '0'
+          );
+          const amount = amountStr !== null ? (parseFloat(amountStr) || 0) : 0;
+
+          const API = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
+          const res = await fetch(`${API}/api/events/${eventId}/payments/orders`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({
               registration_id: id,
-              amount: 0,               // Admin can update actual amount in payments tab
+              amount,
               currency: 'USD',
               status: 'paid',
               customer_name: reg.full_name || reg.name || '',
               customer_email: reg.email || '',
               customer_phone: reg.phone || '',
-              notes: `تأكيد دفع يدوي — ${reg.reg_type || reg.registration_type || 'عام'}`,
+              notes: `تأكيد دفع يدوي — ${reg.reg_type || 'عام'}`,
             }),
-          }).catch(() => {}); // Non-blocking
+          });
+          const result = await res.json().catch(() => null);
+          if (result?.success) {
+            showToast(`✅ تم تسجيل الدفع ($${amount}) في تبويب المدفوعات`);
+          }
         }
       }
     } catch (e: any) {
@@ -1174,8 +1230,8 @@ function VideoTab({ eventId, eventSlug, token, save, saving }: any) {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    if (!token || !eventSlug) return;
-    fetchEvent(eventSlug)
+    if (!token) return; const slug = eventSlug || 's3-summit-2026';
+    fetchEvent(slug)
       .then((res: any) => {
         const ev = res?.data;
         if (ev) {
@@ -1546,8 +1602,8 @@ function FormConfigTab({ eventId, eventSlug, token, save, saving }: any) {
   const [newFieldOptions, setNewFieldOptions] = useState<Record<number,string>>({});
 
   useEffect(() => {
-    if (!token || !eventSlug) return;
-    fetchEvent(eventSlug).then((r: any) => {
+    if (!token) return; const slug = eventSlug || 's3-summit-2026';
+    fetchEvent(slug).then((r: any) => {
       if (r.data?.form_config) {
         try { setCfg({ ...DEFAULT_CFG, ...JSON.parse(r.data.form_config) }); } catch {}
       }
@@ -1826,8 +1882,8 @@ function SiteConfigTab({ eventId, eventSlug, token, save, saving }: any) {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    if (!token || !eventSlug) return;
-    fetchEvent(eventSlug).then((r: any) => {
+    if (!token) return; const slug = eventSlug || 's3-summit-2026';
+    fetchEvent(slug).then((r: any) => {
       if (r.data?.site_config) {
         try { setSc(normalizeSiteConfig(JSON.parse(r.data.site_config))); }
         catch {}

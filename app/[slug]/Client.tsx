@@ -9,7 +9,7 @@ import TicketsSection from '../components/TicketsSection';
 import SupportWidget from '../components/SupportWidget';
 import RegistrationSuccessMessage from '../components/RegistrationSuccessMessage';
 
-const DEFAULT_EVENT_SLUG = process.env.NEXT_PUBLIC_EVENT_SLUG || '';
+const DEFAULT_EVENT_SLUG = ''; // No hardcoded fallback — slug MUST come from URL params
 
 // ─── Event Navigation Bar ──────────────────────────────────────────────────────
 function EventNavBar({ eventId, primaryColor, archiveLabel, showArchive }: { eventId: number; primaryColor: string; archiveLabel?: string; showArchive?: boolean }) {
@@ -568,17 +568,33 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
 
     (async () => {
       try {
-        // Use the slug prop first; fallback to env var only if BOTH defined
-        const effectiveSlug = (slug && slug.trim()) || (DEFAULT_EVENT_SLUG && DEFAULT_EVENT_SLUG.trim()) || null;
+        // slug prop must come from the URL via [slug]/page.tsx
+        const effectiveSlug = slug && slug.trim() ? slug.trim() : null;
         if (!effectiveSlug) {
-          // No slug available — stop loading and show nothing
           setLoading(false);
           return;
         }
-        // Always bypass cache so switching events gets fresh data
-        const eventRes = await fetchEvent(effectiveSlug, true);
-        const ev: Event = eventRes.data;
+
+        // Fetch event data — simple GET, no Content-Type header needed
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
+        const evResponse = await fetch(`${API_URL}/api/events/${effectiveSlug}`);
+        if (!evResponse.ok) {
+          console.error('Event fetch failed:', evResponse.status, evResponse.statusText);
+          setLoading(false);
+          return;
+        }
+        const evJson = await evResponse.json();
+
+        if (!evJson?.success || !evJson?.data) {
+          console.error('Event not found or invalid response:', evJson);
+          // Event not found — show error state
+          setLoading(false);
+          return;
+        }
+
+        const ev: Event = evJson.data;
         setEvent(ev);
+
         // Parse form_config
         if (ev.form_config) {
           try { setCfg(JSON.parse(ev.form_config)); } catch {}
@@ -589,21 +605,36 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
         }
         // Update browser title dynamically
         document.title = `${ev.name_ar || ev.name} – ${ev.tagline_ar || ev.tagline || ''}`;
-        const [spRes, agRes, stRes, spnRes, fqRes, venueRes, artRes] = await Promise.all([
-          fetchSpeakers(ev.id), fetchAgenda(ev.id), fetchStats(ev.id), fetchSponsors(ev.id), fetchFaqs(ev.id), fetchVenueGallery(ev.id),
-          fetchArticles(ev.id, 'limit=1&status=published')
+
+        // Fetch all sub-resources in parallel — don't let any single failure block the rest
+        const [spRes, agRes, stRes, spnRes, fqRes, venueRes, artRes] = await Promise.allSettled([
+          fetch(`${API_URL}/api/events/${ev.id}/speakers`).then(r => r.json()),
+          fetch(`${API_URL}/api/events/${ev.id}/agenda`).then(r => r.json()),
+          fetch(`${API_URL}/api/events/${ev.id}/stats`).then(r => r.json()),
+          fetch(`${API_URL}/api/events/${ev.id}/sponsors`).then(r => r.json()),
+          fetch(`${API_URL}/api/events/${ev.id}/faqs`).then(r => r.json()),
+          fetch(`${API_URL}/api/events/${ev.id}/venue`).then(r => r.json()),
+          fetch(`${API_URL}/api/events/${ev.id}/articles?limit=1&status=published`).then(r => r.json()),
         ]);
-        setSpeakers(spRes.data || []);
-        setAgenda(agRes.data || []);
-        setStats(stRes.data || null);
-        setSponsors(spnRes.data || []);
-        setFaqs(fqRes.data || []);
-        setVenueGallery(venueRes.data || []);
-        setHasArticles((artRes.data || []).length > 0);
-        // Load footer pages and terms (non-blocking)
-        fetchPages(ev.id, 'footer').then(r => setFooterPages(r.data || [])).catch(() => {});
-        fetchTerms(ev.id).then(r => setTermsData(r.data || null)).catch(() => {});
-      } catch { /* use default demo data */ }
+
+        const val = (r: PromiseSettledResult<any>) => r.status === 'fulfilled' ? r.value : null;
+        setSpeakers(val(spRes)?.data || []);
+        setAgenda(val(agRes)?.data || []);
+        setStats(val(stRes)?.data || null);
+        setSponsors(val(spnRes)?.data || []);
+        setFaqs(val(fqRes)?.data || []);
+        setVenueGallery(val(venueRes)?.data || []);
+        setHasArticles((val(artRes)?.data || []).length > 0);
+
+        // Non-critical data — non-blocking
+        fetch(`${API_URL}/api/events/${ev.id}/pages?location=footer`)
+          .then(r => r.json()).then(d => setFooterPages(d?.data || [])).catch(() => {});
+        fetch(`${API_URL}/api/events/${ev.id}/terms`)
+          .then(r => r.json()).then(d => setTermsData(d?.data || null)).catch(() => {});
+
+      } catch (err) {
+        console.error('Event page fetch error:', err);
+      }
       setLoading(false);
     })();
   }, [slug]); // re-fetch whenever slug changes
@@ -645,6 +676,22 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       <div className="text-center">
         <div className="w-12 h-12 border-2 border-t-transparent rounded-full mx-auto mb-4 animate-spin" style={{ borderColor: primaryColor, borderTopColor: 'transparent' }} />
         <p className="text-[var(--text-muted)]">جار التحميل...</p>
+      </div>
+    </div>
+  );
+
+  // If event failed to load, show error with retry button
+  if (!event) return (
+    <div style={{ minHeight: '100vh', background: '#0d0b1a', display: 'flex', alignItems: 'center', justifyContent: 'center', direction: 'rtl', fontFamily: 'system-ui, sans-serif' }}>
+      <div style={{ textAlign: 'center', padding: '2rem' }}>
+        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
+        <h2 style={{ color: 'white', fontSize: '1.25rem', marginBottom: '0.5rem' }}>تعذّر تحميل بيانات الفعالية</h2>
+        <p style={{ color: '#94a3b8', marginBottom: '1.5rem', fontSize: '0.9rem' }}>تحقق من اتصالك بالإنترنت أو حاول مجدداً</p>
+        <button
+          onClick={() => window.location.reload()}
+          style={{ background: '#6C63FF', color: 'white', border: 'none', borderRadius: '0.5rem', padding: '0.65rem 1.5rem', cursor: 'pointer', fontSize: '0.95rem', fontWeight: 600, marginLeft: '0.75rem' }}
+        >↻ إعادة المحاولة</button>
+        <a href="/" style={{ color: '#94a3b8', fontSize: '0.9rem', display: 'block', marginTop: '1rem' }}>← العودة للرئيسية</a>
       </div>
     </div>
   );

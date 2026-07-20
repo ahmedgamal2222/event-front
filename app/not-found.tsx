@@ -59,7 +59,7 @@ export default function NotFound() {
     );
   }
 
-  if (state === 'event') {
+  if (state === 'event' && slug) {
     // key={slug} forces full remount when navigating between different event slugs
     return <EventLandingClient key={slug} slug={slug} />;
   }

@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build --webpack",
-    "deploy": "npx wrangler pages deploy out",
+    "deploy": "npx wrangler pages deploy out --project-name event-web --commit-dirty=true",
     "start": "next start",
     "lint": "eslint"
   },

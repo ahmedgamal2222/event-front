@@ -17,13 +17,8 @@ export default function HomeClient() {
       .then(r => r.json())
       .then(d => {
         const list = d.success ? (d.data as any[]) : [];
-        if (list.length === 1) {
-          // Single event → redirect directly
-          window.location.replace(`/${list[0].slug}`);
-        } else {
-          setEvents(list);
-          setLoading(false);
-        }
+        setEvents(list);
+        setLoading(false);
       })
       .catch(() => setLoading(false));
   }, []);
