@@ -12,8 +12,8 @@ export async function generateStaticParams() {
       return (data.data as any[]).map((e: any) => ({ slug: e.slug }));
     }
   } catch {}
-  // Fallback to known slug
-  return [{ slug: '' }];
+  // Fallback to known slugs
+  return [{ slug: 's3-summit-2026' }, { slug: 's3-summit2027' }];
 }
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
