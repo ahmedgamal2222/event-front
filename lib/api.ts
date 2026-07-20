@@ -3,7 +3,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.
 
 // Simple in-memory cache
 const cache = new Map<string, { data: any; time: number }>();
-const CACHE_TTL = 60000; // 60 seconds
+const CACHE_TTL = 10000; // 10 seconds — short enough for fresh data
 
 if (typeof window !== 'undefined' && !process.env.NEXT_PUBLIC_API_URL) {
   console.warn('⚠️ NEXT_PUBLIC_API_URL not set, using default API endpoint');
@@ -74,7 +74,7 @@ export function getAuthHeaders(token: string) {
 }
 
 // ── Public helpers ─────────────────────────────────────────────────────────────
-export const fetchEvent     = (slug: string) => apiFetch<any>(`/api/events/${slug}`);
+export const fetchEvent     = (slug: string, bypassCache = false) => apiFetch<any>(`/api/events/${slug}`, undefined, bypassCache);
 export const fetchSpeakers  = (eventId: number) => apiFetch<any>(`/api/events/${eventId}/speakers`);
 export const fetchAgenda    = (eventId: number) => apiFetch<any>(`/api/events/${eventId}/agenda`);
 export const fetchStats     = (eventId: number) => apiFetch<any>(`/api/events/${eventId}/stats`);

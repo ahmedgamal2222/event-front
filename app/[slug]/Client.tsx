@@ -556,9 +556,21 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
   const [activeGalleryIndex, setActiveGalleryIndex] = useState(0);
 
   useEffect(() => {
+    // Reset state when slug changes to avoid showing stale data
+    setEvent(null);
+    setSpeakers([]);
+    setAgenda([]);
+    setStats(null);
+    setSponsors([]);
+    setFaqs([]);
+    setVenueGallery([]);
+    setLoading(true);
+
     (async () => {
       try {
-        const eventRes = await fetchEvent(slug || DEFAULT_EVENT_SLUG);
+        const effectiveSlug = slug || DEFAULT_EVENT_SLUG;
+        // Bypass cache so switching events always gets fresh data
+        const eventRes = await fetchEvent(effectiveSlug, true);
         const ev: Event = eventRes.data;
         setEvent(ev);
         // Parse form_config
@@ -588,9 +600,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       } catch { /* use default demo data */ }
       setLoading(false);
     })();
-  }, []);
-
-  // Show blog in navbar only if there are articles
+  }, [slug]); // re-fetch whenever slug changes
   const [hasArticles, setHasArticles] = useState(false);
 
   const navLinks = [

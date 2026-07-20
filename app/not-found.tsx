@@ -60,8 +60,8 @@ export default function NotFound() {
   }
 
   if (state === 'event') {
-    // Render the full event landing page for this slug
-    return <EventLandingClient slug={slug} />;
+    // key={slug} forces full remount when navigating between different event slugs
+    return <EventLandingClient key={slug} slug={slug} />;
   }
 
   // Proper 404 page
