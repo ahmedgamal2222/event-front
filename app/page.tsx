@@ -1,5 +1,6 @@
-import { redirect } from 'next/navigation';
+// Delegate entirely to a client component so events are fetched fresh on every visit
+import HomeClient from './HomeClient';
 
 export default function Home() {
-  redirect('/s3-summit-2026');
+  return <HomeClient />;
 }

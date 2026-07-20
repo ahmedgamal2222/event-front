@@ -6,7 +6,7 @@
 Create a `.env.local` file in the project root:
 ```
 NEXT_PUBLIC_API_URL=https://event-api.info1703.workers.dev
-NEXT_PUBLIC_EVENT_SLUG=s3-summit-2026
+NEXT_PUBLIC_EVENT_SLUG=
 ```
 
 ### For Cloudflare Pages Production
@@ -20,7 +20,7 @@ NEXT_PUBLIC_EVENT_SLUG=s3-summit-2026
 | Variable Name | Value |
 |---|---|
 | `NEXT_PUBLIC_API_URL` | `https://event-api.info1703.workers.dev` |
-| `NEXT_PUBLIC_EVENT_SLUG` | `s3-summit-2026` |
+| `NEXT_PUBLIC_EVENT_SLUG` |
 
 **Important:** The `NEXT_PUBLIC_` prefix means these variables are exposed to the browser (public).
 

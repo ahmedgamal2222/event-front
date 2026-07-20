@@ -26,6 +26,11 @@ import AdminCampaigns from '../../../app/components/admin/AdminCampaigns';
 import RichEditor from '../../../app/components/admin/RichEditor';
 import AdminCountries from '../../../app/components/admin/AdminCountries';
 import AdminEvents from '../../../app/components/admin/AdminEvents';
+import AdminCRMContacts from '../../../app/components/admin/AdminCRMContacts';
+import AdminCRMRegistrations from '../../../app/components/admin/AdminCRMRegistrations';
+import AdminCRMPayments from '../../../app/components/admin/AdminCRMPayments';
+import AdminCRMTasks from '../../../app/components/admin/AdminCRMTasks';
+import AdminCRMSponsorships from '../../../app/components/admin/AdminCRMSponsorships';
 import type { FormConfig, SiteConfig } from '../../../lib/types';
 
 function getToken() { return typeof window !== 'undefined' ? localStorage.getItem('admin_token') || '' : ''; }
@@ -33,9 +38,11 @@ function getToken() { return typeof window !== 'undefined' ? localStorage.getIte
 const STATUS_STYLES: Record<string, { bg: string; label: string }> = {
   pending:    { bg: '#f59e0b', label: 'قيد الانتظار' },
   approved:   { bg: '#10b981', label: 'مقبول' },
+  paid:       { bg: '#06b6d4', label: 'تم الدفع' },
   rejected:   { bg: '#ef4444', label: 'مرفوض' },
   waitlisted: { bg: '#8b5cf6', label: 'قائمة الانتظار' },
   cancelled:  { bg: '#6b7280', label: 'ملغى' },
+  checked_in: { bg: '#8b5cf6', label: 'حضر فعلاً' },
 };
 const TYPE_LABELS: Record<string, string> = {
   startup: '🚀 ناشئة', general: '👤 عام', investor: '💼 مستثمر',
@@ -45,33 +52,38 @@ const SESSION_TYPES = ['keynote','talk','workshop','panel','networking','break',
 const SPONSOR_TIERS = ['platinum','gold','silver','bronze','media'];
 const TABS = [
   // القسم الرئيسي
-  { key: 'overview',       label: '📊 نظرة عامة',       group: 'رئيسي' },
-  { key: 'events_mgmt',    label: '🗂 الأحداث والأرشيف', group: 'رئيسي' },
+  { key: 'overview',         label: '📊 نظرة عامة',         group: 'رئيسي' },
+  { key: 'events_mgmt',      label: '🗂 الأحداث والأرشيف',   group: 'رئيسي' },
+  { key: 'profile',          label: '👤 إعدادات الأدمن',     group: 'رئيسي' },
+  // إدارة التسجيلات والمبيعات (موحّد)
+  { key: 'registrations',    label: '📋 التسجيلات',          group: 'المبيعات' },
+  { key: 'payments',         label: '💳 المدفوعات',          group: 'المبيعات' },
+  { key: 'tickets',          label: '🎫 التذاكر',            group: 'المبيعات' },
+  // CRM المتكامل
+  { key: 'crm_contacts',     label: '👥 جهات الاتصال',       group: 'CRM' },
+  { key: 'crm_tasks',        label: '✅ المهام والمتابعة',   group: 'CRM' },
+  { key: 'crm_escalated',    label: '🔺 المصعّدات',          group: 'CRM' },
+  { key: 'crm_sponsorships', label: '🤝 خط الرعايات',        group: 'CRM' },
   // إدارة الحدث
-  { key: 'event',          label: '⚙️ معلومات الحدث',   group: 'الحدث' },
-  { key: 'video',          label: '🎬 الفيديو التعريفي', group: 'الحدث' },
-  { key: 'siteconfig',     label: '🎨 محتوى الصفحة',    group: 'الحدث' },
-  { key: 'formconfig',     label: '📝 فورم التسجيل',    group: 'الحدث' },
+  { key: 'event',            label: '⚙️ معلومات الحدث',     group: 'الحدث' },
+  { key: 'video',            label: '🎬 الفيديو التعريفي',   group: 'الحدث' },
+  { key: 'siteconfig',       label: '🎨 محتوى الصفحة',      group: 'الحدث' },
+  { key: 'formconfig',       label: '📝 فورم التسجيل',      group: 'الحدث' },
+  { key: 'countries',        label: '🌍 قائمة الدول',        group: 'الحدث' },
   // إدارة المحتوى
-  { key: 'agenda',         label: '📅 البرنامج',        group: 'المحتوى' },
-  { key: 'speakers',       label: '🎙️ المتحدثون',       group: 'المحتوى' },
-  { key: 'venue',          label: '📸 معرض الصور',       group: 'المحتوى' },
-  { key: 'sponsors',       label: '🏅 الرعاة',          group: 'المحتوى' },
-  { key: 'faqs',           label: '❓ الأسئلة الشائعة',  group: 'المحتوى' },
-  // إدارة التسجيلات والمبيعات
-  { key: 'registrations',  label: '📋 التسجيلات',      group: 'المبيعات' },
-  { key: 'tickets',        label: '🎫 التذاكر',         group: 'المبيعات' },
+  { key: 'agenda',           label: '📅 البرنامج',           group: 'المحتوى' },
+  { key: 'speakers',         label: '🎙️ المتحدثون',          group: 'المحتوى' },
+  { key: 'venue',            label: '📸 معرض الصور',          group: 'المحتوى' },
+  { key: 'sponsors',         label: '🏅 الرعاة (الموقع)',    group: 'المحتوى' },
+  { key: 'faqs',             label: '❓ الأسئلة الشائعة',    group: 'المحتوى' },
+  { key: 'articles',         label: '📝 المقالات',            group: 'المحتوى' },
+  { key: 'pages',            label: '📄 الصفحات الثابتة',    group: 'المحتوى' },
   // الدعم والتتبع
-  { key: 'support',        label: '💬 الدعم الفني',     group: 'الدعم' },
-  { key: 'pixels',         label: '📊 البكسل والتتبع',  group: 'الدعم' },
-  { key: 'email',          label: '📧 إعدادات البريد',  group: 'الدعم' },
-  { key: 'articles',       label: '📝 المقالات',        group: 'المحتوى' },
-  { key: 'terms',          label: '⚖️ الشروط والأحكام', group: 'الدعم' },
-  { key: 'pages',          label: '📄 الصفحات الثابتة', group: 'المحتوى' },
-  { key: 'profile',        label: '👤 إعدادات الأدمن',  group: 'رئيسي' },
-  { key: 'payments',       label: '💳 المدفوعات',       group: 'المبيعات' },
-  { key: 'campaigns',      label: '📧 الحملات البريدية', group: 'الدعم' },
-  { key: 'countries',      label: '🌍 قائمة الدول',     group: 'الحدث' },
+  { key: 'support',          label: '💬 الدعم الفني',        group: 'الدعم' },
+  { key: 'pixels',           label: '📊 البكسل والتتبع',     group: 'الدعم' },
+  { key: 'email',            label: '📧 إعدادات البريد',     group: 'الدعم' },
+  { key: 'terms',            label: '⚖️ الشروط والأحكام',   group: 'الدعم' },
+  { key: 'campaigns',        label: '📧 الحملات البريدية',   group: 'الدعم' },
 ] as const;
 type Tab = typeof TABS[number]['key'];
 
@@ -223,15 +235,35 @@ function MediaUploadField({ mediaType, onUploaded, token }: { mediaType: 'image'
 export default function AdminDashboard() {
   const router = useRouter();
   const [token, setToken] = useState('');
-  const [eventId] = useState(1);
+  const [events, setEvents] = useState<any[]>([]);
+  const [eventId, setEventId] = useState(1);
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState('');
+
+  // Derived: slug of the currently selected event
+  const eventSlug = events.find(e => e.id === eventId)?.slug ;
+  const eventLabel = events.find(e => e.id === eventId)?.name_ar || events.find(e => e.id === eventId)?.name || '';
+
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
 
   useEffect(() => {
     const t = getToken();
     if (!t) { router.replace('/admin'); return; }
     setToken(t);
+    // Load all events for selector
+    fetch(`${API_BASE}/api/events/all`, { headers: { Authorization: `Bearer ${t}` } })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success && d.data?.length > 0) {
+          setEvents(d.data);
+          // Default to first published/draft event (not archived)
+          const active = d.data.find((e: any) => ['published','draft','open','live'].includes(e.status));
+          if (active) setEventId(active.id);
+          else setEventId(d.data[0].id);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
@@ -256,7 +288,7 @@ export default function AdminDashboard() {
     return acc;
   }, {} as Record<string, any[]>);
 
-  const tabGroups = ['رئيسي', 'الحدث', 'المحتوى', 'المبيعات', 'الدعم'] as const;
+  const tabGroups = ['رئيسي', 'المبيعات', 'CRM', 'الحدث', 'المحتوى', 'الدعم'] as const;
 
   return (
     <div style={{ minHeight: '100vh', background: '#0d0b1a', color: '#e2e8f0', fontFamily: 'Cairo,sans-serif', direction: 'rtl', display: 'flex', flexDirection: 'row' }}>
@@ -265,9 +297,58 @@ export default function AdminDashboard() {
         {/* Sidebar Header */}
         <div style={{ padding: '1.25rem', borderBottom: '1px solid rgba(108,99,255,0.15)' }}>
           <h2 style={{ fontWeight: 900, fontSize: '1.1rem', margin: 0 }}>
-            <span style={{ color: '#6C63FF' }}>S3</span> Admin
+            <span style={{ color: '#6C63FF' }}>⚙️</span> Admin Panel
           </h2>
-          <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: '0.5rem 0 0 0' }}>S3 Summit 2026</p>
+          {/* Event Selector — shows always so admin knows which event they're editing */}
+          {events.length > 0 && (
+            <div style={{ marginTop: '0.75rem' }}>
+              <label style={{ fontSize: '0.65rem', color: '#6b7280', display: 'block', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>🗂 الحدث النشط</label>
+              {events.length === 1 ? (
+                <div style={{ background: 'rgba(108,99,255,0.1)', border: '1px solid rgba(108,99,255,0.25)', borderRadius: '0.5rem', padding: '0.5rem 0.75rem', color: 'white', fontSize: '0.85rem' }}>
+                  {events[0].name_ar || events[0].name}
+                  <span style={{ marginRight: '0.4rem', fontSize: '0.65rem', color: events[0].status === 'published' ? '#34d399' : '#94a3b8' }}>
+                    ● {events[0].status === 'published' ? 'منشور' : events[0].status === 'draft' ? 'مسودة' : events[0].status}
+                  </span>
+                </div>
+              ) : (
+                <select
+                  value={eventId}
+                  onChange={e => setEventId(Number(e.target.value))}
+                  style={{
+                    width: '100%',
+                    background: 'rgba(13,11,26,0.95)',
+                    border: '1px solid rgba(108,99,255,0.4)',
+                    borderRadius: '0.5rem',
+                    padding: '0.55rem 0.75rem',
+                    color: 'white',
+                    fontSize: '0.85rem',
+                    outline: 'none',
+                    cursor: 'pointer',
+                    colorScheme: 'dark',
+                    boxShadow: '0 2px 8px rgba(108,99,255,0.2)',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onFocus={e => (e.target.style.borderColor = '#6C63FF')}
+                  onBlur={e => (e.target.style.borderColor = 'rgba(108,99,255,0.4)')}
+                >
+                  {events.map(ev => {
+                    const statusIcon = ev.status === 'published' ? '🟢' : ev.status === 'archived' ? '🔴' : '🟡';
+                    const statusLabel = ev.status === 'archived' ? ' (أرشيف)' : ev.status === 'draft' ? ' (مسودة)' : '';
+                    return (
+                      <option key={ev.id} value={ev.id}>
+                        {statusIcon} {ev.name_ar || ev.name}{statusLabel}
+                      </option>
+                    );
+                  })}
+                </select>
+              )}
+              {events.length > 1 && (
+                <div style={{ marginTop: '0.4rem', fontSize: '0.7rem', color: '#6b7280', textAlign: 'center' }}>
+                  {events.length} أحداث — كل التبويبات تعمل على الحدث المختار
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Menu Groups */}
@@ -318,7 +399,7 @@ export default function AdminDashboard() {
 
         {/* Sidebar Footer */}
         <div style={{ padding: '1rem', borderTop: '1px solid rgba(108,99,255,0.15)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <a href="/s3-summit-2026" target="_blank" rel="noopener noreferrer"
+          <a href={`/${eventSlug}`} target="_blank" rel="noopener noreferrer"
             style={{ fontSize: '0.85rem', color: '#3b82f6', textDecoration: 'none', padding: '0.5rem', textAlign: 'center', background: 'rgba(59,130,246,0.1)', borderRadius: '0.4rem', border: '1px solid rgba(59,130,246,0.2)', cursor: 'pointer', transition: 'all 0.2s' }}
             onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(59,130,246,0.2)')}
             onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(59,130,246,0.1)')}
@@ -339,39 +420,51 @@ export default function AdminDashboard() {
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         {/* Top Header */}
         <header style={{ background: 'rgba(19,16,42,0.9)', borderBottom: '1px solid rgba(108,99,255,0.15)', padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 30 }}>
-          <h1 style={{ fontSize: '1.3rem', fontWeight: 700, margin: 0, color: 'white' }}>
-            {TABS.find(t => t.key === activeTab)?.label || 'Dashboard'}
-          </h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <a href="/s3-summit-2026" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.85rem', color: '#94a3b8', textDecoration: 'none' }}>عرض ↗</a>
+            <h1 style={{ fontSize: '1.3rem', fontWeight: 700, margin: 0, color: 'white' }}>
+              {TABS.find(t => t.key === activeTab)?.label || 'Dashboard'}
+            </h1>
+            {events.length > 0 && (
+              <span style={{ background: 'rgba(108,99,255,0.15)', color: '#818cf8', fontSize: '0.75rem', padding: '3px 10px', borderRadius: '2rem', fontWeight: 600 }}>
+                {eventLabel}
+              </span>
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <a href={`/${eventSlug}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.85rem', color: '#94a3b8', textDecoration: 'none' }}>عرض ↗</a>
           </div>
         </header>
 
         {/* Content Area */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '2rem' }}>
-          {activeTab === 'overview'      && <OverviewTab eventId={eventId} token={token} />}
-          {activeTab === 'event'         && <EventTab eventId={eventId} token={token} save={save} saving={saving} />}
-          {activeTab === 'video'         && <VideoTab eventId={eventId} token={token} save={save} saving={saving} />}
-          {activeTab === 'registrations' && <RegistrationsTab eventId={eventId} token={token} router={router} />}
-          {activeTab === 'speakers'      && <SpeakersTab eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
-          {activeTab === 'venue'         && <VenueGalleryTab eventId={eventId} token={token} showToast={showToast} />}
-          {activeTab === 'agenda'        && <AgendaTab eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
-          {activeTab === 'sponsors'      && <SponsorsTab eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
-          {activeTab === 'faqs'          && <FaqsTab eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
-          {activeTab === 'formconfig'    && <FormConfigTab eventId={eventId} token={token} save={save} saving={saving} />}
-          {activeTab === 'siteconfig'    && <SiteConfigTab eventId={eventId} token={token} save={save} saving={saving} />}
-          {activeTab === 'tickets'       && <AdminTickets eventId={eventId} token={token} />}
-          {activeTab === 'support'       && <AdminSupport eventId={eventId} token={token} />}
-          {activeTab === 'pixels'        && <AdminPixels eventId={eventId} token={token} />}
-          {activeTab === 'email'         && <AdminEmailSettings eventId={eventId} token={token} />}
-          {activeTab === 'articles'      && <ArticlesTab eventId={eventId} token={token} showToast={showToast} />}
-          {activeTab === 'terms'         && <AdminTerms eventId={eventId} token={token} />}
-          {activeTab === 'pages'         && <AdminPages eventId={eventId} token={token} />}
+          {activeTab === 'overview'      && <OverviewTab key={eventId} eventId={eventId} token={token} />}
+          {activeTab === 'event'         && <EventTab key={eventId} eventId={eventId} eventSlug={eventSlug} token={token} save={save} saving={saving} />}
+          {activeTab === 'video'         && <VideoTab key={eventId} eventId={eventId} eventSlug={eventSlug} token={token} save={save} saving={saving} />}
+          {activeTab === 'registrations' && <RegistrationsTab key={eventId} eventId={eventId} eventSlug={eventSlug} token={token} router={router} />}
+          {activeTab === 'speakers'      && <SpeakersTab key={eventId} eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
+          {activeTab === 'venue'         && <VenueGalleryTab key={eventId} eventId={eventId} token={token} showToast={showToast} />}
+          {activeTab === 'agenda'        && <AgendaTab key={eventId} eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
+          {activeTab === 'sponsors'      && <SponsorsTab key={eventId} eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
+          {activeTab === 'faqs'          && <FaqsTab key={eventId} eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
+          {activeTab === 'formconfig'    && <FormConfigTab key={eventId} eventId={eventId} eventSlug={eventSlug} token={token} save={save} saving={saving} />}
+          {activeTab === 'siteconfig'    && <SiteConfigTab key={eventId} eventId={eventId} eventSlug={eventSlug} token={token} save={save} saving={saving} />}
+          {activeTab === 'tickets'       && <AdminTickets key={eventId} eventId={eventId} token={token} />}
+          {activeTab === 'support'       && <AdminSupport key={eventId} eventId={eventId} token={token} />}
+          {activeTab === 'pixels'        && <AdminPixels key={eventId} eventId={eventId} token={token} />}
+          {activeTab === 'email'         && <AdminEmailSettings key={eventId} eventId={eventId} token={token} />}
+          {activeTab === 'articles'      && <ArticlesTab key={eventId} eventId={eventId} token={token} showToast={showToast} />}
+          {activeTab === 'terms'         && <AdminTerms key={eventId} eventId={eventId} token={token} />}
+          {activeTab === 'pages'         && <AdminPages key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'profile'       && <ProfileTab token={token} showToast={showToast} />}
-          {activeTab === 'payments'      && <AdminPayments eventId={eventId} token={token} />}
-          {activeTab === 'campaigns'     && <AdminCampaigns eventId={eventId} token={token} />}
-          {activeTab === 'countries'     && <AdminCountries eventId={eventId} token={token} />}
+          {activeTab === 'payments'      && <AdminPayments key={eventId} eventId={eventId} token={token} />}
+          {activeTab === 'campaigns'     && <AdminCampaigns key={eventId} eventId={eventId} token={token} />}
+          {activeTab === 'countries'     && <AdminCountries key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'events_mgmt'   && <AdminEvents token={token} />}
+          {/* CRM Tabs */}
+          {activeTab === 'crm_contacts'      && <AdminCRMContacts key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} />}
+          {activeTab === 'crm_tasks'         && <AdminCRMTasks key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} />}
+          {activeTab === 'crm_escalated'     && <AdminCRMTasks key={`esc-${eventId}`} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} mode="escalated" />}
+          {activeTab === 'crm_sponsorships'  && <AdminCRMSponsorships key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} />}
         </div>
 
         {/* Toast Notification */}
@@ -392,6 +485,7 @@ function OverviewTab({ eventId, token }: { eventId: number; token: string }) {
   const cards = [
     { v: stats?.total_registrations || 0, l: 'إجمالي التسجيلات', c: '#6C63FF', i: '📋' },
     { v: stats?.approved_count || 0,      l: 'المقبولون',          c: '#10b981', i: '✅' },
+    { v: stats?.paid_count || 0,          l: 'تم الدفع',           c: '#06b6d4', i: '💳' },
     { v: stats?.pending_count || 0,       l: 'قيد الانتظار',       c: '#f59e0b', i: '⏳' },
     { v: stats?.startup_count || 0,       l: 'شركات ناشئة',        c: '#8b5cf6', i: '🚀' },
     { v: stats?.investor_count || 0,      l: 'مستثمرون',           c: '#0ea5e9', i: '💼' },
@@ -415,12 +509,12 @@ function OverviewTab({ eventId, token }: { eventId: number; token: string }) {
 }
 
 // ── Event Info ────────────────────────────────────────────────────────────────
-function EventTab({ eventId, token, save, saving }: any) {
+function EventTab({ eventId, eventSlug, token, save, saving }: any) {
   const [form, setForm] = useState<any>({});
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
-    if (!token) return;
-    fetchEvent('s3-summit-2026').then((r: any) => { setForm(r.data); setLoaded(true); }).catch(() => {});
+    if (!token || !eventSlug) return;
+    fetchEvent(eventSlug).then((r: any) => { setForm(r.data); setLoaded(true); }).catch(() => {});
   }, [token]);
   if (!loaded) return <p style={{ color: '#94a3b8' }}>جار التحميل...</p>;
   const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
@@ -463,7 +557,12 @@ function EventTab({ eventId, token, save, saving }: any) {
             </select>
           </div>
           <div style={{ alignSelf: 'flex-end' }}>
-            <SaveBtn loading={saving} onClick={() => save(() => updateEvent(eventId, form, token))} />
+            <SaveBtn loading={saving} onClick={() => save(async () => {
+              await updateEvent(eventId, form, token);
+              // Clear client cache for this event's slug so next load gets fresh data
+              clearApiCacheFor(`/api/events/${eventSlug}`);
+              clearApiCacheFor('/api/events');
+            })} />
           </div>
         </div>
       </div>
@@ -526,7 +625,7 @@ function EventTab({ eventId, token, save, saving }: any) {
 
 // ── Registrations ─────────────────────────────────────────────────────────────
 // ── Registrations ─────────────────────────────────────────────────────────────
-function RegistrationsTab({ eventId, token, router }: any) {
+function RegistrationsTab({ eventId, eventSlug, token, router }: any) {
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -540,8 +639,8 @@ function RegistrationsTab({ eventId, token, router }: any) {
 
   // Load form config - reload every time registrations tab is opened
   const loadCfg = () => {
-    if (!token) return;
-    fetchEvent('s3-summit-2026').then((r: any) => {
+    if (!token || !eventSlug) return;
+    fetchEvent(eventSlug).then((r: any) => {
       if (r.data?.form_config) {
         try { setCfg(JSON.parse(r.data.form_config)); } catch { setCfg(null); }
       }
@@ -550,7 +649,7 @@ function RegistrationsTab({ eventId, token, router }: any) {
 
   useEffect(() => {
     loadCfg();
-  }, [token]);
+  }, [token, eventSlug]);
 
   // Get available types from form config
   const availableTypes = cfg?.enabled_types || ['startup', 'general'];
@@ -582,10 +681,29 @@ function RegistrationsTab({ eventId, token, router }: any) {
     if (selected?.id === id) setSelected((s: any) => s ? { ...s, status } : null);
     try {
       await updateRegistration(eventId, id, { status }, token);
-      // Clear cache so next load gets fresh data
       clearApiCacheFor(`/api/events/${eventId}/registrations`);
+
+      // When marked as paid → auto-create a payment record in payment_orders
+      if (status === 'paid') {
+        const reg = registrations.find(r => r.id === id) || selected;
+        if (reg) {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'}/api/events/${eventId}/payments/orders`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({
+              registration_id: id,
+              amount: 0,               // Admin can update actual amount in payments tab
+              currency: 'USD',
+              status: 'paid',
+              customer_name: reg.full_name || reg.name || '',
+              customer_email: reg.email || '',
+              customer_phone: reg.phone || '',
+              notes: `تأكيد دفع يدوي — ${reg.reg_type || reg.registration_type || 'عام'}`,
+            }),
+          }).catch(() => {}); // Non-blocking
+        }
+      }
     } catch (e: any) {
-      // Revert on error
       load();
       alert('❌ خطأ في تحديث الحالة: ' + e.message);
     }
@@ -733,6 +851,7 @@ function RegistrationsTab({ eventId, token, router }: any) {
           </div>
           <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
             <button onClick={() => changeStatus(selected.id, 'approved')} style={{ flex: 1, ...S.btn('#10b98130'), color: '#10b981', border: '1px solid #10b98140' }}>✅ قبول</button>
+            <button onClick={() => changeStatus(selected.id, 'paid')} style={{ flex: 1, ...S.btn('#06b6d430'), color: '#06b6d4', border: '1px solid #06b6d440' }}>💳 تم الدفع</button>
             <button onClick={() => changeStatus(selected.id, 'rejected')} style={{ flex: 1, ...S.btn('#ef444420'), color: '#ef4444', border: '1px solid #ef444440' }}>❌ رفض</button>
           </div>
           <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
@@ -1032,17 +1151,13 @@ function AgendaTab({ eventId, token, save, saving, showToast }: any) {
 }
 
 // ── Video Tab ─────────────────────────────────────────────────────────────────
-function VideoTab({ eventId, token, save, saving }: any) {
+function VideoTab({ eventId, eventSlug, token, save, saving }: any) {
   const [form, setForm] = useState({ intro_video_url: '', intro_video_thumbnail: '', show_intro_video: false });
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    if (!token) return;
-    // Fetch the event by ID for the admin (use eventId directly)
-    fetch(`https://event-api.info1703.workers.dev/api/events/${eventId}`, {
-      headers: { 'Authorization': `Bearer ${token}`, 'Cache-Control': 'no-store' }
-    })
-      .then(r => r.json())
+    if (!token || !eventSlug) return;
+    fetchEvent(eventSlug)
       .then((res: any) => {
         const ev = res?.data;
         if (ev) {
@@ -1055,7 +1170,7 @@ function VideoTab({ eventId, token, save, saving }: any) {
         setLoaded(true);
       })
       .catch(() => setLoaded(true));
-  }, [token, eventId]);
+  }, [token, eventSlug]);
 
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }));
 
@@ -1404,7 +1519,7 @@ const DEFAULT_CFG: FormConfig = {
   ],
 };
 
-function FormConfigTab({ eventId, token, save, saving }: any) {
+function FormConfigTab({ eventId, eventSlug, token, save, saving }: any) {
   const [cfg, setCfg] = useState<FormConfig>({ ...DEFAULT_CFG });
   const [loaded, setLoaded] = useState(false);
   const [newCity, setNewCity] = useState('');
@@ -1413,14 +1528,14 @@ function FormConfigTab({ eventId, token, save, saving }: any) {
   const [newFieldOptions, setNewFieldOptions] = useState<Record<number,string>>({});
 
   useEffect(() => {
-    if (!token) return;
-    fetchEvent('s3-summit-2026').then((r: any) => {
+    if (!token || !eventSlug) return;
+    fetchEvent(eventSlug).then((r: any) => {
       if (r.data?.form_config) {
         try { setCfg({ ...DEFAULT_CFG, ...JSON.parse(r.data.form_config) }); } catch {}
       }
       setLoaded(true);
     }).catch(() => setLoaded(true));
-  }, [token]);
+  }, [token, eventSlug]);
 
   const set = (k: keyof FormConfig, v: any) => setCfg(f => ({ ...f, [k]: v }));
   const setLabel = (type: string, v: string) => setCfg(f => ({ ...f, type_labels: { ...f.type_labels, [type]: v } }));
@@ -1452,7 +1567,11 @@ function FormConfigTab({ eventId, token, save, saving }: any) {
   const addExtraField = () => setCfg(f => ({ ...f, extra_fields: [...(f.extra_fields||[]), { key: `field_${Date.now()}`, label: 'حقل جديد', type: 'text' as const, placeholder: '', required: false, for_types: ['general'] }] }));
   const removeExtraField = (i: number) => setCfg(f => ({ ...f, extra_fields: (f.extra_fields||[]).filter((_, idx) => idx !== i) }));
 
-  const saveAll = () => save(async () => { await updateEvent(eventId, { form_config: cfg }, token); });
+  const saveAll = () => save(async () => {
+    await updateEvent(eventId, { form_config: cfg }, token);
+    clearApiCacheFor(`/api/events/${eventSlug}`);
+    clearApiCacheFor('/api/events');
+  });
 
   if (!loaded) return <p style={{ color: '#94a3b8' }}>جار التحميل...</p>;
 
@@ -1684,20 +1803,20 @@ function normalizeSiteConfig(raw: any): SiteConfig {
   };
 }
 
-function SiteConfigTab({ eventId, token, save, saving }: any) {
+function SiteConfigTab({ eventId, eventSlug, token, save, saving }: any) {
   const [sc, setSc] = useState<SiteConfig>(cloneDefaultSiteConfig());
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    if (!token) return;
-    fetchEvent('s3-summit-2026').then((r: any) => {
+    if (!token || !eventSlug) return;
+    fetchEvent(eventSlug).then((r: any) => {
       if (r.data?.site_config) {
         try { setSc(normalizeSiteConfig(JSON.parse(r.data.site_config))); }
         catch {}
       }
       setLoaded(true);
     }).catch(() => setLoaded(true));
-  }, [token]);
+  }, [token, eventSlug]);
 
   const set = (k: keyof SiteConfig, v: any) => setSc(f => ({ ...f, [k]: v }));
   const setStat = (i: number, k: string, v: any) => setSc(f => ({ ...f, stats: f.stats.map((s, idx) => idx === i ? { ...s, [k]: v } : s) }));
@@ -1706,7 +1825,11 @@ function SiteConfigTab({ eventId, token, save, saving }: any) {
   const removeCard = (i: number) => setSc(f => ({ ...f, about_cards: f.about_cards.filter((_, idx) => idx !== i) }));
   const addStat = () => setSc(f => ({ ...f, stats: [...f.stats, { label: 'إحصاء جديد', field: 'total_registrations', fallback: 0 }] }));
   const removeStat = (i: number) => setSc(f => ({ ...f, stats: f.stats.filter((_, idx) => idx !== i) }));
-  const saveAll = () => save(async () => { await updateEvent(eventId, { site_config: sc }, token); });
+  const saveAll = () => save(async () => {
+    await updateEvent(eventId, { site_config: sc }, token);
+    clearApiCacheFor(`/api/events/${eventSlug}`);
+    clearApiCacheFor('/api/events');
+  });
 
   if (!loaded) return <p style={{ color: '#94a3b8' }}>جار التحميل...</p>;
 

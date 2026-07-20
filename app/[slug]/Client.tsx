@@ -9,7 +9,7 @@ import TicketsSection from '../components/TicketsSection';
 import SupportWidget from '../components/SupportWidget';
 import RegistrationSuccessMessage from '../components/RegistrationSuccessMessage';
 
-const API_EVENT_SLUG = process.env.NEXT_PUBLIC_EVENT_SLUG || 's3-summit-2026';
+const DEFAULT_EVENT_SLUG = process.env.NEXT_PUBLIC_EVENT_SLUG;
 
 // ─── Event Navigation Bar ──────────────────────────────────────────────────────
 function EventNavBar({ eventId, primaryColor, archiveLabel, showArchive }: { eventId: number; primaryColor: string; archiveLabel?: string; showArchive?: boolean }) {
@@ -455,7 +455,7 @@ function RegistrationForm({ event, onClose, cfg, initialTab }: { event: Event; o
   );
 }
 
-export default function EventLandingClient() {
+export default function EventLandingClient({ slug }: { slug?: string } = {}) {
   const [event, setEvent] = useState<Event | null>(null);
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
   const [agenda, setAgenda] = useState<AgendaDay[]>([]);
@@ -558,7 +558,7 @@ export default function EventLandingClient() {
   useEffect(() => {
     (async () => {
       try {
-        const eventRes = await fetchEvent(API_EVENT_SLUG);
+        const eventRes = await fetchEvent(slug || DEFAULT_EVENT_SLUG);
         const ev: Event = eventRes.data;
         setEvent(ev);
         // Parse form_config

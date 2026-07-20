@@ -114,15 +114,25 @@ export default function AdminPayments({ eventId, token }: { eventId: number; tok
     } catch (e: any) { showMsg(e.message, true); } finally { setLoading(false); }
   };
 
-  const updateOrderStatus = async (orderId: number, status: string) => {
+  const updateOrderStatus = async (orderId: number, status: string, amount?: number) => {
     try {
+      const body: any = { status };
+      if (amount !== undefined) body.amount = amount;
       await fetch(`${API_BASE}/api/events/${eventId}/payments/orders/${orderId}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify(body),
       });
       loadOrders();
-      showMsg(status === 'paid' ? '✅ تم تأكيد الدفع — ستصل التذكرة للبريد تلقائياً' : '✅ تم التحديث');
+      showMsg(status === 'paid' ? '✅ تم تأكيد الدفع' : '✅ تم التحديث');
     } catch (e: any) { showMsg(e.message, true); }
+  };
+
+  const updateOrderAmount = async (orderId: number, currentAmount: number) => {
+    const input = prompt('أدخل المبلغ المدفوع بالـ USD:', String(currentAmount));
+    if (input === null) return;
+    const amount = parseFloat(input);
+    if (isNaN(amount) || amount < 0) return alert('مبلغ غير صالح');
+    await updateOrderStatus(orderId, 'paid', amount);
   };
 
   const resendTicket = async (orderId: number) => {
@@ -352,19 +362,26 @@ export default function AdminPayments({ eventId, token }: { eventId: number; tok
                 return (
                   <div key={order.id} style={{ ...S.card, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
                     <div style={{ minWidth: 200 }}>
-                      <div style={{ fontWeight: 700, color: 'white', fontSize: '0.92rem' }}>{order.customer_name}</div>
-                      <div style={{ color: '#94a3b8', fontSize: '0.78rem' }}>{order.customer_email}</div>
+                      <div style={{ fontWeight: 700, color: 'white', fontSize: '0.92rem' }}>{order.customer_name || order.customer_name_reg || '—'}</div>
+                      <div style={{ color: '#94a3b8', fontSize: '0.78rem' }}>{order.customer_email || order.customer_email_reg || ''}</div>
                       <div style={{ fontFamily: 'monospace', color: '#6C63FF', fontSize: '0.72rem', marginTop: 4 }}>{order.order_ref}</div>
+                      {order.notes && <div style={{ color: '#64748b', fontSize: '0.7rem', marginTop: 2 }}>📝 {order.notes}</div>}
                       {order.paid_at && <div style={{ color: '#64748b', fontSize: '0.7rem' }}>دفع: {new Date(order.paid_at).toLocaleString('ar-SA')}</div>}
                     </div>
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'white' }}>${order.amount}</div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: order.amount === 0 ? '#f59e0b' : 'white' }}>
+                        {order.amount === 0 ? '—' : `$${order.amount}`}
+                      </div>
                       <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{order.currency}</div>
                     </div>
                     <span style={{ padding: '0.25rem 0.75rem', borderRadius: 20, fontSize: '0.78rem', fontWeight: 600, background: st.bg, color: st.color }}>
                       {st.label}
                     </span>
                     <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                      {order.amount === 0 && (
+                        <button onClick={() => updateOrderAmount(order.id, order.amount)}
+                          style={{ ...S.btn('#f59e0b'), fontSize: '0.75rem', padding: '0.3rem 0.65rem' }}>✏️ المبلغ</button>
+                      )}
                       {order.status === 'pending' && (
                         <button onClick={() => updateOrderStatus(order.id, 'paid')} style={{ ...S.btn('#10b981'), fontSize: '0.75rem', padding: '0.3rem 0.65rem' }}>✅ تأكيد</button>
                       )}

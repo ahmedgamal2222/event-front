@@ -1,4 +1,4 @@
-// lib/api.ts – API client
+﻿// lib/api.ts – API client
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
 
 // Simple in-memory cache
@@ -445,3 +445,123 @@ export const updateCountry = (eventId: number, id: number, body: any, token: str
 
 export const deleteCountry = (eventId: number, id: number, token: string) =>
   apiFetch<any>(`/api/events/${eventId}/countries/${id}`, { method: 'DELETE', headers: getAuthHeaders(token) });
+
+// ── CRM System ─────────────────────────────────────────────────────────────────────────
+// Contacts
+export const fetchCRMContacts = (token: string, params?: { page?: number; search?: string; limit?: number }) => {
+  const p = new URLSearchParams();
+  if (params?.page) p.set('page', String(params.page));
+  if (params?.search) p.set('search', params.search);
+  if (params?.limit) p.set('limit', String(params.limit));
+  return apiFetch<any>(`/api/crm/contacts?${p}`, { headers: getAuthHeaders(token) });
+};
+export const fetchCRMContact = (id: number, token: string) =>
+  apiFetch<any>(`/api/crm/contacts/${id}`, { headers: getAuthHeaders(token) });
+export const createCRMContact = (body: any, token: string) =>
+  apiFetch<any>(`/api/crm/contacts`, { method: 'POST', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+export const updateCRMContact = (id: number, body: any, token: string) =>
+  apiFetch<any>(`/api/crm/contacts/${id}`, { method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+
+// Organizations
+export const fetchCRMOrganizations = (token: string, params?: { type?: string; search?: string }) => {
+  const p = new URLSearchParams();
+  if (params?.type) p.set('type', params.type);
+  if (params?.search) p.set('search', params.search);
+  return apiFetch<any>(`/api/crm/organizations?${p}`, { headers: getAuthHeaders(token) });
+};
+export const createCRMOrganization = (body: any, token: string) =>
+  apiFetch<any>(`/api/crm/organizations`, { method: 'POST', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+export const updateCRMOrganization = (id: number, body: any, token: string) =>
+  apiFetch<any>(`/api/crm/organizations/${id}`, { method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+
+// CRM Registrations
+export const fetchCRMRegistrations = (token: string, params?: { event_id?: number; status?: string; type?: string; search?: string; page?: number }) => {
+  const p = new URLSearchParams();
+  if (params?.event_id) p.set('event_id', String(params.event_id));
+  if (params?.status) p.set('status', params.status);
+  if (params?.type) p.set('type', params.type);
+  if (params?.search) p.set('search', params.search);
+  if (params?.page) p.set('page', String(params.page));
+  return apiFetch<any>(`/api/crm/registrations?${p}`, { headers: getAuthHeaders(token) });
+};
+export const fetchCRMRegistrationStats = (eventId: number, token: string) =>
+  apiFetch<any>(`/api/crm/registrations/stats/${eventId}`, { headers: getAuthHeaders(token) });
+export const updateCRMRegistration = (id: number, body: any, token: string) =>
+  apiFetch<any>(`/api/crm/registrations/${id}`, { method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+
+// Public registration submission (CRM-aware)
+export const submitCRMRegistration = (body: any) =>
+  apiFetch<any>(`/api/crm/contacts/register`, { method: 'POST', body: JSON.stringify(body) });
+
+// Interactions
+export const fetchCRMInteractions = (token: string, params?: { contact_id?: number; org_id?: number; event_id?: number }) => {
+  const p = new URLSearchParams();
+  if (params?.contact_id) p.set('contact_id', String(params.contact_id));
+  if (params?.org_id) p.set('org_id', String(params.org_id));
+  if (params?.event_id) p.set('event_id', String(params.event_id));
+  return apiFetch<any>(`/api/crm/interactions?${p}`, { headers: getAuthHeaders(token) });
+};
+export const createCRMInteraction = (body: any, token: string) =>
+  apiFetch<any>(`/api/crm/interactions`, { method: 'POST', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+
+// Tasks
+export const fetchCRMTasks = (token: string, params?: { event_id?: number; assigned_to?: string; status?: string; escalated?: boolean }) => {
+  const p = new URLSearchParams();
+  if (params?.event_id) p.set('event_id', String(params.event_id));
+  if (params?.assigned_to) p.set('assigned_to', params.assigned_to);
+  if (params?.status) p.set('status', params.status);
+  if (params?.escalated) p.set('escalated', 'true');
+  return apiFetch<any>(`/api/crm/tasks?${p}`, { headers: getAuthHeaders(token) });
+};
+export const createCRMTask = (body: any, token: string) =>
+  apiFetch<any>(`/api/crm/tasks`, { method: 'POST', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+export const updateCRMTask = (id: number, body: any, token: string) =>
+  apiFetch<any>(`/api/crm/tasks/${id}`, { method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+export const deleteCRMTask = (id: number, token: string) =>
+  apiFetch<any>(`/api/crm/tasks/${id}`, { method: 'DELETE', headers: getAuthHeaders(token) });
+
+// CRM Payments
+export const fetchCRMPayments = (token: string, params?: { event_id?: number; match_status?: string }) => {
+  const p = new URLSearchParams();
+  if (params?.event_id) p.set('event_id', String(params.event_id));
+  if (params?.match_status) p.set('match_status', params.match_status);
+  return apiFetch<any>(`/api/crm/payments?${p}`, { headers: getAuthHeaders(token) });
+};
+export const createCRMPayment = (body: any, token: string) =>
+  apiFetch<any>(`/api/crm/payments`, { method: 'POST', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+export const updateCRMPayment = (id: number, body: any, token: string) =>
+  apiFetch<any>(`/api/crm/payments/${id}`, { method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+export const fetchCRMPaymentCandidates = (paymentId: number, token: string) =>
+  apiFetch<any>(`/api/crm/payments/candidates/${paymentId}`, { headers: getAuthHeaders(token) });
+
+// Sponsorships
+export const fetchCRMSponsorships = (token: string, params?: { event_id?: number; status?: string }) => {
+  const p = new URLSearchParams();
+  if (params?.event_id) p.set('event_id', String(params.event_id));
+  if (params?.status) p.set('status', params.status);
+  return apiFetch<any>(`/api/crm/sponsorships?${p}`, { headers: getAuthHeaders(token) });
+};
+export const createCRMSponsorship = (body: any, token: string) =>
+  apiFetch<any>(`/api/crm/sponsorships`, { method: 'POST', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+export const updateCRMSponsorship = (id: number, body: any, token: string) =>
+  apiFetch<any>(`/api/crm/sponsorships/${id}`, { method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+export const deleteCRMSponsorship = (id: number, token: string) =>
+  apiFetch<any>(`/api/crm/sponsorships/${id}`, { method: 'DELETE', headers: getAuthHeaders(token) });
+
+// CRM Tickets (magic link assignment)
+export const fetchCRMTickets = (adminToken: string, params?: { event_id?: number; status?: string }) => {
+  const p = new URLSearchParams();
+  if (params?.event_id) p.set('event_id', String(params.event_id));
+  if (params?.status) p.set('status', params.status);
+  return apiFetch<any>(`/api/crm/tickets?${p}`, { headers: getAuthHeaders(adminToken) });
+};
+export const fetchTicketByToken = (assignToken: string) =>
+  apiFetch<any>(`/api/crm/tickets/assign/${assignToken}`);
+export const assignTicketByToken = (assignToken: string, body: any) =>
+  apiFetch<any>(`/api/crm/tickets/assign/${assignToken}`, { method: 'POST', body: JSON.stringify(body) });
+export const scanTicketQR = (ticketCode: string, scannedBy: string, adminToken: string) =>
+  apiFetch<any>(`/api/crm/tickets/scan`, {
+    method: 'POST',
+    body: JSON.stringify({ ticket_code: ticketCode, scanned_by: scannedBy }),
+    headers: getAuthHeaders(adminToken),
+  });
