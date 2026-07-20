@@ -9,7 +9,7 @@ import TicketsSection from '../components/TicketsSection';
 import SupportWidget from '../components/SupportWidget';
 import RegistrationSuccessMessage from '../components/RegistrationSuccessMessage';
 
-const DEFAULT_EVENT_SLUG = process.env.NEXT_PUBLIC_EVENT_SLUG;
+const DEFAULT_EVENT_SLUG = process.env.NEXT_PUBLIC_EVENT_SLUG || '';
 
 // ─── Event Navigation Bar ──────────────────────────────────────────────────────
 function EventNavBar({ eventId, primaryColor, archiveLabel, showArchive }: { eventId: number; primaryColor: string; archiveLabel?: string; showArchive?: boolean }) {
@@ -568,8 +568,14 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
 
     (async () => {
       try {
-        const effectiveSlug = slug || DEFAULT_EVENT_SLUG;
-        // Bypass cache so switching events always gets fresh data
+        // Use the slug prop first; fallback to env var only if BOTH defined
+        const effectiveSlug = (slug && slug.trim()) || (DEFAULT_EVENT_SLUG && DEFAULT_EVENT_SLUG.trim()) || null;
+        if (!effectiveSlug) {
+          // No slug available — stop loading and show nothing
+          setLoading(false);
+          return;
+        }
+        // Always bypass cache so switching events gets fresh data
         const eventRes = await fetchEvent(effectiveSlug, true);
         const ev: Event = eventRes.data;
         setEvent(ev);

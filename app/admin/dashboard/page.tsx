@@ -236,7 +236,7 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [token, setToken] = useState('');
   const [events, setEvents] = useState<any[]>([]);
-  const [eventId, setEventId] = useState(1);
+  const [eventId, setEventId] = useState(0); // 0 = not yet loaded — prevents fetching event 1 before list arrives
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState('');
@@ -313,7 +313,14 @@ export default function AdminDashboard() {
               ) : (
                 <select
                   value={eventId}
-                  onChange={e => setEventId(Number(e.target.value))}
+                  onChange={e => {
+                    const newId = Number(e.target.value);
+                    // Clear cache for old event so tabs get fresh data
+                    if (eventId > 0) {
+                      clearApiCacheFor(`/api/events/${eventId}`);
+                    }
+                    setEventId(newId);
+                  }}
                   style={{
                     width: '100%',
                     background: 'rgba(13,11,26,0.95)',
@@ -437,6 +444,14 @@ export default function AdminDashboard() {
 
         {/* Content Area */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '2rem' }}>
+          {/* Don't render tabs until a valid event is selected */}
+          {eventId === 0 && (
+            <div style={{ textAlign: 'center', paddingTop: '4rem', color: '#94a3b8' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⏳</div>
+              <p>جاري تحميل الأحداث...</p>
+            </div>
+          )}
+          {eventId > 0 && <>
           {activeTab === 'overview'      && <OverviewTab key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'event'         && <EventTab key={eventId} eventId={eventId} eventSlug={eventSlug} token={token} save={save} saving={saving} />}
           {activeTab === 'video'         && <VideoTab key={eventId} eventId={eventId} eventSlug={eventSlug} token={token} save={save} saving={saving} />}
@@ -465,6 +480,7 @@ export default function AdminDashboard() {
           {activeTab === 'crm_tasks'         && <AdminCRMTasks key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} />}
           {activeTab === 'crm_escalated'     && <AdminCRMTasks key={`esc-${eventId}`} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} mode="escalated" />}
           {activeTab === 'crm_sponsorships'  && <AdminCRMSponsorships key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} />}
+          </>}
         </div>
 
         {/* Toast Notification */}
@@ -481,7 +497,9 @@ export default function AdminDashboard() {
 // ── Overview ──────────────────────────────────────────────────────────────────
 function OverviewTab({ eventId, token }: { eventId: number; token: string }) {
   const [stats, setStats] = useState<any>(null);
-  useEffect(() => { if (token) fetchStats(eventId).then((r: any) => setStats(r.data)).catch(() => {}); }, [token]);
+  useEffect(() => {
+    if (token && eventId > 0) fetchStats(eventId).then((r: any) => setStats(r.data)).catch(() => {});
+  }, [token, eventId]);
   const cards = [
     { v: stats?.total_registrations || 0, l: 'إجمالي التسجيلات', c: '#6C63FF', i: '📋' },
     { v: stats?.approved_count || 0,      l: 'المقبولون',          c: '#10b981', i: '✅' },
@@ -515,7 +533,7 @@ function EventTab({ eventId, eventSlug, token, save, saving }: any) {
   useEffect(() => {
     if (!token || !eventSlug) return;
     fetchEvent(eventSlug).then((r: any) => { setForm(r.data); setLoaded(true); }).catch(() => {});
-  }, [token]);
+  }, [token, eventSlug]);
   if (!loaded) return <p style={{ color: '#94a3b8' }}>جار التحميل...</p>;
   const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
   const fields: Array<{ key: string; label: string; type?: string; textarea?: boolean }> = [
@@ -877,7 +895,7 @@ function SpeakersTab({ eventId, token, save, saving, showToast }: any) {
       fetchSpeakers(eventId).then((r: any) => setSpeakers(r.data || [])).catch(() => {});
     }
   };
-  useEffect(() => { load(); }, [token]);
+  useEffect(() => { load(); }, [token, eventId]);
   const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
   const saveItem = () => save(async () => {
@@ -994,7 +1012,7 @@ function AgendaTab({ eventId, token, save, saving, showToast }: any) {
     fetchAgenda(eventId).then((r: any) => setAgenda(r.data || [])).catch(() => {});
     fetchSpeakers(eventId).then((r: any) => setSpeakers(r.data || [])).catch(() => {});
   };
-  useEffect(() => { load(); }, [token]);
+  useEffect(() => { load(); }, [token, eventId]);
 
   const blankSession = (dayId: number) => ({ day_id: dayId, time_start: '', time_end: '', title_ar: '', description_ar: '', session_type: 'talk', speaker_id: '', sort_order: 0 });
   const set = (k: string, v: any) => setSessionForm((f: any) => ({ ...f, [k]: v }));
@@ -1249,7 +1267,7 @@ function VenueGalleryTab({ eventId, token, showToast }: any) {
   const load = () => {
     if (token) fetchVenueGalleryAdmin(eventId, token).then((r: any) => setGallery(r.data || [])).catch(() => {});
   };
-  useEffect(() => { load(); }, [token]);
+  useEffect(() => { load(); }, [token, eventId]);
   const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
   const saveItem = async () => {
@@ -1373,7 +1391,7 @@ function SponsorsTab({ eventId, token, save, saving, showToast }: any) {
       fetchSponsors(eventId).then((r: any) => setSponsors(r.data || [])).catch(() => {});
     }
   };
-  useEffect(() => { load(); }, [token]);
+  useEffect(() => { load(); }, [token, eventId]);
   const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
   const saveItem = () => save(async () => {
@@ -1448,7 +1466,7 @@ function FaqsTab({ eventId, token, save, saving, showToast }: any) {
       fetchFaqs(eventId).then((r: any) => setFaqs(r.data || [])).catch(() => {});
     }
   };
-  useEffect(() => { load(); }, [token]);
+  useEffect(() => { load(); }, [token, eventId]);
 
   const saveItem = () => save(async () => {
     await createFaq(eventId, form, token);
@@ -2105,7 +2123,7 @@ function ArticlesTab({ eventId, token, showToast }: any) {
       fetchArticlesAdmin(eventId, token).then((r: any) => setArticles(r.data || [])).catch(() => {});
     }
   };
-  useEffect(() => { load(); }, [token]);
+  useEffect(() => { load(); }, [token, eventId]);
   const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
   const generateSlug = (title: string) =>
