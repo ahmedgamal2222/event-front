@@ -62,6 +62,12 @@ const PRIORITY_LABELS: Record<string, string> = {
 };
 
 export default function AdminCRMUnified({ token, apiBase, eventId, readOnly }: Props) {
+
+  const roAlert = () => {
+    if (readOnly) alert('أنت في وضع المشاهدة فقط. تواصل مع المسؤول الرئيسي لتفعيل صلاحياتك.');
+    return readOnly;
+  };
+  const roStyle: React.CSSProperties = readOnly ? { opacity: 0.45, cursor: 'not-allowed', filter: 'grayscale(0.4)' } : {};
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -238,6 +244,7 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly }: P
             onChange={e => { setSearch(e.target.value); setPage(1); }}
           />
           {!readOnly && <button style={S.btn()} onClick={() => { setContactForm({}); setShowContactForm(true); setSelected(null); }}>+ جديد</button>}
+          {readOnly && <button style={{ ...S.btn('#374151'), ...roStyle }} onClick={() => roAlert()} title="وضع المشاهدة فقط">+ جديد 🔒</button>}
         </div>
 
         {loading ? (
@@ -379,15 +386,22 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly }: P
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
-                {!readOnly && <button style={S.btn('#374151')} onClick={() => { setContactForm({ ...selected }); setShowContactForm(true); }}>✏️ تعديل</button>}
-                {!readOnly && <button style={S.btn()} onClick={() => { setShowTaskForm(true); setDetailTab('tasks'); }}>+ مهمة</button>}
+                <button
+                  style={{ ...S.btn('#374151'), ...(readOnly ? roStyle : {}) }}
+                  onClick={() => { if (roAlert()) return; setContactForm({ ...selected }); setShowContactForm(true); }}
+                  title={readOnly ? 'وضع المشاهدة فقط' : 'تعديل'}
+                >✏️ تعديل</button>
+                <button
+                  style={{ ...S.btn(), ...(readOnly ? roStyle : {}) }}
+                  onClick={() => { if (roAlert()) return; setShowTaskForm(true); setDetailTab('tasks'); }}
+                  title={readOnly ? 'وضع المشاهدة فقط' : 'إضافة مهمة'}
+                >+ مهمة</button>
                 <button style={S.btn('#1e293b')} onClick={() => setShowInteraction(true)}>💬</button>
-                {!readOnly && (
-                  <button
-                    onClick={() => deleteContact(selected.id, selected.full_name)}
-                    style={{ background: 'rgba(239,68,68,0.12)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.35)', borderRadius: '0.4rem', padding: '0.45rem 0.7rem', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}
-                  >🗑️</button>
-                )}
+                <button
+                  onClick={() => { if (roAlert()) return; deleteContact(selected.id, selected.full_name); }}
+                  style={{ background: 'rgba(239,68,68,0.12)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.35)', borderRadius: '0.4rem', padding: '0.45rem 0.7rem', cursor: readOnly ? 'not-allowed' : 'pointer', fontSize: '0.82rem', fontWeight: 600, ...(readOnly ? roStyle : {}) }}
+                  title={readOnly ? 'وضع المشاهدة فقط' : 'حذف'}
+                >🗑️</button>
                 <button style={{ ...S.btn('#374151'), padding: '0.45rem 0.6rem' }} onClick={() => { setSelected(null); setShowTaskForm(false); }}>✕</button>
               </div>
             </div>
@@ -583,14 +597,15 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly }: P
                             <div style={{ color: overdue ? '#fca5a5' : 'white', fontWeight: 600, fontSize: '0.88rem', flex: 1 }}>{task.title}</div>
                             <button
                               onClick={async () => {
+                                if (roAlert()) return;
                                 if (!confirm(`حذف المهمة "${task.title}"؟`)) return;
                                 const res = await fetch(`${apiBase}/api/crm/tasks/${task.id}`, { method: 'DELETE', headers });
                                 const d = await res.json();
                                 if (d.success) openContact(selected!.id);
                                 else alert(d.error || 'فشل الحذف');
                               }}
-                              style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: '0.8rem', padding: '0 0 0 6px', flexShrink: 0 }}
-                              title="حذف المهمة"
+                              style={{ background: 'none', border: 'none', color: readOnly ? '#374151' : '#6b7280', cursor: readOnly ? 'not-allowed' : 'pointer', fontSize: '0.8rem', padding: '0 0 0 6px', flexShrink: 0, ...(readOnly ? roStyle : {}) }}
+                              title={readOnly ? 'وضع المشاهدة فقط' : 'حذف المهمة'}
                             >🗑️</button>
                           </div>
                           <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>

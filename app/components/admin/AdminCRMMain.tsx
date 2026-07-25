@@ -60,8 +60,23 @@ export default function AdminCRMMain({ token, apiBase, eventId, isSuperAdmin, my
   return (
     <div style={{ direction: 'rtl' }}>
       {readOnly && (
-        <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: '0.75rem', padding: '0.6rem 1rem', marginBottom: 12, color: '#fcd34d', fontSize: '0.82rem' }}>
-          وضع المشاهدة فقط - لا يمكنك اضافة او تعديل او حذف البيانات
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(245,158,11,0.12), rgba(239,68,68,0.08))',
+          border: '1px solid rgba(245,158,11,0.45)',
+          borderRadius: '0.75rem',
+          padding: '0.85rem 1.2rem',
+          marginBottom: 14,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+        }}>
+          <div style={{ fontSize: '1.5rem', flexShrink: 0 }}>👁️</div>
+          <div>
+            <div style={{ color: '#fcd34d', fontWeight: 700, fontSize: '0.88rem' }}>أنت في وضع المشاهدة فقط</div>
+            <div style={{ color: '#d97706', fontSize: '0.78rem', marginTop: 2 }}>
+              يمكنك الاطلاع على البيانات فقط. لتفعيل الصلاحيات تواصل مع المسؤول الرئيسي.
+            </div>
+          </div>
         </div>
       )}
       <div style={{ background: 'rgba(13,11,26,0.8)', border: '1px solid rgba(108,99,255,0.2)', borderRadius: '1rem', padding: '0.75rem 1rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>

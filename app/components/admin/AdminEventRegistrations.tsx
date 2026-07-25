@@ -41,6 +41,12 @@ interface Props {
 }
 
 export default function AdminEventRegistrations({ token, eventId, readOnly }: Props) {
+
+  const roAlert = () => {
+    if (readOnly) alert('أنت في وضع المشاهدة فقط. تواصل مع المسؤول الرئيسي لتفعيل صلاحياتك.');
+    return readOnly;
+  };
+  const roStyle: React.CSSProperties = readOnly ? { opacity: 0.45, cursor: 'not-allowed', filter: 'grayscale(0.4)' } : {};
   const [regs, setRegs] = useState<Reg[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -252,30 +258,29 @@ export default function AdminEventRegistrations({ token, eventId, readOnly }: Pr
                         <span style={{ background: sc.color + '20', color: sc.color, fontSize: '0.72rem', padding: '2px 8px', borderRadius: 4 }}>{sc.label}</span>
                       </td>
                       <td style={{ padding: '0.5rem 0.85rem' }} onClick={e => e.stopPropagation()}>
-                        {!readOnly ? (
-                          <select
-                            value={reg.status}
-                            onChange={e => changeStatus(reg.id, e.target.value)}
-                            style={{ ...S.inp, width: 'auto', padding: '0.25rem 0.5rem', fontSize: '0.72rem' }}
-                          >
-                            {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                          </select>
-                        ) : (
-                          <span style={{ background: sc.color + '20', color: sc.color, fontSize: '0.7rem', padding: '2px 8px', borderRadius: 4 }}>{sc.label}</span>
-                        )}
+                        <select
+                          value={reg.status}
+                          onChange={e => { if (roAlert()) return; changeStatus(reg.id, e.target.value); }}
+                          disabled={readOnly}
+                          style={{ ...S.inp, width: 'auto', padding: '0.25rem 0.5rem', fontSize: '0.72rem', ...(readOnly ? roStyle : {}) }}
+                          title={readOnly ? 'وضع المشاهدة فقط' : ''}
+                        >
+                          {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                        </select>
                       </td>
                       <td style={{ padding: '0.5rem 0.85rem' }} onClick={e => e.stopPropagation()}>
-                        {!readOnly && !isConverted ? (
+                        {!isConverted ? (
                           <button
-                            onClick={() => convertToContact(reg)}
-                            disabled={converting}
-                            style={{ ...S.btn('#1e3a5f'), fontSize: '0.7rem', padding: '0.25rem 0.5rem', border: '1px solid rgba(59,130,246,0.4)', color: '#60a5fa', whiteSpace: 'nowrap' }}
+                            onClick={() => { if (roAlert()) return; convertToContact(reg); }}
+                            disabled={readOnly || converting}
+                            style={{ ...S.btn('#1e3a5f'), fontSize: '0.7rem', padding: '0.25rem 0.5rem', border: '1px solid rgba(59,130,246,0.4)', color: '#60a5fa', whiteSpace: 'nowrap', ...(readOnly ? roStyle : {}) }}
+                            title={readOnly ? 'وضع المشاهدة فقط' : ''}
                           >
                             👤 جهة اتصال
                           </button>
-                        ) : isConverted ? (
+                        ) : (
                           <span style={{ color: '#10b981', fontSize: '0.7rem' }}>✓</span>
-                        ) : null}
+                        )}
                       </td>
                     </tr>
                   );
@@ -337,22 +342,24 @@ export default function AdminEventRegistrations({ token, eventId, readOnly }: Pr
 
             {/* Actions */}
             <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-              {/* Convert to contact button - Professional UI */}
+              {/* Convert to contact button */}
               {!converted.has(selected.id) && !selected.contact_id ? (
                 <button
-                  onClick={() => convertToContact(selected)}
-                  disabled={converting}
+                  onClick={() => { if (roAlert()) return; convertToContact(selected); }}
+                  disabled={converting || readOnly}
+                  title={readOnly ? 'وضع المشاهدة فقط' : ''}
                   style={{
                     background: 'linear-gradient(135deg, rgba(59,130,246,0.2), rgba(16,185,129,0.15))',
                     border: '1px solid rgba(59,130,246,0.4)',
                     color: '#60a5fa',
                     borderRadius: '0.5rem',
                     padding: '0.5rem 1rem',
-                    cursor: converting ? 'not-allowed' : 'pointer',
+                    cursor: (converting || readOnly) ? 'not-allowed' : 'pointer',
                     fontSize: '0.82rem',
                     fontWeight: 600,
                     display: 'flex',
                     alignItems: 'center',
+                    ...(readOnly ? roStyle : {}),
                     gap: 6,
                     transition: 'all 0.2s',
                   }}
