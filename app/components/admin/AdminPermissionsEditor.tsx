@@ -126,8 +126,22 @@ export default function AdminPermissionsEditor({ adminId, adminName, token, apiB
     setPerms(prev => {
       const filtered = prev.filter(p => p.event_id !== eventId);
       if (!giveAll) return filtered;
+      // عند تفعيل حدث جديد: ابدأ بقسم واحد افتراضيًا وليس كل الصلاحيات
+      const existing = prev.find(p => p.event_id === eventId);
+      if (existing) return [...filtered, existing]; // احتفظ بالصلاحيات الحالية
+      return [...filtered, { event_id: eventId, sections: [] }]; // فارغ ليختار المستخدم
+    });
+  };
+
+  const giveAllSections = (eventId: number | null) => {
+    setPerms(prev => {
+      const filtered = prev.filter(p => p.event_id !== eventId);
       return [...filtered, { event_id: eventId, sections: [...ALL_SECTIONS] }];
     });
+  };
+
+  const clearAllSections = (eventId: number | null) => {
+    setPerms(prev => prev.filter(p => p.event_id !== eventId));
   };
 
   const toggleGroup = (eventId: number | null, group: string, giveAll: boolean) => {
@@ -209,8 +223,8 @@ export default function AdminPermissionsEditor({ adminId, adminName, token, apiB
                   </label>
                   {hasRow && (
                     <div style={{ display: 'flex', gap: 6 }}>
-                      <button onClick={() => toggleAllSections(ev.id, true)} style={{ ...S.btn('#374151'), fontSize: '0.72rem', padding: '0.2rem 0.5rem' }}>كل الأقسام</button>
-                      <button onClick={() => toggleAllSections(ev.id, false)} style={{ ...S.btn('#374151'), fontSize: '0.72rem', padding: '0.2rem 0.5rem', background: 'rgba(239,68,68,0.15)', color: '#fca5a5' }}>إلغاء الكل</button>
+                      <button onClick={() => giveAllSections(ev.id)} style={{ ...S.btn('#374151'), fontSize: '0.72rem', padding: '0.2rem 0.5rem' }}>كل الأقسام</button>
+                      <button onClick={() => clearAllSections(ev.id)} style={{ ...S.btn('#374151'), fontSize: '0.72rem', padding: '0.2rem 0.5rem', background: 'rgba(239,68,68,0.15)', color: '#fca5a5' }}>إلغاء الكل</button>
                     </div>
                   )}
                 </div>

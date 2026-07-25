@@ -344,8 +344,10 @@ function AdminDashboardInner() {
   // Permission helper: can the current user access this tab for the current event?
   const canAccess = (tabKey: string): boolean => {
     if (isSuperAdmin) return true;
-    // Always-visible tabs (no permission needed)
-    const alwaysTabs = ['overview', 'admins_mgmt'];
+    // إدارة المسؤولين للـ super_admin فقط
+    if (tabKey === 'admins_mgmt') return false;
+    // التبويبات المتاحة دائماً لأي مسؤول معتمد
+    const alwaysTabs = ['overview'];
     if (alwaysTabs.includes(tabKey)) return true;
     // crm_main يشمل registrations و crm_contacts و المهام
     if (tabKey === 'crm_main' || tabKey === 'crm_unified') {
