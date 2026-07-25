@@ -88,7 +88,7 @@ export default function AdminManagement({ token, apiBase }: Props) {
   const reactivate = async (id: number, name: string) => {
     if (!confirm(`إعادة تنشيط حساب ${name}؟`)) return;
     setProcessing(id);
-    const res = await fetch(`${apiBase}/api/auth/admins/${id}/reactivate`, {
+    const res = await fetch(`${apiBase}/api/auth/admins/${id}/activate`, {
       method: 'POST',
       headers,
     });
