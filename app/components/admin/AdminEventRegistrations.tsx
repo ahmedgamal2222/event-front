@@ -105,6 +105,7 @@ export default function AdminEventRegistrations({ token, eventId }: Props) {
         phone: reg.phone || '',
         city: reg.city || '',
         source: 'registration',
+        event_id: eventId, // ربط بالحدث الحالي
         notes: `تحويل من تسجيل الحدث #${eventId}. النوع: ${reg.reg_type || reg.type || 'عام'}.${reg.participation_reason ? ` سبب المشاركة: ${reg.participation_reason}` : ''}`,
         is_vip: 0,
       };
@@ -113,17 +114,21 @@ export default function AdminEventRegistrations({ token, eventId }: Props) {
         method: 'POST', headers, body: JSON.stringify(body),
       });
       const d = await res.json();
-      if (d.success) {
-        const contactId = d.data?.id || d.id;
+      if (d.success || d.existing_id) {
+        const contactId = d.id || d.existing_id;
         setConverted(prev => new Set([...prev, reg.id]));
-        // Link registration to contact if contact_id column exists
+        // Link registration to contact
         if (contactId) {
           await fetch(`${API_BASE}/api/events/${eventId}/registrations/${reg.id}`, {
             method: 'PUT', headers, body: JSON.stringify({ contact_id: contactId }),
           }).catch(() => {});
         }
         setSelected(s => s ? { ...s, contact_id: contactId } : null);
-        alert(`✅ تم إضافة "${name}" إلى جهات الاتصال`);
+        if (d.existing_id) {
+          alert(`ℹ️ "${name}" موجود مسبقاً في جهات الاتصال وتم الربط به`);
+        } else {
+          alert(`✅ تم إضافة "${name}" إلى جهات الاتصال`);
+        }
       } else {
         alert(d.error || 'حدث خطأ');
       }

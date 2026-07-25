@@ -130,11 +130,14 @@ export default function AdminCRMUnified({ token, apiBase, eventId }: Props) {
   const loadContacts = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${apiBase}/api/crm/contacts?page=${page}&search=${encodeURIComponent(search)}&limit=30`, { headers });
+      const params = new URLSearchParams({ page: String(page), limit: '30' });
+      if (search) params.set('search', search);
+      if (eventId) params.set('event_id', String(eventId)); // فلترة per-event
+      const res = await fetch(`${apiBase}/api/crm/contacts?${params}`, { headers });
       const d = await res.json();
       if (d.success) { setContacts(d.data); setTotal(d.total); }
     } finally { setLoading(false); }
-  }, [page, search, apiBase, token]);
+  }, [page, search, apiBase, token, eventId]);
 
   useEffect(() => { loadContacts(); }, [loadContacts]);
 
@@ -159,11 +162,23 @@ export default function AdminCRMUnified({ token, apiBase, eventId }: Props) {
     try {
       const method = contactForm.id ? 'PUT' : 'POST';
       const url = contactForm.id ? `${apiBase}/api/crm/contacts/${contactForm.id}` : `${apiBase}/api/crm/contacts`;
-      const res = await fetch(url, { method, headers, body: JSON.stringify(contactForm) });
+      const res = await fetch(url, { method, headers, body: JSON.stringify({
+        ...contactForm,
+        event_id: eventId || null,
+      }) });
       const d = await res.json();
       if (d.success) { setShowContactForm(false); loadContacts(); if (selected) openContact(selected.id); }
+      else if (d.existing_id) { openContact(d.existing_id); setShowContactForm(false); alert('جهة الاتصال موجودة مسبقاً، تم فتح ملفها.'); }
       else alert(d.error);
     } finally { setSaving(false); }
+  };
+
+  const deleteContact = async (id: number, name: string) => {
+    if (!confirm(`🗑️ حذف جهة الاتصال "${name}"؟\nسيتم حذف مهامها أيضاً.`)) return;
+    const res = await fetch(`${apiBase}/api/crm/contacts/${id}`, { method: 'DELETE', headers });
+    const d = await res.json();
+    if (d.success) { setSelected(null); loadContacts(); }
+    else alert(d.error || 'فشل الحذف');
   };
 
   const saveTask = async () => {
@@ -363,9 +378,15 @@ export default function AdminCRMUnified({ token, apiBase, eventId }: Props) {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
-                <button style={S.btn('#374151')} onClick={() => { setContactForm({ ...selected }); setShowContactForm(true); }}>✏️</button>
+                <button style={S.btn('#374151')} onClick={() => { setContactForm({ ...selected }); setShowContactForm(true); }}>✏️ تعديل</button>
                 <button style={S.btn()} onClick={() => { setShowTaskForm(true); setDetailTab('tasks'); }}>+ مهمة</button>
-                <button style={S.btn('#1e293b')} onClick={() => setShowInteraction(true)}>💬 تواصل</button>
+                <button style={S.btn('#1e293b')} onClick={() => setShowInteraction(true)}>💬</button>
+                <button
+                  onClick={() => deleteContact(selected.id, selected.full_name)}
+                  style={{ background: 'rgba(239,68,68,0.12)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.35)', borderRadius: '0.4rem', padding: '0.45rem 0.7rem', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}
+                >
+                  🗑️
+                </button>
                 <button style={{ ...S.btn('#374151'), padding: '0.45rem 0.6rem' }} onClick={() => { setSelected(null); setShowTaskForm(false); }}>✕</button>
               </div>
             </div>
@@ -557,7 +578,20 @@ export default function AdminCRMUnified({ token, apiBase, eventId }: Props) {
                       const overdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'done';
                       return (
                         <div key={task.id} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '0.5rem', padding: '10px 12px', borderRight: `3px solid ${pc}` }}>
-                          <div style={{ color: overdue ? '#fca5a5' : 'white', fontWeight: 600, fontSize: '0.88rem' }}>{task.title}</div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div style={{ color: overdue ? '#fca5a5' : 'white', fontWeight: 600, fontSize: '0.88rem', flex: 1 }}>{task.title}</div>
+                            <button
+                              onClick={async () => {
+                                if (!confirm(`حذف المهمة "${task.title}"؟`)) return;
+                                const res = await fetch(`${apiBase}/api/crm/tasks/${task.id}`, { method: 'DELETE', headers });
+                                const d = await res.json();
+                                if (d.success) openContact(selected!.id);
+                                else alert(d.error || 'فشل الحذف');
+                              }}
+                              style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: '0.8rem', padding: '0 0 0 6px', flexShrink: 0 }}
+                              title="حذف المهمة"
+                            >🗑️</button>
+                          </div>
                           <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
                             <span style={{ fontSize: '0.7rem', background: `${pc}20`, color: pc, padding: '1px 6px', borderRadius: 3 }}>{PRIORITY_LABELS[task.priority]}</span>
                             <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.06)', color: '#94a3b8', padding: '1px 6px', borderRadius: 3 }}>{task.status}</span>

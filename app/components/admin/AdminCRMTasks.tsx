@@ -124,7 +124,7 @@ export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all' }:
         )}
         <input style={{ ...S.inp, flex: '1 1 180px' }} placeholder="🔍 فلتر بالمسؤول..." value={assignedTo} onChange={e => setAssignedTo(e.target.value)} />
         {mode !== 'escalated' && (
-          <button style={S.btn()} onClick={() => { setForm({ event_id: eventId } as any); setExtraAssignees([]); setAssigneeInput(''); setShowForm(true); }}>+ مهمة جديدة</button>
+          <button style={S.btn()} onClick={() => { setForm({ event_id: eventId } as any); setExtraAssignees([]); setAssigneeSearch(''); setShowForm(true); }}>+ مهمة جديدة</button>
         )}
       </div>
 
@@ -372,8 +372,20 @@ export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all' }:
             {mode !== 'escalated' && (
               <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <button style={S.btn('#10b981')} onClick={() => save({ ...selected, status: 'done' })}>✅ إغلاق</button>
-                <button style={S.btn('#8b5cf6')} onClick={() => { setForm({ ...selected, status: 'escalated', escalated_to: 'management' }); setShowForm(true); }}>🔺 تصعيد للإدارة</button>
-                <button style={S.btn('#374151')} onClick={() => save({ ...selected, status: 'in_progress' })}>⚡ بدأت العمل</button>
+                <button style={S.btn('#8b5cf6')} onClick={() => { setForm({ ...selected, status: 'escalated', escalated_to: 'management' }); setShowForm(true); }}>🔺 تصعيد</button>
+                <button style={S.btn('#374151')} onClick={() => save({ ...selected, status: 'in_progress' })}>⚡ بدأت</button>
+                <button
+                  onClick={async () => {
+                    if (!confirm(`حذف المهمة "${selected.title}"؟`)) return;
+                    const res = await fetch(`${apiBase}/api/crm/tasks/${selected.id}`, { method: 'DELETE', headers });
+                    const d = await res.json();
+                    if (d.success) { setSelected(null); load(); }
+                    else alert(d.error || 'فشل الحذف');
+                  }}
+                  style={{ background: 'rgba(239,68,68,0.12)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.35)', borderRadius: '0.4rem', padding: '0.45rem 0.7rem', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}
+                >
+                  🗑️ حذف
+                </button>
               </div>
             )}
           </div>
