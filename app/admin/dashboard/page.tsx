@@ -32,8 +32,7 @@ import AdminCRMPayments from '../../../app/components/admin/AdminCRMPayments';
 import AdminCRMTasks from '../../../app/components/admin/AdminCRMTasks';
 import AdminCRMSponsorships from '../../../app/components/admin/AdminCRMSponsorships';
 import AdminCRMUnified from '../../../app/components/admin/AdminCRMUnified';
-import AdminManagement from '../../../app/components/admin/AdminManagement';
-import type { FormConfig, SiteConfig } from '../../../lib/types';
+import AdminManagement from '../../../app/components/admin/AdminManagement';import type { FormConfig, SiteConfig } from '../../../lib/types';
 
 function getToken() { return typeof window !== 'undefined' ? localStorage.getItem('admin_token') || '' : ''; }
 
@@ -62,9 +61,9 @@ const TABS = [
   { key: 'payments',         label: '💳 المدفوعات',          group: 'المبيعات' },
   { key: 'tickets',          label: '🎫 التذاكر',            group: 'المبيعات' },
   // CRM المتكامل
-  { key: 'crm_contacts',     label: '👥 جهات الاتصال',       group: 'CRM' },
-  { key: 'crm_tasks',        label: '✅ المهام والمتابعة',   group: 'CRM' },
-  { key: 'crm_escalated',    label: '🔺 المصعّدات',          group: 'CRM' },
+  { key: 'crm_unified',     label: '👥 جهات الاتصال والتسجيلات', group: 'CRM' },
+  { key: 'crm_tasks',        label: '✅ لوحة المهام',             group: 'CRM' },
+  { key: 'crm_escalated',    label: '🔺 المصعّدات',               group: 'CRM' },
   // crm_sponsorships مخفي مؤقتاً
   // إدارة الحدث
   { key: 'event',            label: '⚙️ معلومات الحدث',     group: 'الحدث' },
@@ -259,6 +258,8 @@ function AdminDashboardInner() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState('');
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [myPermissions, setMyPermissions] = useState<{ event_id: number | null; sections: string[] }[]>([]);
 
   // eventId is derived from URL (?event=N) — the URL is the single source of truth.
   // This eliminates all stale-closure issues: every render reads directly from URL.
@@ -283,6 +284,18 @@ function AdminDashboardInner() {
     const t = getToken();
     if (!t) { router.replace('/admin'); return; }
     setToken(t);
+    // Load permissions
+    fetch(`${API_BASE}/api/auth/me/permissions`, { headers: { Authorization: `Bearer ${t}` } })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) {
+          setIsSuperAdmin(d.isSuperAdmin);
+          setMyPermissions(d.permissions?.map((p: any) => ({
+            event_id: p.event_id,
+            sections: (() => { try { return JSON.parse(p.sections); } catch { return p.sections === 'all' ? [] : []; } })(),
+          })) || []);
+        }
+      }).catch(() => setIsSuperAdmin(true)); // fallback: treat as super admin on error
     // Load all events — try admin endpoint first, fall back to public
     const loadEvents = async () => {
       try {
@@ -330,8 +343,38 @@ function AdminDashboardInner() {
 
   const logout = () => { localStorage.removeItem('admin_token'); router.replace('/admin'); };
 
-  // Group tabs by category
+  // Permission helper: can the current user access this tab for the current event?
+  const canAccess = (tabKey: string): boolean => {
+    if (isSuperAdmin) return true;
+    // Always-visible tabs (no permission needed)
+    const alwaysTabs = ['overview', 'admins_mgmt'];
+    if (alwaysTabs.includes(tabKey)) return true;
+    // crm_unified maps to both registrations and crm_contacts permissions
+    if (tabKey === 'crm_unified') {
+      for (const perm of myPermissions) {
+        if (perm.event_id === null || perm.event_id === eventId) {
+          if (['registrations', 'crm_contacts', 'crm_unified', 'all'].some(k => perm.sections.includes(k))) return true;
+        }
+      }
+      return false;
+    }
+    // Check permissions for current event or global (event_id = null)
+    for (const perm of myPermissions) {
+      if (perm.event_id === null || perm.event_id === eventId) {
+        if (perm.sections.includes(tabKey) || perm.sections.includes('all')) return true;
+      }
+    }
+    return false;
+  };
+
+  // Filter events the user is allowed to see
+  const allowedEvents = isSuperAdmin
+    ? events
+    : events.filter(ev => myPermissions.some(p => p.event_id === null || p.event_id === ev.id));
+
+  // Group tabs by category — filter by permissions
   const groupedTabs = TABS.reduce((acc, tab) => {
+    if (!canAccess(tab.key)) return acc;
     const group = (tab as any).group || 'أخرى';
     if (!acc[group]) acc[group] = [];
     acc[group].push(tab);
@@ -350,14 +393,14 @@ function AdminDashboardInner() {
             <span style={{ color: '#6C63FF' }}>⚙️</span> Admin Panel
           </h2>
           {/* Event Selector — shows always so admin knows which event they're editing */}
-          {events.length > 0 && (
+          {allowedEvents.length > 0 && (
             <div style={{ marginTop: '0.75rem' }}>
               <label style={{ fontSize: '0.65rem', color: '#6b7280', display: 'block', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>🗂 الحدث النشط</label>
-              {events.length === 1 ? (
+              {allowedEvents.length === 1 ? (
                 <div style={{ background: 'rgba(108,99,255,0.1)', border: '1px solid rgba(108,99,255,0.25)', borderRadius: '0.5rem', padding: '0.5rem 0.75rem', color: 'white', fontSize: '0.85rem' }}>
-                  {events[0].name_ar || events[0].name}
-                  <span style={{ marginRight: '0.4rem', fontSize: '0.65rem', color: events[0].status === 'published' ? '#34d399' : '#94a3b8' }}>
-                    ● {events[0].status === 'published' ? 'منشور' : events[0].status === 'draft' ? 'مسودة' : events[0].status}
+                  {allowedEvents[0].name_ar || allowedEvents[0].name}
+                  <span style={{ marginRight: '0.4rem', fontSize: '0.65rem', color: allowedEvents[0].status === 'published' ? '#34d399' : '#94a3b8' }}>
+                    ● {allowedEvents[0].status === 'published' ? 'منشور' : allowedEvents[0].status === 'draft' ? 'مسودة' : allowedEvents[0].status}
                   </span>
                 </div>
               ) : (
@@ -384,7 +427,7 @@ function AdminDashboardInner() {
                   onFocus={e => (e.target.style.borderColor = '#6C63FF')}
                   onBlur={e => (e.target.style.borderColor = 'rgba(108,99,255,0.4)')}
                 >
-                  {events.map(ev => {
+                  {allowedEvents.map(ev => {
                     const statusIcon = ev.status === 'published' ? '🟢' : ev.status === 'archived' ? '🔴' : '🟡';
                     const statusLabel = ev.status === 'archived' ? ' (أرشيف)' : ev.status === 'draft' ? ' (مسودة)' : '';
                     return (
@@ -395,9 +438,9 @@ function AdminDashboardInner() {
                   })}
                 </select>
               )}
-              {events.length > 1 && (
+              {allowedEvents.length > 1 && (
                 <div style={{ marginTop: '0.4rem', fontSize: '0.7rem', color: '#6b7280', textAlign: 'center' }}>
-                  {events.length} أحداث — كل التبويبات تعمل على الحدث المختار
+                  {allowedEvents.length} أحداث — كل التبويبات تعمل على الحدث المختار
                 </div>
               )}
             </div>
@@ -458,14 +501,6 @@ function AdminDashboardInner() {
             onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(59,130,246,0.1)')}
           >
             👁️ عرض الحدث
-          </a>
-          {/* Approvals link — visible to super admins */}
-          <a href="/admin/approvals"
-            style={{ fontSize: '0.85rem', color: '#f59e0b', textDecoration: 'none', padding: '0.5rem', textAlign: 'center', background: 'rgba(245,158,11,0.1)', borderRadius: '0.4rem', border: '1px solid rgba(245,158,11,0.2)', cursor: 'pointer', transition: 'all 0.2s' }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(245,158,11,0.2)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(245,158,11,0.1)')}
-          >
-            👥 طلبات الانضمام
           </a>
           <button onClick={logout}
             style={{ fontSize: '0.85rem', color: '#f87171', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', padding: '0.5rem', borderRadius: '0.4rem', cursor: 'pointer', transition: 'all 0.2s' }}
@@ -531,7 +566,7 @@ function AdminDashboardInner() {
           {activeTab === 'countries'     && <AdminCountries key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'events_mgmt'   && <AdminEvents token={token} />}
           {/* CRM Tabs */}
-          {activeTab === 'crm_contacts'      && <AdminCRMUnified key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} />}
+          {activeTab === 'crm_unified'      && <AdminCRMUnified key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} />}
           {activeTab === 'crm_tasks'         && <AdminCRMTasks key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} />}
           {activeTab === 'crm_escalated'     && <AdminCRMTasks key={`esc-${eventId}`} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} mode="escalated" />}
           {activeTab === 'crm_sponsorships'  && <AdminCRMSponsorships key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} />}

@@ -130,6 +130,7 @@ export default function AdminCRMUnified({ token, apiBase, eventId }: Props) {
       setShowTaskForm(false);
       setDetailTab('info');
     }
+    return d;
   };
 
   const saveContact = async () => {
@@ -206,15 +207,22 @@ export default function AdminCRMUnified({ token, apiBase, eventId }: Props) {
           <p style={{ color: '#94a3b8', textAlign: 'center', padding: '2rem' }}>جاري التحميل...</p>
         ) : (
           <>
-            <div style={{ color: '#94a3b8', fontSize: '0.78rem', marginBottom: 8 }}>{total} جهة اتصال</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ color: '#94a3b8', fontSize: '0.78rem' }}>{total} جهة اتصال / تسجيل</span>
+            </div>
             {contacts.map(c => (
               <div key={c.id} onClick={() => openContact(c.id)} style={{
                 ...S.card, marginBottom: 8, cursor: 'pointer',
                 borderColor: selected?.id === c.id ? '#6C63FF' : 'rgba(108,99,255,0.15)',
                 display: 'flex', alignItems: 'center', gap: 10,
               }}>
-                <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#6C63FF,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0 }}>
+                <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#6C63FF,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0, position: 'relative' }}>
                   {c.full_name?.[0] || '?'}
+                  {!!c.tasks_count && (
+                    <span style={{ position: 'absolute', top: -4, left: -4, background: '#f59e0b', color: '#0d0b1a', fontSize: '0.6rem', fontWeight: 700, width: 16, height: 16, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {c.tasks_count}
+                    </span>
+                  )}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, color: 'white', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -224,11 +232,25 @@ export default function AdminCRMUnified({ token, apiBase, eventId }: Props) {
                     {c.org_name ? `🏢 ${c.org_name}` : c.email || c.phone || ''}
                   </div>
                   <div style={{ display: 'flex', gap: 4, marginTop: 3, flexWrap: 'wrap' }}>
-                    {!!c.reg_count && <span style={{ fontSize: '0.68rem', background: 'rgba(108,99,255,0.2)', color: '#818cf8', padding: '1px 5px', borderRadius: 3 }}>📋 {c.reg_count}</span>}
-                    {!!c.tasks_count && <span style={{ fontSize: '0.68rem', background: 'rgba(245,158,11,0.2)', color: '#fcd34d', padding: '1px 5px', borderRadius: 3 }}>✅ {c.tasks_count}</span>}
-                    {!!c.payment_count && <span style={{ fontSize: '0.68rem', background: 'rgba(16,185,129,0.2)', color: '#34d399', padding: '1px 5px', borderRadius: 3 }}>💳</span>}
+                    {!!c.reg_count && <span style={{ fontSize: '0.68rem', background: 'rgba(108,99,255,0.2)', color: '#818cf8', padding: '1px 5px', borderRadius: 3 }}>📋 {c.reg_count} تسجيل</span>}
+                    {!!c.tasks_count && <span style={{ fontSize: '0.68rem', background: 'rgba(245,158,11,0.2)', color: '#fcd34d', padding: '1px 5px', borderRadius: 3 }}>✅ {c.tasks_count} مهمة</span>}
+                    {!!c.payment_count && <span style={{ fontSize: '0.68rem', background: 'rgba(16,185,129,0.2)', color: '#34d399', padding: '1px 5px', borderRadius: 3 }}>💳 دفع</span>}
                   </div>
                 </div>
+                {/* Quick add task button */}
+                <button
+                  onClick={e => {
+                    e.stopPropagation();
+                    openContact(c.id).then(() => {
+                      setDetailTab('tasks');
+                      setShowTaskForm(true);
+                    });
+                  }}
+                  title="إضافة مهمة"
+                  style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', color: '#fcd34d', borderRadius: '0.35rem', padding: '0.2rem 0.5rem', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0 }}
+                >
+                  + مهمة
+                </button>
               </div>
             ))}
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 10 }}>
@@ -366,16 +388,37 @@ export default function AdminCRMUnified({ token, apiBase, eventId }: Props) {
                   <p style={{ color: '#6b7280', textAlign: 'center', padding: '2rem 0', margin: 0 }}>لا توجد تسجيلات</p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {registrations.map(reg => (
-                      <div key={reg.id} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '0.5rem', padding: '10px 12px', borderRight: '3px solid #6C63FF' }}>
-                        <div style={{ color: 'white', fontWeight: 600, fontSize: '0.88rem' }}>{reg.event_name_ar || reg.event_name || `تسجيل #${reg.id}`}</div>
-                        <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
-                          {reg.reg_type && <span style={{ fontSize: '0.72rem', background: 'rgba(108,99,255,0.2)', color: '#818cf8', padding: '2px 8px', borderRadius: 4 }}>{reg.reg_type}</span>}
-                          {reg.status && <span style={{ fontSize: '0.72rem', background: `${STATUS_COLORS[reg.status] || '#374151'}20`, color: STATUS_COLORS[reg.status] || '#94a3b8', padding: '2px 8px', borderRadius: 4 }}>{reg.status}</span>}
-                          <span style={{ fontSize: '0.7rem', color: '#4b5563' }}>{new Date(reg.created_at).toLocaleDateString('ar-SA')}</span>
+                    {registrations.map(reg => {
+                      // Find tasks linked to this registration
+                      const regTasks = tasks.filter((t: any) => t.registration_id === reg.id);
+                      return (
+                        <div key={reg.id} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '0.5rem', padding: '10px 12px', borderRight: '3px solid #6C63FF' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                              <div style={{ color: 'white', fontWeight: 600, fontSize: '0.88rem' }}>{reg.event_name_ar || reg.event_name || `تسجيل #${reg.id}`}</div>
+                              <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+                                {reg.reg_type && <span style={{ fontSize: '0.72rem', background: 'rgba(108,99,255,0.2)', color: '#818cf8', padding: '2px 8px', borderRadius: 4 }}>{reg.reg_type}</span>}
+                                {reg.status && <span style={{ fontSize: '0.72rem', background: `${STATUS_COLORS[reg.status] || '#374151'}20`, color: STATUS_COLORS[reg.status] || '#94a3b8', padding: '2px 8px', borderRadius: 4 }}>{reg.status}</span>}
+                                <span style={{ fontSize: '0.7rem', color: '#4b5563' }}>{new Date(reg.created_at).toLocaleDateString('ar-SA')}</span>
+                              </div>
+                            </div>
+                          </div>
+                          {/* Tasks linked to this registration */}
+                          {regTasks.length > 0 && (
+                            <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                              <div style={{ color: '#64748b', fontSize: '0.72rem', marginBottom: 4 }}>مهام مرتبطة:</div>
+                              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                                {regTasks.map((t: any) => (
+                                  <span key={t.id} style={{ fontSize: '0.7rem', background: `${PRIORITY_COLORS[t.priority] || '#374151'}20`, color: PRIORITY_COLORS[t.priority] || '#94a3b8', padding: '2px 8px', borderRadius: 4 }}>
+                                    ✅ {t.title}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import AdminPermissionsEditor from './AdminPermissionsEditor';
 
 const S = {
   inp: { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '0.5rem', padding: '0.55rem 0.85rem', color: 'white', outline: 'none', width: '100%', fontSize: '0.9rem', colorScheme: 'dark' } as React.CSSProperties,
@@ -38,6 +39,7 @@ export default function AdminManagement({ token, apiBase }: Props) {
   const [error, setError] = useState('');
   const [processing, setProcessing] = useState<number | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
+  const [editingPermsFor, setEditingPermsFor] = useState<{ id: number; name: string } | null>(null);
 
   const me = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('admin_user') || '{}') : {};
   const headers = { Authorization: `Bearer ${token}` };
@@ -179,6 +181,10 @@ export default function AdminManagement({ token, apiBase }: Props) {
                         <option value="viewer">👁️ مشاهد</option>
                         <option value="super_admin">👑 رئيسي</option>
                       </select>
+                      <button onClick={() => setEditingPermsFor({ id: admin.id, name: admin.name })}
+                        style={{ ...S.btn('#1e3a5f'), fontSize: '0.78rem', padding: '0.3rem 0.6rem', border: '1px solid rgba(59,130,246,0.4)', color: '#60a5fa' }}>
+                        🔐 صلاحيات
+                      </button>
                       <button onClick={() => deactivate(admin.id, admin.name)} disabled={processing === admin.id}
                         style={{ ...S.btn('#374151'), fontSize: '0.78rem', padding: '0.3rem 0.6rem', background: 'rgba(239,68,68,0.1)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.3)' }}>
                         🚫 تعطيل
@@ -192,6 +198,17 @@ export default function AdminManagement({ token, apiBase }: Props) {
           );
         })}
       </div>
+      
+      {/* Permissions Editor Modal */}
+      {editingPermsFor && (
+        <AdminPermissionsEditor
+          adminId={editingPermsFor.id}
+          adminName={editingPermsFor.name}
+          token={token}
+          apiBase={apiBase}
+          onClose={() => setEditingPermsFor(null)}
+        />
+      )}
     </div>
   );
 }
