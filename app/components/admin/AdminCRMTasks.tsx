@@ -14,6 +14,10 @@ interface Assignee {
   is_creator: number;
 }
 
+interface AdminUser {
+  id: number; name: string; email: string; google_picture?: string;
+}
+
 interface Task {
   id: number; title: string; task_type: string; assigned_to?: string;
   priority: string; status: string; due_date?: string;
@@ -41,13 +45,21 @@ export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all' }:
   const [saving, setSaving] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
-  // Multi-assignee state
-  const [extraAssignees, setExtraAssignees] = useState<string[]>([]);
-  const [assigneeInput, setAssigneeInput] = useState('');
+  // Admin dropdown for assignees
+  const [adminsList, setAdminsList] = useState<AdminUser[]>([]);
+  const [extraAssignees, setExtraAssignees] = useState<number[]>([]);
+  const [assigneeSearch, setAssigneeSearch] = useState('');
 
   const currentAdmin = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('admin_user') || '{}') : {};
 
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+
+  // Load admins for dropdown
+  useEffect(() => {
+    fetch(`${apiBase}/api/auth/admins-list`, { headers }).then(r => r.json()).then(d => {
+      if (d.success) setAdminsList(d.data || []);
+    }).catch(() => {});
+  }, [apiBase, token]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -72,14 +84,13 @@ export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all' }:
       const method = taskData.id ? 'PUT' : 'POST';
       const url = taskData.id ? `${apiBase}/api/crm/tasks/${taskData.id}` : `${apiBase}/api/crm/tasks`;
       const body = { ...taskData, event_id: eventId };
-      // Add creator info for new tasks
       if (!taskData.id) {
         (body as any).creator_email = currentAdmin.email || '';
         (body as any).creator_name = currentAdmin.name || '';
       }
       const res = await fetch(url, { method, headers, body: JSON.stringify(body) });
       const data = await res.json();
-      if (data.success) { setShowForm(false); setSelected(null); setExtraAssignees([]); setAssigneeInput(''); load(); }
+      if (data.success) { setShowForm(false); setSelected(null); setExtraAssignees([]); setAssigneeSearch(''); load(); }
       else alert(data.error);
     } finally { setSaving(false); }
   };
@@ -91,12 +102,9 @@ export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all' }:
     await save(body);
   };
 
-  const addAssignee = () => {
-    const email = assigneeInput.trim();
-    if (!email || extraAssignees.includes(email)) return;
-    setExtraAssignees(prev => [...prev, email]);
-    setAssigneeInput('');
-  };
+  const filteredAdmins = adminsList.filter(a =>
+    !assigneeSearch || a.name.toLowerCase().includes(assigneeSearch.toLowerCase()) || a.email.toLowerCase().includes(assigneeSearch.toLowerCase())
+  );
 
   return (
     <div>
@@ -218,7 +226,15 @@ export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all' }:
                 </div>
                 <div>
                   <label style={S.label}>المسؤول الرئيسي</label>
-                  <input style={{ ...S.inp, opacity: 0.6 }} value={form.id ? (form.assigned_to || '') : (currentAdmin.email || '')} readOnly={!form.id} onChange={e => form.id ? setForm(f => ({ ...f, assigned_to: e.target.value })) : undefined} />
+                  {form.id ? (
+                    // Edit mode: dropdown
+                    <select style={S.inp} value={form.assigned_to || ''} onChange={e => setForm(f => ({ ...f, assigned_to: e.target.value }))}>
+                      <option value="">-- اختر المسؤول --</option>
+                      {adminsList.map(a => <option key={a.id} value={a.email}>{a.name} ({a.email})</option>)}
+                    </select>
+                  ) : (
+                    <input style={{ ...S.inp, opacity: 0.6 }} value={currentAdmin.email || ''} readOnly />
+                  )}
                 </div>
                 <div>
                   <label style={S.label}>الموعد النهائي</label>
@@ -226,29 +242,38 @@ export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all' }:
                 </div>
               </div>
 
-              {/* Multi-assignee (new tasks only) */}
+              {/* Multi-assignee from dropdown (new tasks only) */}
               {!form.id && (
                 <div>
                   <label style={S.label}>مسؤولون إضافيون (اختياري)</label>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <input
-                      style={{ ...S.inp, flex: 1 }}
-                      type="email"
-                      placeholder="admin@example.com"
-                      value={assigneeInput}
-                      onChange={e => setAssigneeInput(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addAssignee(); } }}
-                    />
-                    <button style={S.btn('#374151')} type="button" onClick={addAssignee}>إضافة</button>
-                  </div>
-                  {extraAssignees.length > 0 && (
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
-                      {extraAssignees.map(email => (
-                        <span key={email} style={{ background: 'rgba(108,99,255,0.2)', color: '#818cf8', fontSize: '0.75rem', padding: '3px 8px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                          {email}
-                          <button onClick={() => setExtraAssignees(prev => prev.filter(e => e !== email))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0, fontSize: '0.9rem' }}>×</button>
-                        </span>
+                  <input style={{ ...S.inp, marginBottom: 6 }} placeholder="🔍 ابحث عن مسؤول..." value={assigneeSearch} onChange={e => setAssigneeSearch(e.target.value)} />
+                  {assigneeSearch && (
+                    <div style={{ background: '#0d0b1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.5rem', maxHeight: 150, overflowY: 'auto', marginBottom: 8 }}>
+                      {filteredAdmins.filter(a => a.email !== currentAdmin.email).map(admin => (
+                        <div key={admin.id} onClick={() => {
+                          if (!extraAssignees.includes(admin.id)) setExtraAssignees(prev => [...prev, admin.id]);
+                          setAssigneeSearch('');
+                        }} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.5rem 0.75rem', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(108,99,255,0.15)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                          {admin.google_picture ? <img src={admin.google_picture} style={{ width: 24, height: 24, borderRadius: '50%' }} alt="" /> : <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#6C63FF30', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', color: '#818cf8' }}>{admin.name?.[0]}</div>}
+                          <span style={{ color: 'white', fontSize: '0.82rem' }}>{admin.name}</span>
+                          {extraAssignees.includes(admin.id) && <span style={{ marginRight: 'auto', color: '#10b981' }}>✓</span>}
+                        </div>
                       ))}
+                    </div>
+                  )}
+                  {extraAssignees.length > 0 && (
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      {extraAssignees.map(id => {
+                        const a = adminsList.find(ad => ad.id === id);
+                        return (
+                          <span key={id} style={{ background: 'rgba(108,99,255,0.2)', color: '#818cf8', fontSize: '0.75rem', padding: '3px 8px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            {a?.name || a?.email}
+                            <button onClick={() => setExtraAssignees(prev => prev.filter(x => x !== id))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0, fontSize: '0.9rem' }}>×</button>
+                          </span>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -270,7 +295,10 @@ export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all' }:
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
               <button style={S.btn()} onClick={() => save({
                 ...form,
-                assignees: extraAssignees.map(email => ({ email })),
+                assignees: extraAssignees.map(id => {
+                  const a = adminsList.find(ad => ad.id === id);
+                  return { email: a?.email || '', name: a?.name || '' };
+                }),
               })} disabled={saving}>{saving ? 'جاري الحفظ...' : 'حفظ'}</button>
               <button style={S.btn('#374151')} onClick={() => setShowForm(false)}>إلغاء</button>
             </div>

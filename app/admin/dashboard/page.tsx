@@ -31,6 +31,8 @@ import AdminCRMRegistrations from '../../../app/components/admin/AdminCRMRegistr
 import AdminCRMPayments from '../../../app/components/admin/AdminCRMPayments';
 import AdminCRMTasks from '../../../app/components/admin/AdminCRMTasks';
 import AdminCRMSponsorships from '../../../app/components/admin/AdminCRMSponsorships';
+import AdminCRMUnified from '../../../app/components/admin/AdminCRMUnified';
+import AdminManagement from '../../../app/components/admin/AdminManagement';
 import type { FormConfig, SiteConfig } from '../../../lib/types';
 
 function getToken() { return typeof window !== 'undefined' ? localStorage.getItem('admin_token') || '' : ''; }
@@ -54,7 +56,7 @@ const TABS = [
   // القسم الرئيسي
   { key: 'overview',         label: '📊 نظرة عامة',         group: 'رئيسي' },
   { key: 'events_mgmt',      label: '🗂 الأحداث والأرشيف',   group: 'رئيسي' },
-  { key: 'profile',          label: '👤 إعدادات الأدمن',     group: 'رئيسي' },
+  { key: 'admins_mgmt',      label: '👥 إدارة المسؤولين',   group: 'رئيسي' },
   // إدارة التسجيلات والمبيعات (موحّد)
   { key: 'registrations',    label: '📋 التسجيلات',          group: 'المبيعات' },
   { key: 'payments',         label: '💳 المدفوعات',          group: 'المبيعات' },
@@ -523,13 +525,13 @@ function AdminDashboardInner() {
           {activeTab === 'articles'      && <ArticlesTab key={eventId} eventId={eventId} token={token} showToast={showToast} />}
           {activeTab === 'terms'         && <AdminTerms key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'pages'         && <AdminPages key={eventId} eventId={eventId} token={token} />}
-          {activeTab === 'profile'       && <ProfileTab token={token} showToast={showToast} />}
+          {activeTab === 'admins_mgmt'   && <AdminManagement token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} />}
           {activeTab === 'payments'      && <AdminPayments key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'campaigns'     && <AdminCampaigns key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'countries'     && <AdminCountries key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'events_mgmt'   && <AdminEvents token={token} />}
           {/* CRM Tabs */}
-          {activeTab === 'crm_contacts'      && <AdminCRMContacts key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} />}
+          {activeTab === 'crm_contacts'      && <AdminCRMUnified key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} />}
           {activeTab === 'crm_tasks'         && <AdminCRMTasks key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} />}
           {activeTab === 'crm_escalated'     && <AdminCRMTasks key={`esc-${eventId}`} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} mode="escalated" />}
           {activeTab === 'crm_sponsorships'  && <AdminCRMSponsorships key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} />}
