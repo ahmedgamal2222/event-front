@@ -337,6 +337,10 @@ function AdminDashboardInner() {
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
   const save = async (fn: () => Promise<any>) => {
+    if (isReadOnly) {
+      showToast('👁️ أنت في وضع المشاهدة فقط');
+      return;
+    }
     setSaving(true);
     try { 
       await fn();
@@ -544,7 +548,28 @@ function AdminDashboardInner() {
         </header>
 
         {/* Content Area */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '2rem' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '2rem', position: 'relative' }}>
+          {/* Read-only overlay — intercepts ALL clicks when user is moderator */}
+          {isReadOnly && (
+            <div
+              onClick={() => alert('أنت في وضع المشاهدة فقط.\nيمكنك الاطلاع على البيانات فقط.\nتواصل مع المسؤول الرئيسي لتفعيل صلاحياتك.')}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                zIndex: 50,
+                cursor: 'not-allowed',
+                background: 'transparent',
+              }}
+              title="وضع المشاهدة فقط — تواصل مع المسؤول الرئيسي"
+            />
+          )}
+          {/* Global style to visually dim interactive elements for read-only */}
+          {isReadOnly && (
+            <style>{`
+              button, input, select, textarea { opacity: 0.55 !important; cursor: not-allowed !important; }
+              button:hover, input:hover, select:hover { opacity: 0.55 !important; }
+            `}</style>
+          )}
           {/* Loading state while events haven't loaded yet */}
           {eventId === 0 && (
             <div style={{ textAlign: 'center', paddingTop: '4rem', color: '#94a3b8' }}>
