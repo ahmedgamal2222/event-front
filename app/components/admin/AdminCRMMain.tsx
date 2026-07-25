@@ -50,7 +50,7 @@ export default function AdminCRMMain({ token, apiBase, eventId }: Props) {
         gap: '0.5rem',
         flexWrap: 'wrap',
       }}>
-        {VIEWS.map(v => (
+        {allowedViews.map(v => (
           <button
             key={v.key}
             onClick={() => setView(v.key)}

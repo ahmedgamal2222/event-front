@@ -25,6 +25,7 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isPending, setIsPending] = useState(false);
+  const [isDisabled, setIsDisabled] = useState(false);
   const googleBtnRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -81,6 +82,9 @@ export default function AdminLoginPage() {
         if (data.error === 'pending_approval') {
           setIsPending(true);
           setError(data.message || 'سيتم اعتمادكم كمسؤول من قبل الإدارة وسنرسل لكم رسالة عند الاعتماد');
+        } else if (data.error === 'account_disabled') {
+          setIsDisabled(true);
+          setError(data.message || 'حسابك معطّل من قبل الإدارة');
         } else {
           setError(data.error || 'خطأ في تسجيل الدخول');
         }
@@ -96,7 +100,7 @@ export default function AdminLoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true); setError(''); setIsPending(false);
+    setLoading(true); setError(''); setIsPending(false); setIsDisabled(false);
     try {
       const res = await adminLogin(email, password) as any;
       if (res.data?.admin?.approval_status === 'pending') {
@@ -111,6 +115,9 @@ export default function AdminLoginPage() {
       if (err.message?.includes('pending')) {
         setIsPending(true);
         setError('سيتم اعتمادكم كمسؤول من قبل الإدارة وسنرسل لكم رسالة عند الاعتماد');
+      } else if (err.message?.includes('account_disabled') || err.message?.includes('معطّل')) {
+        setIsDisabled(true);
+        setError(err.message);
       } else {
         setError(err.message || 'بيانات الدخول غير صحيحة');
       }
@@ -138,8 +145,18 @@ export default function AdminLoginPage() {
             </div>
           )}
 
+          {/* رسالة الحساب المعطّل */}
+          {isDisabled && (
+            <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: '0.5rem', padding: '0.75rem 1rem', color: '#fca5a5', fontSize: '0.85rem', textAlign: 'center', lineHeight: 1.6 }}>
+              <div style={{ fontSize: '1.2rem', marginBottom: 4 }}>🚫</div>
+              <strong>حساب معطّل</strong>
+              <br />
+              {error || 'حسابك معطّل من قبل الإدارة، يرجى التواصل مع المسؤول الرئيسي'}
+            </div>
+          )}
+
           {/* رسالة الخطأ */}
-          {error && !isPending && (
+          {error && !isPending && !isDisabled && (
             <p className="text-red-400 text-sm text-center">{error}</p>
           )}
 

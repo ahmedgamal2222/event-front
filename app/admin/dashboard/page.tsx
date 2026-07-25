@@ -566,7 +566,7 @@ function AdminDashboardInner() {
           {activeTab === 'countries'     && <AdminCountries key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'events_mgmt'   && <AdminEvents token={token} />}
           {/* CRM Tabs - موحد في مكون واحد */}
-          {activeTab === 'crm_main'          && <AdminCRMMain key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} />}
+          {activeTab === 'crm_main'          && <AdminCRMMain key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} isSuperAdmin={isSuperAdmin} myPermissions={myPermissions} />}
           {activeTab === 'crm_sponsorships'  && <AdminCRMSponsorships key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} />}
           </>}
         </div>

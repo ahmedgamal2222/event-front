@@ -85,6 +85,19 @@ export default function AdminManagement({ token, apiBase }: Props) {
     setProcessing(null);
   };
 
+  const reactivate = async (id: number, name: string) => {
+    if (!confirm(`إعادة تنشيط حساب ${name}؟`)) return;
+    setProcessing(id);
+    const res = await fetch(`${apiBase}/api/auth/admins/${id}/reactivate`, {
+      method: 'POST',
+      headers,
+    });
+    const data = await res.json();
+    if (!data.success) alert(data.error || 'فشل إعادة التنشيط');
+    await load();
+    setProcessing(null);
+  };
+
   const changeRole = async (id: number, role: string) => {
     setProcessing(id);
     await fetch(`${apiBase}/api/auth/admins/${id}/role`, {
@@ -129,9 +142,9 @@ export default function AdminManagement({ token, apiBase }: Props) {
           return (
             <div key={admin.id} style={{
               ...S.card,
-              opacity: isDisabled ? 0.5 : 1,
+              opacity: isDisabled ? 0.7 : 1,
               display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap',
-              borderColor: admin.role === 'super_admin' ? 'rgba(245,158,11,0.3)' : 'rgba(108,99,255,0.15)',
+              borderColor: isDisabled ? 'rgba(239,68,68,0.3)' : admin.role === 'super_admin' ? 'rgba(245,158,11,0.3)' : 'rgba(108,99,255,0.15)',
             }}>
               {/* Avatar */}
               {admin.google_picture ? (
@@ -190,6 +203,13 @@ export default function AdminManagement({ token, apiBase }: Props) {
                         🚫 تعطيل
                       </button>
                     </>
+                  )}
+                  {/* زر إعادة التنشيط للحسابات المعطّلة */}
+                  {admin.is_active === 0 && (
+                    <button onClick={() => reactivate(admin.id, admin.name)} disabled={processing === admin.id}
+                      style={{ ...S.btn('#10b981'), fontSize: '0.78rem', padding: '0.3rem 0.8rem' }}>
+                      ✅ تنشيط
+                    </button>
                   )}
                   {processing === admin.id && <span style={{ color: '#94a3b8', fontSize: '0.8rem', alignSelf: 'center' }}>...</span>}
                 </div>
