@@ -228,9 +228,17 @@ export default function AdminEventRegistrations({ token, eventId, readOnly }: Pr
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(0,0,0,0.2)' }}>
-                  {['الاسم', 'البريد', 'النوع', 'المدينة', 'الحالة', 'تغيير الحالة', ''].map(h => (
-                    <th key={h} style={{ textAlign: 'right', padding: '0.6rem 0.85rem', color: '#94a3b8', fontWeight: 600, fontSize: '0.72rem', whiteSpace: 'nowrap' }}>{h}</th>
+                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(0,0,0,0.18)' }}>
+                  {[
+                    { h: 'الاسم',   w: '' },
+                    { h: 'البريد',  w: '' },
+                    { h: 'النوع',   w: '90px' },
+                    { h: 'المدينة', w: '80px' },
+                    { h: 'الحالة',  w: '90px' },
+                    { h: 'تغيير',   w: '110px' },
+                    { h: '',         w: '50px' },
+                  ].map(({ h, w }) => (
+                    <th key={h} style={{ textAlign: 'right', padding: '0.55rem 0.85rem', color: '#64748b', fontWeight: 600, fontSize: '0.68rem', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', width: w || undefined }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -241,6 +249,7 @@ export default function AdminEventRegistrations({ token, eventId, readOnly }: Pr
                   <tr><td colSpan={7} style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>لا توجد تسجيلات</td></tr>
                 ) : regs.map(reg => {
                   const sc = STATUS_CONFIG[reg.status] || { label: reg.status, color: '#6b7280' };
+                  const ti = getTypeInfo(reg);
                   const isSelected = selected?.id === reg.id;
                   const isConverted = converted.has(reg.id) || !!reg.contact_id;
                   return (
@@ -248,56 +257,75 @@ export default function AdminEventRegistrations({ token, eventId, readOnly }: Pr
                       key={reg.id}
                       onClick={() => { setSelected(reg); setShowTaskForm(false); }}
                       style={{
-                        borderTop: '1px solid rgba(255,255,255,0.05)',
+                        borderTop: '1px solid rgba(255,255,255,0.04)',
                         cursor: 'pointer',
-                        background: isSelected ? 'rgba(108,99,255,0.12)' : 'transparent',
+                        background: isSelected ? 'rgba(108,99,255,0.1)' : 'transparent',
                         transition: 'background 0.1s',
                       }}
-                      onMouseEnter={e => { if (!isSelected) (e.currentTarget.style.background = 'rgba(255,255,255,0.03)'); }}
+                      onMouseEnter={e => { if (!isSelected) (e.currentTarget.style.background = 'rgba(255,255,255,0.025)'); }}
                       onMouseLeave={e => { if (!isSelected) (e.currentTarget.style.background = 'transparent'); }}
                     >
-                      <td style={{ padding: '0.65rem 0.85rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#6C63FF,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', flexShrink: 0 }}>
-                            {getName(reg)[0] || '?'}
+                      {/* الاسم */}
+                      <td style={{ padding: '0.55rem 0.85rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                          <div style={{ width: 26, height: 26, borderRadius: '50%', background: `${ti.color}30`, border: `1px solid ${ti.color}50`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', flexShrink: 0, color: ti.color }}>
+                            {ti.icon}
                           </div>
-                          <div>
-                            <div style={{ color: 'white', fontWeight: 500 }}>{getName(reg)}</div>
-                            {isConverted && <div style={{ fontSize: '0.65rem', color: '#10b981' }}>✓ جهة اتصال</div>}
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ color: 'white', fontWeight: 500, fontSize: '0.82rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getName(reg)}</div>
+                            {isConverted && <div style={{ fontSize: '0.62rem', color: '#10b981' }}>✓ جهة اتصال</div>}
                           </div>
                         </div>
                       </td>
-                      <td style={{ padding: '0.65rem 0.85rem', color: '#94a3b8', fontSize: '0.78rem' }}>{reg.email || '—'}</td>
-                      <td style={{ padding: '0.65rem 0.85rem' }}>
-                        {(() => { const ti = getTypeInfo(reg); return <span style={{ background: `${ti.color}22`, color: ti.color, fontSize: '0.7rem', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>{ti.icon} {ti.label}</span>; })()}
+                      {/* البريد */}
+                      <td style={{ padding: '0.55rem 0.85rem', color: '#64748b', fontSize: '0.75rem', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{reg.email || '—'}</td>
+                      {/* النوع - badge صغير نظيف */}
+                      <td style={{ padding: '0.55rem 0.85rem' }}>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 3,
+                          background: `${ti.color}18`, color: ti.color,
+                          fontSize: '0.68rem', fontWeight: 600,
+                          padding: '2px 7px', borderRadius: '999px',
+                          border: `1px solid ${ti.color}30`,
+                          whiteSpace: 'nowrap',
+                        }}>{ti.icon} {ti.label}</span>
                       </td>
-                      <td style={{ padding: '0.65rem 0.85rem', color: '#94a3b8' }}>{reg.city || '—'}</td>
-                      <td style={{ padding: '0.65rem 0.85rem' }}>
-                        <span style={{ background: sc.color + '20', color: sc.color, fontSize: '0.72rem', padding: '2px 8px', borderRadius: 4 }}>{sc.label}</span>
+                      {/* المدينة */}
+                      <td style={{ padding: '0.55rem 0.85rem', color: '#64748b', fontSize: '0.75rem' }}>{reg.city || '—'}</td>
+                      {/* الحالة - dot بسيط */}
+                      <td style={{ padding: '0.55rem 0.85rem' }}>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 4,
+                          fontSize: '0.72rem', color: sc.color,
+                          fontWeight: 500, whiteSpace: 'nowrap',
+                        }}>
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: sc.color, flexShrink: 0, display: 'inline-block' }} />
+                          {sc.label.replace(/^[^\u0600-\u06FF ]+/, '').trim()}
+                        </span>
                       </td>
-                      <td style={{ padding: '0.5rem 0.85rem' }} onClick={e => e.stopPropagation()}>
+                      {/* تغيير الحالة */}
+                      <td style={{ padding: '0.4rem 0.7rem' }} onClick={e => e.stopPropagation()}>
                         <select
                           value={reg.status}
                           onChange={e => { if (roAlert()) return; changeStatus(reg.id, e.target.value); }}
                           disabled={readOnly}
-                          style={{ ...S.inp, width: 'auto', padding: '0.25rem 0.5rem', fontSize: '0.72rem', ...(readOnly ? roStyle : {}) }}
+                          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.35rem', color: '#94a3b8', fontSize: '0.7rem', padding: '0.2rem 0.35rem', outline: 'none', cursor: readOnly ? 'not-allowed' : 'pointer', colorScheme: 'dark', ...(readOnly ? roStyle : {}) }}
                           title={readOnly ? 'وضع المشاهدة فقط' : ''}
                         >
-                          {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                          {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label.replace(/^[^\u0600-\u06FF ]+/, '').trim()}</option>)}
                         </select>
                       </td>
-                      <td style={{ padding: '0.5rem 0.85rem' }} onClick={e => e.stopPropagation()}>
+                      {/* جهة اتصال */}
+                      <td style={{ padding: '0.4rem 0.7rem' }} onClick={e => e.stopPropagation()}>
                         {!isConverted ? (
                           <button
                             onClick={() => { if (roAlert()) return; convertToContact(reg); }}
                             disabled={readOnly || converting}
-                            style={{ ...S.btn('#1e3a5f'), fontSize: '0.7rem', padding: '0.25rem 0.5rem', border: '1px solid rgba(59,130,246,0.4)', color: '#60a5fa', whiteSpace: 'nowrap', ...(readOnly ? roStyle : {}) }}
-                            title={readOnly ? 'وضع المشاهدة فقط' : ''}
-                          >
-                            👤 جهة اتصال
-                          </button>
+                            style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', color: '#60a5fa', borderRadius: '0.35rem', padding: '0.2rem 0.6rem', cursor: (readOnly || converting) ? 'not-allowed' : 'pointer', fontSize: '0.68rem', fontWeight: 600, whiteSpace: 'nowrap', ...(readOnly ? roStyle : {}) }}
+                            title={readOnly ? 'وضع المشاهدة فقط' : 'إضافة لجهات الاتصال'}
+                          >👤 +</button>
                         ) : (
-                          <span style={{ color: '#10b981', fontSize: '0.7rem' }}>✓</span>
+                          <span style={{ color: '#10b981', fontSize: '0.72rem' }}>✓</span>
                         )}
                       </td>
                     </tr>
