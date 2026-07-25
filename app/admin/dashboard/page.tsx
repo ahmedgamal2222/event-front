@@ -32,7 +32,9 @@ import AdminCRMPayments from '../../../app/components/admin/AdminCRMPayments';
 import AdminCRMTasks from '../../../app/components/admin/AdminCRMTasks';
 import AdminCRMSponsorships from '../../../app/components/admin/AdminCRMSponsorships';
 import AdminCRMUnified from '../../../app/components/admin/AdminCRMUnified';
-import AdminManagement from '../../../app/components/admin/AdminManagement';import type { FormConfig, SiteConfig } from '../../../lib/types';
+import AdminCRMMain from '../../../app/components/admin/AdminCRMMain';
+import AdminManagement from '../../../app/components/admin/AdminManagement';
+import type { FormConfig, SiteConfig } from '../../../lib/types';
 
 function getToken() { return typeof window !== 'undefined' ? localStorage.getItem('admin_token') || '' : ''; }
 
@@ -56,15 +58,11 @@ const TABS = [
   { key: 'overview',         label: '📊 نظرة عامة',         group: 'رئيسي' },
   { key: 'events_mgmt',      label: '🗂 الأحداث والأرشيف',   group: 'رئيسي' },
   { key: 'admins_mgmt',      label: '👥 إدارة المسؤولين',   group: 'رئيسي' },
-  // إدارة التسجيلات والمبيعات (موحّد)
-  { key: 'registrations',    label: '📋 التسجيلات',          group: 'المبيعات' },
+  // إدارة المبيعات
   { key: 'payments',         label: '💳 المدفوعات',          group: 'المبيعات' },
   { key: 'tickets',          label: '🎫 التذاكر',            group: 'المبيعات' },
-  // CRM المتكامل
-  { key: 'crm_unified',     label: '👥 جهات الاتصال والتسجيلات', group: 'CRM' },
-  { key: 'crm_tasks',        label: '✅ لوحة المهام',             group: 'CRM' },
-  { key: 'crm_escalated',    label: '🔺 المصعّدات',               group: 'CRM' },
-  // crm_sponsorships مخفي مؤقتاً
+  // CRM المتكامل - تاب واحد يجمع كل شيء
+  { key: 'crm_main',         label: '📊 إدارة علاقات العملاء',    group: 'CRM' },
   // إدارة الحدث
   { key: 'event',            label: '⚙️ معلومات الحدث',     group: 'الحدث' },
   { key: 'video',            label: '🎬 الفيديو التعريفي',   group: 'الحدث' },
@@ -349,11 +347,11 @@ function AdminDashboardInner() {
     // Always-visible tabs (no permission needed)
     const alwaysTabs = ['overview', 'admins_mgmt'];
     if (alwaysTabs.includes(tabKey)) return true;
-    // crm_unified maps to both registrations and crm_contacts permissions
-    if (tabKey === 'crm_unified') {
+    // crm_main يشمل registrations و crm_contacts و المهام
+    if (tabKey === 'crm_main' || tabKey === 'crm_unified') {
       for (const perm of myPermissions) {
         if (perm.event_id === null || perm.event_id === eventId) {
-          if (['registrations', 'crm_contacts', 'crm_unified', 'all'].some(k => perm.sections.includes(k))) return true;
+          if (['registrations', 'crm_contacts', 'crm_unified', 'crm_main', 'all'].some(k => perm.sections.includes(k))) return true;
         }
       }
       return false;
@@ -565,10 +563,8 @@ function AdminDashboardInner() {
           {activeTab === 'campaigns'     && <AdminCampaigns key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'countries'     && <AdminCountries key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'events_mgmt'   && <AdminEvents token={token} />}
-          {/* CRM Tabs */}
-          {activeTab === 'crm_unified'      && <AdminCRMUnified key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} />}
-          {activeTab === 'crm_tasks'         && <AdminCRMTasks key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} />}
-          {activeTab === 'crm_escalated'     && <AdminCRMTasks key={`esc-${eventId}`} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} mode="escalated" />}
+          {/* CRM Tabs - موحد في مكون واحد */}
+          {activeTab === 'crm_main'          && <AdminCRMMain key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} />}
           {activeTab === 'crm_sponsorships'  && <AdminCRMSponsorships key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} />}
           </>}
         </div>

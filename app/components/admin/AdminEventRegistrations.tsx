@@ -1,0 +1,485 @@
+'use client';
+/**
+ * AdminEventRegistrations — عرض التسجيلات الحقيقية للحدث مع CRM integration
+ * يجلب من: /api/events/:id/registrations
+ * يتيح: عرض، فلترة، تغيير الحالة، تحويل إلى جهة اتصال، إضافة مهمة
+ */
+import { useState, useEffect, useCallback } from 'react';
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
+
+const S = {
+  inp: { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '0.5rem', padding: '0.55rem 0.85rem', color: 'white', outline: 'none', width: '100%', fontSize: '0.9rem', colorScheme: 'dark' } as React.CSSProperties,
+  btn: (color = '#6C63FF') => ({ background: color, color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.45rem 1rem', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 } as React.CSSProperties),
+  card: { background: '#13102a', border: '1px solid rgba(108,99,255,0.15)', borderRadius: '1rem', padding: '1.25rem' } as React.CSSProperties,
+  label: { fontSize: '0.78rem', color: '#94a3b8', marginBottom: '0.3rem', display: 'block' } as React.CSSProperties,
+};
+
+const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+  pending:    { label: '⏳ قيد الانتظار',  color: '#f59e0b' },
+  approved:   { label: '✅ مقبول',          color: '#10b981' },
+  paid:       { label: '💰 دفع مؤكد',      color: '#06b6d4' },
+  rejected:   { label: '❌ مرفوض',          color: '#ef4444' },
+  waitlisted: { label: '🕐 قائمة انتظار',  color: '#8b5cf6' },
+  cancelled:  { label: '🚫 ملغى',           color: '#6b7280' },
+  checked_in: { label: '✔️ حضر',            color: '#10b981' },
+};
+
+interface Reg {
+  id: number; name?: string; full_name?: string; email?: string; phone?: string;
+  city?: string; reg_type?: string; type?: string; status: string;
+  created_at: string; contact_id?: number;
+  participation_reason?: string; work_field?: string;
+}
+
+interface AdminUser { id: number; name: string; email: string; google_picture?: string; }
+
+interface Props {
+  token: string;
+  eventId: number;
+}
+
+export default function AdminEventRegistrations({ token, eventId }: Props) {
+  const [regs, setRegs] = useState<Reg[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [page, setPage] = useState(0);
+  const LIMIT = 25;
+
+  const [selected, setSelected] = useState<Reg | null>(null);
+  const [converting, setConverting] = useState(false);
+  const [converted, setConverted] = useState<Set<number>>(new Set());
+
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [taskForm, setTaskForm] = useState<any>({ task_type: 'follow_up', priority: 'normal' });
+  const [savingTask, setSavingTask] = useState(false);
+  const [adminsList, setAdminsList] = useState<AdminUser[]>([]);
+  const [assigneeSearch, setAssigneeSearch] = useState('');
+  const [extraAssignees, setExtraAssignees] = useState<number[]>([]);
+
+  const currentUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('admin_user') || '{}') : {};
+  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+
+  // Load admins list
+  useEffect(() => {
+    fetch(`${API_BASE}/api/auth/admins-list`, { headers }).then(r => r.json()).then(d => {
+      if (d.success) setAdminsList(d.data || []);
+    }).catch(() => {});
+  }, [token]);
+
+  const load = useCallback(async () => {
+    if (!token || !eventId) return;
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (statusFilter) params.set('status', statusFilter);
+      if (search) params.set('search', search);
+      params.set('limit', String(LIMIT));
+      params.set('offset', String(page * LIMIT));
+      const res = await fetch(`${API_BASE}/api/events/${eventId}/registrations?${params}`, { headers });
+      const d = await res.json();
+      if (d.success) { setRegs(d.data || []); setTotal(d.total || 0); }
+    } finally { setLoading(false); }
+  }, [token, eventId, statusFilter, search, page]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const changeStatus = async (id: number, status: string) => {
+    setRegs(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+    if (selected?.id === id) setSelected(s => s ? { ...s, status } : null);
+    await fetch(`${API_BASE}/api/events/${eventId}/registrations/${id}`, {
+      method: 'PUT', headers, body: JSON.stringify({ status }),
+    });
+  };
+
+  const convertToContact = async (reg: Reg) => {
+    setConverting(true);
+    try {
+      // First check if contact already exists by email
+      const name = reg.full_name || reg.name || '';
+      const body = {
+        full_name: name,
+        email: reg.email || '',
+        phone: reg.phone || '',
+        city: reg.city || '',
+        source: 'registration',
+        notes: `تحويل من تسجيل الحدث #${eventId}. النوع: ${reg.reg_type || reg.type || 'عام'}.${reg.participation_reason ? ` سبب المشاركة: ${reg.participation_reason}` : ''}`,
+        is_vip: 0,
+      };
+
+      const res = await fetch(`${API_BASE}/api/crm/contacts`, {
+        method: 'POST', headers, body: JSON.stringify(body),
+      });
+      const d = await res.json();
+      if (d.success) {
+        const contactId = d.data?.id || d.id;
+        setConverted(prev => new Set([...prev, reg.id]));
+        // Link registration to contact if contact_id column exists
+        if (contactId) {
+          await fetch(`${API_BASE}/api/events/${eventId}/registrations/${reg.id}`, {
+            method: 'PUT', headers, body: JSON.stringify({ contact_id: contactId }),
+          }).catch(() => {});
+        }
+        setSelected(s => s ? { ...s, contact_id: contactId } : null);
+        alert(`✅ تم إضافة "${name}" إلى جهات الاتصال`);
+      } else {
+        alert(d.error || 'حدث خطأ');
+      }
+    } finally { setConverting(false); }
+  };
+
+  const saveTask = async () => {
+    if (!selected || !taskForm.title) return;
+    setSavingTask(true);
+    try {
+      const assignees = extraAssignees.map(id => {
+        const a = adminsList.find(ad => ad.id === id);
+        return { email: a?.email || '', name: a?.name || '' };
+      });
+      const res = await fetch(`${API_BASE}/api/crm/tasks`, {
+        method: 'POST', headers,
+        body: JSON.stringify({
+          ...taskForm,
+          registration_id: selected.id,
+          contact_id: selected.contact_id,
+          event_id: eventId,
+          creator_email: currentUser.email || '',
+          creator_name: currentUser.name || '',
+          assignees,
+        }),
+      });
+      const d = await res.json();
+      if (d.success) {
+        setShowTaskForm(false);
+        setTaskForm({ task_type: 'follow_up', priority: 'normal' });
+        setExtraAssignees([]);
+        setAssigneeSearch('');
+        alert('✅ تم إنشاء المهمة');
+      } else alert(d.error);
+    } finally { setSavingTask(false); }
+  };
+
+  const filteredAdmins = adminsList.filter(a =>
+    !assigneeSearch || a.name.toLowerCase().includes(assigneeSearch.toLowerCase()) || a.email.includes(assigneeSearch)
+  );
+
+  const getName = (r: Reg) => r.full_name || r.name || '—';
+  const getType = (r: Reg) => r.reg_type || r.type || 'عام';
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr 360px' : '1fr', gap: 16, alignItems: 'start' }}>
+      {/* ── List ── */}
+      <div>
+        {/* Filters */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+          <input
+            style={{ ...S.inp, flex: '1 1 200px' }}
+            placeholder="🔍 بحث بالاسم أو البريد..."
+            value={search}
+            onChange={e => { setSearch(e.target.value); setPage(0); }}
+          />
+          <select style={{ ...S.inp, flex: '0 0 165px' }} value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(0); }}>
+            <option value="">كل الحالات</option>
+            {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+          </select>
+          <button style={S.btn('#374151')} onClick={load}>🔄</button>
+        </div>
+
+        {/* Stats bar */}
+        <div style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: 10 }}>
+          {total} تسجيل إجمالي
+          {converted.size > 0 && <span style={{ color: '#10b981', marginRight: 8 }}>· {converted.size} تم تحويلهم لجهات اتصال</span>}
+        </div>
+
+        {/* Table */}
+        <div style={{ ...S.card, padding: 0, overflow: 'hidden' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(0,0,0,0.2)' }}>
+                  {['الاسم', 'البريد', 'النوع', 'المدينة', 'الحالة', 'تغيير الحالة', ''].map(h => (
+                    <th key={h} style={{ textAlign: 'right', padding: '0.6rem 0.85rem', color: '#94a3b8', fontWeight: 600, fontSize: '0.72rem', whiteSpace: 'nowrap' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>جاري التحميل...</td></tr>
+                ) : regs.length === 0 ? (
+                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>لا توجد تسجيلات</td></tr>
+                ) : regs.map(reg => {
+                  const sc = STATUS_CONFIG[reg.status] || { label: reg.status, color: '#6b7280' };
+                  const isSelected = selected?.id === reg.id;
+                  const isConverted = converted.has(reg.id) || !!reg.contact_id;
+                  return (
+                    <tr
+                      key={reg.id}
+                      onClick={() => { setSelected(reg); setShowTaskForm(false); }}
+                      style={{
+                        borderTop: '1px solid rgba(255,255,255,0.05)',
+                        cursor: 'pointer',
+                        background: isSelected ? 'rgba(108,99,255,0.12)' : 'transparent',
+                        transition: 'background 0.1s',
+                      }}
+                      onMouseEnter={e => { if (!isSelected) (e.currentTarget.style.background = 'rgba(255,255,255,0.03)'); }}
+                      onMouseLeave={e => { if (!isSelected) (e.currentTarget.style.background = 'transparent'); }}
+                    >
+                      <td style={{ padding: '0.65rem 0.85rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#6C63FF,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', flexShrink: 0 }}>
+                            {getName(reg)[0] || '?'}
+                          </div>
+                          <div>
+                            <div style={{ color: 'white', fontWeight: 500 }}>{getName(reg)}</div>
+                            {isConverted && <div style={{ fontSize: '0.65rem', color: '#10b981' }}>✓ جهة اتصال</div>}
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: '0.65rem 0.85rem', color: '#94a3b8', fontSize: '0.78rem' }}>{reg.email || '—'}</td>
+                      <td style={{ padding: '0.65rem 0.85rem' }}>
+                        <span style={{ background: 'rgba(108,99,255,0.2)', color: '#818cf8', fontSize: '0.7rem', padding: '2px 8px', borderRadius: 4 }}>{getType(reg)}</span>
+                      </td>
+                      <td style={{ padding: '0.65rem 0.85rem', color: '#94a3b8' }}>{reg.city || '—'}</td>
+                      <td style={{ padding: '0.65rem 0.85rem' }}>
+                        <span style={{ background: sc.color + '20', color: sc.color, fontSize: '0.72rem', padding: '2px 8px', borderRadius: 4 }}>{sc.label}</span>
+                      </td>
+                      <td style={{ padding: '0.5rem 0.85rem' }} onClick={e => e.stopPropagation()}>
+                        <select
+                          value={reg.status}
+                          onChange={e => changeStatus(reg.id, e.target.value)}
+                          style={{ ...S.inp, width: 'auto', padding: '0.25rem 0.5rem', fontSize: '0.72rem' }}
+                        >
+                          {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                        </select>
+                      </td>
+                      <td style={{ padding: '0.5rem 0.85rem' }} onClick={e => e.stopPropagation()}>
+                        {!isConverted ? (
+                          <button
+                            onClick={() => convertToContact(reg)}
+                            disabled={converting}
+                            style={{ ...S.btn('#1e3a5f'), fontSize: '0.7rem', padding: '0.25rem 0.5rem', border: '1px solid rgba(59,130,246,0.4)', color: '#60a5fa', whiteSpace: 'nowrap' }}
+                          >
+                            👤 جهة اتصال
+                          </button>
+                        ) : (
+                          <span style={{ color: '#10b981', fontSize: '0.7rem' }}>✓</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {total > LIMIT && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.65rem 1rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                {page * LIMIT + 1}–{Math.min((page + 1) * LIMIT, total)} من {total}
+              </span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button disabled={page === 0} onClick={() => setPage(p => p - 1)} style={{ ...S.btn('#374151'), opacity: page === 0 ? 0.4 : 1 }}>السابق</button>
+                <button disabled={(page + 1) * LIMIT >= total} onClick={() => setPage(p => p + 1)} style={{ ...S.btn('#374151'), opacity: (page + 1) * LIMIT >= total ? 0.4 : 1 }}>التالي</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Detail Panel ── */}
+      {selected && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {/* Header card */}
+          <div style={{ ...S.card, borderColor: 'rgba(108,99,255,0.3)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,#6C63FF,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
+                  {getName(selected)[0] || '?'}
+                </div>
+                <div>
+                  <div style={{ color: 'white', fontWeight: 700, fontSize: '0.95rem' }}>{getName(selected)}</div>
+                  <div style={{ color: '#64748b', fontSize: '0.78rem' }}>{selected.email || selected.phone}</div>
+                </div>
+              </div>
+              <button style={{ ...S.btn('#374151'), padding: '0.3rem 0.6rem' }} onClick={() => { setSelected(null); setShowTaskForm(false); }}>✕</button>
+            </div>
+
+            {/* Info grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              {[
+                ['📱', selected.phone || '—'],
+                ['🏙️', selected.city || '—'],
+                ['📋', getType(selected)],
+                ['📅', new Date(selected.created_at).toLocaleDateString('ar-SA')],
+              ].map(([icon, val], i) => (
+                <div key={i} style={{ color: '#cbd5e1', fontSize: '0.8rem' }}><span style={{ opacity: 0.6 }}>{icon} </span>{val}</div>
+              ))}
+            </div>
+
+            {selected.participation_reason && (
+              <div style={{ marginTop: 10, padding: '8px 10px', background: 'rgba(255,255,255,0.04)', borderRadius: '0.5rem', color: '#94a3b8', fontSize: '0.78rem' }}>
+                <span style={{ color: '#64748b' }}>السبب: </span>{selected.participation_reason}
+              </div>
+            )}
+
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+              {/* Convert to contact button - Professional UI */}
+              {!converted.has(selected.id) && !selected.contact_id ? (
+                <button
+                  onClick={() => convertToContact(selected)}
+                  disabled={converting}
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(59,130,246,0.2), rgba(16,185,129,0.15))',
+                    border: '1px solid rgba(59,130,246,0.4)',
+                    color: '#60a5fa',
+                    borderRadius: '0.5rem',
+                    padding: '0.5rem 1rem',
+                    cursor: converting ? 'not-allowed' : 'pointer',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={e => { if (!converting) (e.currentTarget.style.borderColor = '#3b82f6'); }}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(59,130,246,0.4)')}
+                >
+                  {converting ? '⏳ جاري الإضافة...' : '👤 إضافة لجهات الاتصال'}
+                </button>
+              ) : (
+                <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', color: '#34d399', borderRadius: '0.5rem', padding: '0.5rem 1rem', fontSize: '0.82rem' }}>
+                  ✓ تم الإضافة لجهات الاتصال
+                </div>
+              )}
+
+              <button
+                onClick={() => setShowTaskForm(!showTaskForm)}
+                style={{
+                  background: showTaskForm ? 'rgba(245,158,11,0.2)' : 'rgba(245,158,11,0.1)',
+                  border: '1px solid rgba(245,158,11,0.4)',
+                  color: '#fcd34d',
+                  borderRadius: '0.5rem',
+                  padding: '0.5rem 1rem',
+                  cursor: 'pointer',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                }}
+              >
+                {showTaskForm ? '✕ إلغاء' : '✅ + مهمة'}
+              </button>
+
+              {/* Status change */}
+              <select
+                value={selected.status}
+                onChange={e => changeStatus(selected.id, e.target.value)}
+                style={{ ...S.inp, flex: 1, minWidth: 120, fontSize: '0.8rem' }}
+              >
+                {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Task Form */}
+          {showTaskForm && (
+            <div style={{ ...S.card, borderColor: 'rgba(108,99,255,0.35)', background: 'rgba(108,99,255,0.06)' }}>
+              <div style={{ color: '#818cf8', fontWeight: 700, fontSize: '0.88rem', marginBottom: 12 }}>
+                ✅ مهمة جديدة — {getName(selected)}
+              </div>
+
+              {currentUser.name && (
+                <div style={{ background: 'rgba(108,99,255,0.12)', borderRadius: '0.4rem', padding: '0.35rem 0.7rem', marginBottom: 10, fontSize: '0.75rem', color: '#818cf8' }}>
+                  👑 المسؤول الرئيسي: <strong>{currentUser.name}</strong>
+                </div>
+              )}
+
+              <div style={{ display: 'grid', gap: 8 }}>
+                <div>
+                  <label style={S.label}>عنوان المهمة *</label>
+                  <input style={S.inp} value={taskForm.title || ''} onChange={e => setTaskForm((f: any) => ({ ...f, title: e.target.value }))} placeholder="وصف واضح للمهمة..." />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <div>
+                    <label style={S.label}>النوع</label>
+                    <select style={S.inp} value={taskForm.task_type} onChange={e => setTaskForm((f: any) => ({ ...f, task_type: e.target.value }))}>
+                      <option value="follow_up">متابعة</option>
+                      <option value="call">مكالمة</option>
+                      <option value="verify_payment">تحقق دفعة</option>
+                      <option value="review_application">مراجعة طلب</option>
+                      <option value="other">أخرى</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={S.label}>الأولوية</label>
+                    <select style={S.inp} value={taskForm.priority} onChange={e => setTaskForm((f: any) => ({ ...f, priority: e.target.value }))}>
+                      <option value="urgent">🔴 عاجل</option>
+                      <option value="high">🟠 مرتفع</option>
+                      <option value="normal">🟡 عادي</option>
+                      <option value="low">⚪ منخفض</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label style={S.label}>إضافة مسؤولين (يستلمون إشعار بريدي)</label>
+                  <input
+                    style={S.inp}
+                    placeholder="🔍 ابحث عن مسؤول..."
+                    value={assigneeSearch}
+                    onChange={e => setAssigneeSearch(e.target.value)}
+                  />
+                  {assigneeSearch && filteredAdmins.length > 0 && (
+                    <div style={{ background: '#0d0b1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.5rem', maxHeight: 130, overflowY: 'auto', marginTop: 4 }}>
+                      {filteredAdmins.filter(a => a.email !== currentUser.email).map(admin => (
+                        <div key={admin.id}
+                          onClick={() => { if (!extraAssignees.includes(admin.id)) setExtraAssignees(p => [...p, admin.id]); setAssigneeSearch(''); }}
+                          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.45rem 0.75rem', cursor: 'pointer' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(108,99,255,0.15)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                          {admin.google_picture ? (
+                            <img src={admin.google_picture} style={{ width: 24, height: 24, borderRadius: '50%' }} alt="" />
+                          ) : (
+                            <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#6C63FF40', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8', fontSize: '0.75rem' }}>{admin.name[0]}</div>
+                          )}
+                          <div>
+                            <div style={{ color: 'white', fontSize: '0.8rem' }}>{admin.name}</div>
+                            <div style={{ color: '#64748b', fontSize: '0.7rem' }}>{admin.email}</div>
+                          </div>
+                          {extraAssignees.includes(admin.id) && <span style={{ marginRight: 'auto', color: '#10b981', fontSize: '0.8rem' }}>✓</span>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {extraAssignees.length > 0 && (
+                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 6 }}>
+                      {extraAssignees.map(id => {
+                        const a = adminsList.find(ad => ad.id === id);
+                        return (
+                          <span key={id} style={{ background: 'rgba(108,99,255,0.2)', color: '#818cf8', fontSize: '0.72rem', padding: '2px 8px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            📧 {a?.name}
+                            <button onClick={() => setExtraAssignees(p => p.filter(x => x !== id))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0, fontSize: '0.8rem' }}>×</button>
+                          </span>
+                        );
+                      })}
+                      <div style={{ color: '#64748b', fontSize: '0.68rem', alignSelf: 'center' }}>سيتلقى إشعاراً بريدياً</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                <button style={S.btn()} onClick={saveTask} disabled={savingTask || !taskForm.title}>
+                  {savingTask ? '⏳ جاري الإنشاء...' : '✅ إنشاء المهمة'}
+                </button>
+                <button style={S.btn('#374151')} onClick={() => setShowTaskForm(false)}>إلغاء</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

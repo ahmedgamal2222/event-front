@@ -90,6 +90,27 @@ export default function AdminCRMUnified({ token, apiBase, eventId }: Props) {
   const [adminsList, setAdminsList] = useState<AdminUser[]>([]);
   const [countries, setCountries] = useState<Country[]>([]);
 
+  // Syrian cities by country name — predefined for fast UI
+  const CITIES_BY_COUNTRY: Record<string, string[]> = {
+    'Syria': ['دمشق', 'حلب', 'حمص', 'اللاذقية', 'حماة', 'دير الزور', 'الرقة', 'درعا', 'السويداء', 'القنيطرة', 'إدلب', 'طرطوس', 'الحسكة'],
+    'سوريا': ['دمشق', 'حلب', 'حمص', 'اللاذقية', 'حماة', 'دير الزور', 'الرقة', 'درعا', 'السويداء', 'القنيطرة', 'إدلب', 'طرطوس', 'الحسكة'],
+    'Saudi Arabia': ['الرياض', 'جدة', 'مكة المكرمة', 'المدينة المنورة', 'الدمام', 'الخبر', 'أبها'],
+    'المملكة العربية السعودية': ['الرياض', 'جدة', 'مكة المكرمة', 'المدينة المنورة', 'الدمام', 'الخبر', 'أبها'],
+    'UAE': ['دبي', 'أبوظبي', 'الشارقة', 'عجمان', 'رأس الخيمة', 'الفجيرة', 'أم القيوين'],
+    'الإمارات': ['دبي', 'أبوظبي', 'الشارقة', 'عجمان', 'رأس الخيمة', 'الفجيرة', 'أم القيوين'],
+    'Jordan': ['عمّان', 'الزرقاء', 'إربد', 'العقبة', 'السلط', 'مادبا'],
+    'الأردن': ['عمّان', 'الزرقاء', 'إربد', 'العقبة', 'السلط', 'مادبا'],
+    'Lebanon': ['بيروت', 'طرابلس', 'صيدا', 'صور', 'زحلة'],
+    'لبنان': ['بيروت', 'طرابلس', 'صيدا', 'صور', 'زحلة'],
+    'Turkey': ['إسطنبول', 'أنقرة', 'إزمير', 'غازي عينتاب'],
+    'تركيا': ['إسطنبول', 'أنقرة', 'إزمير', 'غازي عينتاب'],
+    'Germany': ['برلين', 'ميونيخ', 'هامبورغ', 'فرانكفورت', 'شتوتغارت'],
+    'ألمانيا': ['برلين', 'ميونيخ', 'هامبورغ', 'فرانكفورت', 'شتوتغارت'],
+  };
+
+  const selectedCountryName = countries.find(c => c.id === contactForm.country_id)?.name || countries.find(c => c.id === contactForm.country_id)?.name_ar || '';
+  const availableCities = CITIES_BY_COUNTRY[selectedCountryName] || [];
+
   const currentUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('admin_user') || '{}') : {};
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
@@ -286,7 +307,7 @@ export default function AdminCRMUnified({ token, apiBase, eventId }: Props) {
             <div>
               <label style={S.label}>الدولة</label>
               {countries.length > 0 ? (
-                <select style={S.inp} value={contactForm.country_id || ''} onChange={e => setContactForm(f => ({ ...f, country_id: parseInt(e.target.value) || undefined }))}>
+                <select style={S.inp} value={contactForm.country_id ?? ''} onChange={e => setContactForm(f => ({ ...f, country_id: parseInt(e.target.value) || undefined, city: '' }))}>
                   <option value="">-- اختر الدولة --</option>
                   {countries.map(c => <option key={c.id} value={c.id}>{c.name_ar || c.name}</option>)}
                 </select>
@@ -296,7 +317,15 @@ export default function AdminCRMUnified({ token, apiBase, eventId }: Props) {
             </div>
             <div>
               <label style={S.label}>المدينة</label>
-              <input style={S.inp} value={contactForm.city || ''} onChange={e => setContactForm(f => ({ ...f, city: e.target.value }))} />
+              {availableCities.length > 0 ? (
+                <select style={S.inp} value={contactForm.city || ''} onChange={e => setContactForm(f => ({ ...f, city: e.target.value }))}>
+                  <option value="">-- اختر المدينة --</option>
+                  {availableCities.map(city => <option key={city} value={city}>{city}</option>)}
+                  <option value="أخرى">أخرى...</option>
+                </select>
+              ) : (
+                <input style={S.inp} placeholder="المدينة" value={contactForm.city || ''} onChange={e => setContactForm(f => ({ ...f, city: e.target.value }))} />
+              )}
             </div>
             <div>
               <label style={S.label}>الصفة في المنظمة</label>

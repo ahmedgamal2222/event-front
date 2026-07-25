@@ -24,6 +24,10 @@ interface Props {
   eventId: number;
 }
 
+interface AdminUser {
+  id: number; name: string; email: string; google_picture?: string;
+}
+
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   pending:        { label: 'قيد الانتظار',      color: '#f59e0b' },
   screening_call: { label: 'قيد الاستعلام',    color: '#8b5cf6' },
@@ -53,6 +57,14 @@ export default function AdminCRMRegistrations({ token, apiBase, eventId }: Props
   const [stats, setStats] = useState<any>(null);
   const [updating, setUpdating] = useState(false);
   const [decision, setDecision] = useState({ status: '', screening_notes: '', reviewed_by: '', status_reason: '' });
+  // Task quick-add
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [taskForm, setTaskForm] = useState<any>({ task_type: 'follow_up', priority: 'normal' });
+  const [savingTask, setSavingTask] = useState(false);
+  const [adminsList, setAdminsList] = useState<AdminUser[]>([]);
+  const [assigneeSearch, setAssigneeSearch] = useState('');
+  const [extraAssignees, setExtraAssignees] = useState<number[]>([]);
+  const currentUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('admin_user') || '{}') : {};
 
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
@@ -78,6 +90,13 @@ export default function AdminCRMRegistrations({ token, apiBase, eventId }: Props
   }, [apiBase, eventId, page, search, statusFilter, typeFilter, token]);
 
   useEffect(() => { load(); loadStats(); }, [load, loadStats]);
+
+  // Load admins for task dropdown
+  useEffect(() => {
+    fetch(`${apiBase}/api/auth/admins-list`, { headers }).then(r => r.json()).then(d => {
+      if (d.success) setAdminsList(d.data || []);
+    }).catch(() => {});
+  }, [apiBase, token]);
 
   const update = async () => {
     if (!selected) return;
@@ -106,6 +125,41 @@ export default function AdminCRMRegistrations({ token, apiBase, eventId }: Props
     setSelected({ ...selected, screening_attempts: selected.screening_attempts + 1 });
     load();
   };
+
+  const saveTask = async () => {
+    if (!selected || !taskForm.title) return;
+    setSavingTask(true);
+    try {
+      const assignees = extraAssignees.map(id => {
+        const a = adminsList.find(ad => ad.id === id);
+        return { email: a?.email || '', name: a?.name || '' };
+      });
+      const res = await fetch(`${apiBase}/api/crm/tasks`, {
+        method: 'POST', headers,
+        body: JSON.stringify({
+          ...taskForm,
+          registration_id: selected.id,
+          contact_id: selected.contact_id,
+          event_id: eventId,
+          creator_email: currentUser.email || '',
+          creator_name: currentUser.name || '',
+          assignees,
+        }),
+      });
+      const d = await res.json();
+      if (d.success) {
+        setShowTaskForm(false);
+        setTaskForm({ task_type: 'follow_up', priority: 'normal' });
+        setExtraAssignees([]);
+        setAssigneeSearch('');
+        alert('✅ تم إنشاء المهمة بنجاح');
+      } else alert(d.error);
+    } finally { setSavingTask(false); }
+  };
+
+  const filteredAdmins = adminsList.filter(a =>
+    !assigneeSearch || a.name.toLowerCase().includes(assigneeSearch.toLowerCase()) || a.email.toLowerCase().includes(assigneeSearch.toLowerCase())
+  );
 
   return (
     <div>
@@ -201,8 +255,89 @@ export default function AdminCRMRegistrations({ token, apiBase, eventId }: Props
           <div style={S.card}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
               <h3 style={{ color: 'white', margin: 0 }}>{selected.full_name}</h3>
-              <button style={S.btn('#374151')} onClick={() => setSelected(null)}>✕</button>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  onClick={() => { setShowTaskForm(!showTaskForm); }}
+                  style={{ ...S.btn('#f59e0b20'), color: '#fcd34d', border: '1px solid rgba(245,158,11,0.4)', fontSize: '0.8rem', padding: '0.3rem 0.7rem' }}
+                >
+                  {showTaskForm ? '✕ إلغاء' : '✅ + مهمة'}
+                </button>
+                <button style={S.btn('#374151')} onClick={() => { setSelected(null); setShowTaskForm(false); }}>✕</button>
+              </div>
             </div>
+
+            {/* Quick Task Form */}
+            {showTaskForm && (
+              <div style={{ background: 'rgba(108,99,255,0.08)', border: '1px solid rgba(108,99,255,0.25)', borderRadius: '0.75rem', padding: '0.75rem', marginBottom: 14 }}>
+                <div style={{ color: '#818cf8', fontWeight: 600, fontSize: '0.82rem', marginBottom: 10 }}>
+                  ➕ مهمة جديدة مرتبطة بـ {selected.full_name}
+                </div>
+                {currentUser.email && (
+                  <div style={{ fontSize: '0.75rem', color: '#818cf8', background: 'rgba(108,99,255,0.1)', borderRadius: '0.4rem', padding: '0.3rem 0.6rem', marginBottom: 10 }}>
+                    👑 المسؤول الرئيسي: <strong>{currentUser.name || currentUser.email}</strong>
+                  </div>
+                )}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <div style={{ gridColumn: '1/-1' }}>
+                    <label style={S.label}>العنوان *</label>
+                    <input style={S.inp} placeholder="وصف المهمة..." value={taskForm.title || ''} onChange={e => setTaskForm((f: any) => ({ ...f, title: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label style={S.label}>النوع</label>
+                    <select style={S.inp} value={taskForm.task_type} onChange={e => setTaskForm((f: any) => ({ ...f, task_type: e.target.value }))}>
+                      <option value="follow_up">متابعة</option>
+                      <option value="call">مكالمة</option>
+                      <option value="verify_payment">تحقق دفعة</option>
+                      <option value="review_application">مراجعة طلب</option>
+                      <option value="other">أخرى</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={S.label}>الأولوية</label>
+                    <select style={S.inp} value={taskForm.priority} onChange={e => setTaskForm((f: any) => ({ ...f, priority: e.target.value }))}>
+                      <option value="urgent">🔴 عاجل</option>
+                      <option value="high">🟠 مرتفع</option>
+                      <option value="normal">🟡 عادي</option>
+                      <option value="low">⚪ منخفض</option>
+                    </select>
+                  </div>
+                  <div style={{ gridColumn: '1/-1' }}>
+                    <label style={S.label}>مسؤولون إضافيون</label>
+                    <input style={S.inp} placeholder="🔍 ابحث عن مسؤول..." value={assigneeSearch} onChange={e => setAssigneeSearch(e.target.value)} />
+                    {assigneeSearch && (
+                      <div style={{ background: '#0d0b1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.5rem', maxHeight: 120, overflowY: 'auto', marginTop: 4 }}>
+                        {filteredAdmins.filter(a => a.email !== currentUser.email).map(admin => (
+                          <div key={admin.id} onClick={() => { if (!extraAssignees.includes(admin.id)) setExtraAssignees(prev => [...prev, admin.id]); setAssigneeSearch(''); }}
+                            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.4rem 0.75rem', cursor: 'pointer' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(108,99,255,0.15)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                            <span style={{ color: 'white', fontSize: '0.8rem' }}>{admin.name}</span>
+                            <span style={{ color: '#64748b', fontSize: '0.72rem' }}>{admin.email}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {extraAssignees.length > 0 && (
+                      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
+                        {extraAssignees.map(id => {
+                          const a = adminsList.find(ad => ad.id === id);
+                          return (
+                            <span key={id} style={{ background: 'rgba(108,99,255,0.2)', color: '#818cf8', fontSize: '0.72rem', padding: '2px 8px', borderRadius: 4, display: 'flex', gap: 4, alignItems: 'center' }}>
+                              {a?.name}
+                              <button onClick={() => setExtraAssignees(p => p.filter(x => x !== id))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0, fontSize: '0.8rem' }}>×</button>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                  <button style={S.btn()} onClick={saveTask} disabled={savingTask || !taskForm.title}>{savingTask ? '...' : '✅ إنشاء المهمة'}</button>
+                  <button style={S.btn('#374151')} onClick={() => setShowTaskForm(false)}>إلغاء</button>
+                </div>
+              </div>
+            )}
 
             {/* Info grid */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
