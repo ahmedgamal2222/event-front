@@ -18,11 +18,22 @@ const S = {
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   pending:    { label: '⏳ قيد الانتظار',  color: '#f59e0b' },
   approved:   { label: '✅ مقبول',          color: '#10b981' },
-  paid:       { label: '💰 دفع مؤكد',      color: '#06b6d4' },
+  paid:       { label: '� مدفوع',          color: '#06b6d4' },
   rejected:   { label: '❌ مرفوض',          color: '#ef4444' },
   waitlisted: { label: '🕐 قائمة انتظار',  color: '#8b5cf6' },
   cancelled:  { label: '🚫 ملغى',           color: '#6b7280' },
   checked_in: { label: '✔️ حضر',            color: '#10b981' },
+};
+
+const REG_TYPE_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
+  startup:  { label: 'شركة ناشئة',   color: '#6C63FF', icon: '🚀' },
+  general:  { label: 'حضور عام',      color: '#8b5cf6', icon: '👤' },
+  investor: { label: 'مستثمر',        color: '#10b981', icon: '💼' },
+  speaker:  { label: 'متحدث',         color: '#ec4899', icon: '🎙️' },
+  sponsor:  { label: 'راعي',           color: '#0ea5e9', icon: '🏅' },
+  media:    { label: 'إعلام',          color: '#f59e0b', icon: '📹' },
+  vip:      { label: 'VIP',            color: '#f59e0b', icon: '⭐' },
+  partner:  { label: 'شريك',           color: '#14b8a6', icon: '🤝' },
 };
 
 interface Reg {
@@ -178,7 +189,14 @@ export default function AdminEventRegistrations({ token, eventId, readOnly }: Pr
   );
 
   const getName = (r: Reg) => r.full_name || r.name || '—';
-  const getType = (r: Reg) => r.reg_type || r.type || 'عام';
+  const getTypeInfo = (r: Reg) => {
+    const key = r.reg_type || r.type || 'general';
+    return REG_TYPE_CONFIG[key] || { label: key, color: '#6b7280', icon: '👤' };
+  };
+  const getType = (r: Reg) => {
+    const info = getTypeInfo(r);
+    return `${info.icon} ${info.label}`;
+  };
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr 360px' : '1fr', gap: 16, alignItems: 'start' }}>
@@ -251,7 +269,7 @@ export default function AdminEventRegistrations({ token, eventId, readOnly }: Pr
                       </td>
                       <td style={{ padding: '0.65rem 0.85rem', color: '#94a3b8', fontSize: '0.78rem' }}>{reg.email || '—'}</td>
                       <td style={{ padding: '0.65rem 0.85rem' }}>
-                        <span style={{ background: 'rgba(108,99,255,0.2)', color: '#818cf8', fontSize: '0.7rem', padding: '2px 8px', borderRadius: 4 }}>{getType(reg)}</span>
+                        {(() => { const ti = getTypeInfo(reg); return <span style={{ background: `${ti.color}22`, color: ti.color, fontSize: '0.7rem', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>{ti.icon} {ti.label}</span>; })()}
                       </td>
                       <td style={{ padding: '0.65rem 0.85rem', color: '#94a3b8' }}>{reg.city || '—'}</td>
                       <td style={{ padding: '0.65rem 0.85rem' }}>
