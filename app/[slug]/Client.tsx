@@ -568,8 +568,13 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
 
     (async () => {
       try {
-        // slug prop must come from the URL via [slug]/page.tsx
-        const effectiveSlug = slug && slug.trim() ? slug.trim() : null;
+        // Get slug from prop OR directly from URL (robust for static export)
+        let effectiveSlug = slug && slug.trim() ? slug.trim() : null;
+        if (!effectiveSlug && typeof window !== 'undefined') {
+          // Derive from pathname: /s3-summit-2026/ → s3-summit-2026
+          const path = window.location.pathname.replace(/^\/+|\/+$/g, '');
+          effectiveSlug = path || null;
+        }
         if (!effectiveSlug) {
           setLoading(false);
           return;

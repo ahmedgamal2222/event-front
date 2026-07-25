@@ -77,8 +77,9 @@ export default function AdminPayments({ eventId, token }: { eventId: number; tok
   const loadOrders = useCallback(async () => {
     setOrdersLoading(true);
     try {
-      const r = await fetch(`${API_BASE}/api/events/${eventId}/payments/orders`, {
+      const r = await fetch(`${API_BASE}/api/events/${eventId}/payments/orders?t=${Date.now()}`, {
         headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
       });
       const d = await r.json();
       setOrders(d.data || []);
@@ -335,7 +336,7 @@ export default function AdminPayments({ eventId, token }: { eventId: number; tok
           </div>
 
           {/* Filter tabs */}
-          <div style={{ display: 'flex', gap: '0.4rem' }}>
+          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
             {[
               { v: 'all', l: `الكل (${orders.length})` },
               { v: 'paid', l: `✅ دفع (${orders.filter(o => o.status === 'paid').length})` },
@@ -346,6 +347,10 @@ export default function AdminPayments({ eventId, token }: { eventId: number; tok
                 {f.l}
               </button>
             ))}
+            <button onClick={() => loadOrders()} disabled={ordersLoading}
+              style={{ marginRight: 'auto', background: 'rgba(108,99,255,0.15)', color: '#a5b4fc', border: '1px solid rgba(108,99,255,0.3)', borderRadius: '0.4rem', padding: '0.35rem 0.75rem', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>
+              {ordersLoading ? '⏳' : '↻ تحديث'}
+            </button>
           </div>
 
           {ordersLoading ? (

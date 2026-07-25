@@ -500,7 +500,7 @@ function AdminDashboardInner() {
           {activeTab === 'overview'      && <OverviewTab key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'event'         && <EventTab key={eventId} eventId={eventId} eventSlug={eventSlug} token={token} save={save} saving={saving} />}
           {activeTab === 'video'         && <VideoTab key={eventId} eventId={eventId} eventSlug={eventSlug} token={token} save={save} saving={saving} />}
-          {activeTab === 'registrations' && <RegistrationsTab key={eventId} eventId={eventId} eventSlug={eventSlug} token={token} router={router} showToast={showToast} />}
+          {activeTab === 'registrations' && <RegistrationsTab key={eventId} eventId={eventId} eventSlug={eventSlug} token={token} router={router} showToast={showToast} onPaid={() => setActiveTab('payments')} />}
           {activeTab === 'speakers'      && <SpeakersTab key={eventId} eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
           {activeTab === 'venue'         && <VenueGalleryTab key={eventId} eventId={eventId} token={token} showToast={showToast} />}
           {activeTab === 'agenda'        && <AgendaTab key={eventId} eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
@@ -688,7 +688,7 @@ function EventTab({ eventId, eventSlug, token, save, saving }: any) {
 
 // ── Registrations ─────────────────────────────────────────────────────────────
 // ── Registrations ─────────────────────────────────────────────────────────────
-function RegistrationsTab({ eventId, eventSlug, token, router, showToast }: any) {
+function RegistrationsTab({ eventId, eventSlug, token, router, showToast, onPaid }: any) {
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -773,7 +773,9 @@ function RegistrationsTab({ eventId, eventSlug, token, router, showToast }: any)
           });
           const result = await res.json().catch(() => null);
           if (result?.success) {
-            showToast(`✅ تم تسجيل الدفع ($${amount}) في تبويب المدفوعات`);
+            showToast(`✅ تم تسجيل الدفع ($${amount}) — الانتقال للمدفوعات`);
+            // Navigate to payments tab so the new payment shows immediately
+            if (onPaid) setTimeout(() => onPaid(), 600);
           }
         }
       }
