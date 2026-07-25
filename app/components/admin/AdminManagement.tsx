@@ -23,8 +23,8 @@ interface Props {
 
 const ROLE_LABELS: Record<string, { label: string; color: string }> = {
   super_admin: { label: '👑 مسؤول رئيسي', color: '#f59e0b' },
-  admin: { label: '⚙️ مسؤول', color: '#6C63FF' },
-  viewer: { label: '👁️ مشاهد', color: '#64748b' },
+  admin:       { label: '⚙️ مسؤول',        color: '#6C63FF' },
+  moderator:   { label: '👁️ مشاهد',         color: '#64748b' },
 };
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -191,7 +191,7 @@ export default function AdminManagement({ token, apiBase }: Props) {
                         style={{ ...S.inp, width: 'auto', fontSize: '0.78rem', padding: '0.3rem 0.5rem' }}
                       >
                         <option value="admin">⚙️ مسؤول</option>
-                        <option value="viewer">👁️ مشاهد</option>
+                        <option value="moderator">👁️ مشاهد</option>
                         <option value="super_admin">👑 رئيسي</option>
                       </select>
                       <button onClick={() => setEditingPermsFor({ id: admin.id, name: admin.name })}

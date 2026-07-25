@@ -1,20 +1,8 @@
-'use client';
-/**
- * AdminCRMMain — إدارة علاقات العملاء الموحدة
- * التسجيلات | جهات الاتصال | المهام | المصعّدات
- */
-import { useState } from 'react';
+﻿'use client';
+import { useState, useEffect } from 'react';
 import AdminEventRegistrations from './AdminEventRegistrations';
 import AdminCRMUnified from './AdminCRMUnified';
 import AdminCRMTasks from './AdminCRMTasks';
-
-const S = {
-  btn: (color = '#6C63FF') => ({
-    background: color, color: 'white', border: 'none',
-    borderRadius: '0.4rem', padding: '0.45rem 1rem',
-    cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600
-  } as React.CSSProperties),
-};
 
 type View = 'registrations' | 'contacts' | 'tasks' | 'escalated';
 
@@ -22,85 +10,72 @@ interface Props {
   token: string;
   apiBase: string;
   eventId: number;
+  isSuperAdmin?: boolean;
+  myPermissions?: { event_id: number | null; sections: string[] }[];
+  readOnly?: boolean;
 }
 
-const VIEWS: { key: View; label: string; desc: string }[] = [
-  { key: 'registrations', label: '📋 التسجيلات',          desc: 'إدارة الطلبات، تغيير الحالة، تحويل للمسجلين لجهات اتصال' },
-  { key: 'contacts',      label: '👥 جهات الاتصال',        desc: 'ملفات شاملة مع التاريخ والمهام' },
-  { key: 'tasks',         label: '✅ لوحة المهام',          desc: 'جميع المهام مع إمكانية الإضافة والمتابعة' },
-  { key: 'escalated',     label: '🔺 المصعّدات',            desc: 'الحالات التي تتطلب قراراً من الإدارة' },
+const VIEW_PERMISSION_KEYS: Record<View, string[]> = {
+  registrations: ['registrations'],
+  contacts:      ['crm_contacts', 'crm_unified', 'crm_main'],
+  tasks:         ['crm_tasks'],
+  escalated:     ['crm_escalated'],
+};
+
+const ALL_VIEWS: { key: View; label: string; desc: string }[] = [
+  { key: 'registrations', label: 'التسجيلات',       desc: 'عرض الطلبات وتغيير الحالات وتحويل للجهات' },
+  { key: 'contacts',      label: 'جهات الاتصال',   desc: 'ملفات شاملة مع التاريخ والمهام' },
+  { key: 'tasks',         label: 'لوحة المهام',     desc: 'جميع المهام والمتابعات' },
+  { key: 'escalated',     label: 'المصعدات',        desc: 'الحالات التي تتطلب قرارا من الادارة' },
 ];
 
-export default function AdminCRMMain({ token, apiBase, eventId }: Props) {
-  const [view, setView] = useState<View>('contacts');
+export default function AdminCRMMain({ token, apiBase, eventId, isSuperAdmin, myPermissions, readOnly }: Props) {
+  const allowedViews = ALL_VIEWS.filter(v => {
+    if (isSuperAdmin || !myPermissions || myPermissions.length === 0) return true;
+    const keys = VIEW_PERMISSION_KEYS[v.key];
+    return myPermissions.some(perm => {
+      if (perm.event_id !== null && perm.event_id !== eventId) return false;
+      return keys.some(k => perm.sections.includes(k) || perm.sections.includes('all'));
+    });
+  });
 
-  const current = VIEWS.find(v => v.key === view)!;
+  const [view, setView] = useState<View>(allowedViews[0]?.key || 'registrations');
+
+  useEffect(() => {
+    if (allowedViews.length > 0 && !allowedViews.find(v => v.key === view)) {
+      setView(allowedViews[0].key);
+    }
+  }, [eventId]);
+
+  if (allowedViews.length === 0) {
+    return (
+      <div style={{ textAlign: 'center', color: '#64748b', padding: '4rem 2rem' }}>
+        <p>ليس لديك صلاحية للوصول الى هذا القسم</p>
+      </div>
+    );
+  }
+
+  const current = allowedViews.find(v => v.key === view) || allowedViews[0];
 
   return (
     <div style={{ direction: 'rtl' }}>
-      {/* ── Navigation Bar ── */}
-      <div style={{
-        background: 'rgba(13,11,26,0.8)',
-        border: '1px solid rgba(108,99,255,0.2)',
-        borderRadius: '1rem',
-        padding: '0.75rem 1rem',
-        marginBottom: '1.25rem',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-        flexWrap: 'wrap',
-      }}>
+      {readOnly && (
+        <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: '0.75rem', padding: '0.6rem 1rem', marginBottom: 12, color: '#fcd34d', fontSize: '0.82rem' }}>
+          وضع المشاهدة فقط - لا يمكنك اضافة او تعديل او حذف البيانات
+        </div>
+      )}
+      <div style={{ background: 'rgba(13,11,26,0.8)', border: '1px solid rgba(108,99,255,0.2)', borderRadius: '1rem', padding: '0.75rem 1rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
         {allowedViews.map(v => (
-          <button
-            key={v.key}
-            onClick={() => setView(v.key)}
-            style={{
-              background: view === v.key ? 'rgba(108,99,255,0.3)' : 'transparent',
-              color: view === v.key ? '#c4b5fd' : '#64748b',
-              border: view === v.key ? '1px solid rgba(108,99,255,0.5)' : '1px solid transparent',
-              borderRadius: '0.5rem',
-              padding: '0.45rem 0.9rem',
-              cursor: 'pointer',
-              fontSize: '0.85rem',
-              fontWeight: view === v.key ? 700 : 400,
-              transition: 'all 0.15s',
-              whiteSpace: 'nowrap',
-            }}
-            onMouseEnter={e => { if (view !== v.key) (e.currentTarget.style.background = 'rgba(108,99,255,0.1)'); }}
-            onMouseLeave={e => { if (view !== v.key) (e.currentTarget.style.background = 'transparent'); }}
-          >
+          <button key={v.key} onClick={() => setView(v.key)} style={{ background: view === v.key ? 'rgba(108,99,255,0.3)' : 'transparent', color: view === v.key ? '#c4b5fd' : '#64748b', border: view === v.key ? '1px solid rgba(108,99,255,0.5)' : '1px solid transparent', borderRadius: '0.5rem', padding: '0.45rem 0.9rem', cursor: 'pointer', fontSize: '0.85rem', fontWeight: view === v.key ? 700 : 400, whiteSpace: 'nowrap' }}>
             {v.label}
           </button>
         ))}
-
-        {/* Description */}
-        <span style={{
-          marginRight: 'auto',
-          color: '#4b5563',
-          fontSize: '0.75rem',
-          paddingRight: '0.5rem',
-          borderRight: '1px solid rgba(255,255,255,0.08)',
-        }}>
-          {current.desc}
-        </span>
+        <span style={{ marginRight: 'auto', color: '#4b5563', fontSize: '0.75rem' }}>{current.desc}</span>
       </div>
-
-      {/* ── View Content ── */}
-      {view === 'registrations' && (
-        <AdminEventRegistrations key={`regs-${eventId}`} token={token} eventId={eventId} />
-      )}
-
-      {view === 'contacts' && (
-        <AdminCRMUnified key={`contacts-${eventId}`} token={token} apiBase={apiBase} eventId={eventId} />
-      )}
-
-      {view === 'tasks' && (
-        <AdminCRMTasks key={`tasks-${eventId}`} token={token} apiBase={apiBase} eventId={eventId} mode="all" />
-      )}
-
-      {view === 'escalated' && (
-        <AdminCRMTasks key={`esc-${eventId}`} token={token} apiBase={apiBase} eventId={eventId} mode="escalated" />
-      )}
+      {view === 'registrations' && <AdminEventRegistrations key={`regs-${eventId}`} token={token} eventId={eventId} readOnly={readOnly} />}
+      {view === 'contacts' && <AdminCRMUnified key={`contacts-${eventId}`} token={token} apiBase={apiBase} eventId={eventId} readOnly={readOnly} />}
+      {view === 'tasks' && <AdminCRMTasks key={`tasks-${eventId}`} token={token} apiBase={apiBase} eventId={eventId} mode="all" readOnly={readOnly} />}
+      {view === 'escalated' && <AdminCRMTasks key={`esc-${eventId}`} token={token} apiBase={apiBase} eventId={eventId} mode="escalated" readOnly={readOnly} />}
     </div>
   );
 }

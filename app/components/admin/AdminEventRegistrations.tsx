@@ -37,9 +37,10 @@ interface AdminUser { id: number; name: string; email: string; google_picture?: 
 interface Props {
   token: string;
   eventId: number;
+  readOnly?: boolean;
 }
 
-export default function AdminEventRegistrations({ token, eventId }: Props) {
+export default function AdminEventRegistrations({ token, eventId, readOnly }: Props) {
   const [regs, setRegs] = useState<Reg[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -251,16 +252,20 @@ export default function AdminEventRegistrations({ token, eventId }: Props) {
                         <span style={{ background: sc.color + '20', color: sc.color, fontSize: '0.72rem', padding: '2px 8px', borderRadius: 4 }}>{sc.label}</span>
                       </td>
                       <td style={{ padding: '0.5rem 0.85rem' }} onClick={e => e.stopPropagation()}>
-                        <select
-                          value={reg.status}
-                          onChange={e => changeStatus(reg.id, e.target.value)}
-                          style={{ ...S.inp, width: 'auto', padding: '0.25rem 0.5rem', fontSize: '0.72rem' }}
-                        >
-                          {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                        </select>
+                        {!readOnly ? (
+                          <select
+                            value={reg.status}
+                            onChange={e => changeStatus(reg.id, e.target.value)}
+                            style={{ ...S.inp, width: 'auto', padding: '0.25rem 0.5rem', fontSize: '0.72rem' }}
+                          >
+                            {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                          </select>
+                        ) : (
+                          <span style={{ background: sc.color + '20', color: sc.color, fontSize: '0.7rem', padding: '2px 8px', borderRadius: 4 }}>{sc.label}</span>
+                        )}
                       </td>
                       <td style={{ padding: '0.5rem 0.85rem' }} onClick={e => e.stopPropagation()}>
-                        {!isConverted ? (
+                        {!readOnly && !isConverted ? (
                           <button
                             onClick={() => convertToContact(reg)}
                             disabled={converting}
@@ -268,9 +273,9 @@ export default function AdminEventRegistrations({ token, eventId }: Props) {
                           >
                             👤 جهة اتصال
                           </button>
-                        ) : (
+                        ) : isConverted ? (
                           <span style={{ color: '#10b981', fontSize: '0.7rem' }}>✓</span>
-                        )}
+                        ) : null}
                       </td>
                     </tr>
                   );

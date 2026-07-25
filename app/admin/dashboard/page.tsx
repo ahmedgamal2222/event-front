@@ -258,6 +258,8 @@ function AdminDashboardInner() {
   const [toast, setToast] = useState('');
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [myPermissions, setMyPermissions] = useState<{ event_id: number | null; sections: string[] }[]>([]);
+  const [currentRole, setCurrentRole] = useState('admin');
+  const isReadOnly = currentRole === 'moderator';
 
   // eventId is derived from URL (?event=N) — the URL is the single source of truth.
   // This eliminates all stale-closure issues: every render reads directly from URL.
@@ -288,10 +290,15 @@ function AdminDashboardInner() {
       .then(d => {
         if (d.success) {
           setIsSuperAdmin(d.isSuperAdmin);
-          setMyPermissions(d.permissions?.map((p: any) => ({
-            event_id: p.event_id,
-            sections: (() => { try { return JSON.parse(p.sections); } catch { return p.sections === 'all' ? [] : []; } })(),
-          })) || []);
+          if (d.permissions) {
+            setMyPermissions(d.permissions?.map((p: any) => ({
+              event_id: p.event_id,
+              sections: (() => { try { return JSON.parse(p.sections); } catch { return p.sections === 'all' ? [] : []; } })(),
+            })) || []);
+          }
+          // جلب دور المستخدم الحالي
+          const savedUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('admin_user') || '{}') : {};
+          if (savedUser.role) setCurrentRole(savedUser.role);
         }
       }).catch(() => setIsSuperAdmin(true)); // fallback: treat as super admin on error
     // Load all events — try admin endpoint first, fall back to public
@@ -392,6 +399,11 @@ function AdminDashboardInner() {
           <h2 style={{ fontWeight: 900, fontSize: '1.1rem', margin: 0 }}>
             <span style={{ color: '#6C63FF' }}>⚙️</span> Admin Panel
           </h2>
+          {isReadOnly && (
+            <div style={{ marginTop: 8, background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: '0.5rem', padding: '0.4rem 0.75rem', color: '#fcd34d', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+              👁️ وضع المشاهدة فقط
+            </div>
+          )}
           {/* Event Selector — shows always so admin knows which event they're editing */}
           {allowedEvents.length > 0 && (
             <div style={{ marginTop: '0.75rem' }}>
@@ -566,7 +578,7 @@ function AdminDashboardInner() {
           {activeTab === 'countries'     && <AdminCountries key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'events_mgmt'   && <AdminEvents token={token} />}
           {/* CRM Tabs - موحد في مكون واحد */}
-          {activeTab === 'crm_main'          && <AdminCRMMain key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} isSuperAdmin={isSuperAdmin} myPermissions={myPermissions} />}
+          {activeTab === 'crm_main'          && <AdminCRMMain key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} isSuperAdmin={isSuperAdmin} myPermissions={myPermissions} readOnly={isReadOnly} />}
           {activeTab === 'crm_sponsorships'  && <AdminCRMSponsorships key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} />}
           </>}
         </div>

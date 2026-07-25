@@ -30,12 +30,13 @@ interface Task {
 interface Props {
   token: string; apiBase: string; eventId?: number;
   mode?: 'all' | 'escalated';
+  readOnly?: boolean;
 }
 
 const PRIORITY = { urgent: { label: 'عاجل', color: '#ef4444' }, high: { label: 'مرتفع', color: '#f97316' }, normal: { label: 'عادي', color: '#6b7280' }, low: { label: 'منخفض', color: '#374151' } };
 const STATUS = { open: '📂 مفتوح', in_progress: '⚡ جاري', escalated: '🔺 مصعّد', done: '✅ منجز', cancelled: '❌ ملغى' };
 
-export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all' }: Props) {
+export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all', readOnly }: Props) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -123,7 +124,7 @@ export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all' }:
           </select>
         )}
         <input style={{ ...S.inp, flex: '1 1 180px' }} placeholder="🔍 فلتر بالمسؤول..." value={assignedTo} onChange={e => setAssignedTo(e.target.value)} />
-        {mode !== 'escalated' && (
+        {mode !== 'escalated' && !readOnly && (
           <button style={S.btn()} onClick={() => { setForm({ event_id: eventId } as any); setExtraAssignees([]); setAssigneeSearch(''); setShowForm(true); }}>+ مهمة جديدة</button>
         )}
       </div>
@@ -369,7 +370,7 @@ export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all' }:
             )}
 
             {/* Quick actions for non-management */}
-            {mode !== 'escalated' && (
+            {mode !== 'escalated' && !readOnly && (
               <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <button style={S.btn('#10b981')} onClick={() => save({ ...selected, status: 'done' })}>✅ إغلاق</button>
                 <button style={S.btn('#8b5cf6')} onClick={() => { setForm({ ...selected, status: 'escalated', escalated_to: 'management' }); setShowForm(true); }}>🔺 تصعيد</button>

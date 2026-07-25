@@ -46,6 +46,7 @@ interface Props {
   token: string;
   apiBase: string;
   eventId?: number;
+  readOnly?: boolean;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -60,7 +61,7 @@ const PRIORITY_LABELS: Record<string, string> = {
   urgent: 'عاجل', high: 'مرتفع', normal: 'عادي', low: 'منخفض',
 };
 
-export default function AdminCRMUnified({ token, apiBase, eventId }: Props) {
+export default function AdminCRMUnified({ token, apiBase, eventId, readOnly }: Props) {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -236,7 +237,7 @@ export default function AdminCRMUnified({ token, apiBase, eventId }: Props) {
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
           />
-          <button style={S.btn()} onClick={() => { setContactForm({}); setShowContactForm(true); setSelected(null); }}>+ جديد</button>
+          {!readOnly && <button style={S.btn()} onClick={() => { setContactForm({}); setShowContactForm(true); setSelected(null); }}>+ جديد</button>}
         </div>
 
         {loading ? (
@@ -378,15 +379,15 @@ export default function AdminCRMUnified({ token, apiBase, eventId }: Props) {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
-                <button style={S.btn('#374151')} onClick={() => { setContactForm({ ...selected }); setShowContactForm(true); }}>✏️ تعديل</button>
-                <button style={S.btn()} onClick={() => { setShowTaskForm(true); setDetailTab('tasks'); }}>+ مهمة</button>
+                {!readOnly && <button style={S.btn('#374151')} onClick={() => { setContactForm({ ...selected }); setShowContactForm(true); }}>✏️ تعديل</button>}
+                {!readOnly && <button style={S.btn()} onClick={() => { setShowTaskForm(true); setDetailTab('tasks'); }}>+ مهمة</button>}
                 <button style={S.btn('#1e293b')} onClick={() => setShowInteraction(true)}>💬</button>
-                <button
-                  onClick={() => deleteContact(selected.id, selected.full_name)}
-                  style={{ background: 'rgba(239,68,68,0.12)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.35)', borderRadius: '0.4rem', padding: '0.45rem 0.7rem', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}
-                >
-                  🗑️
-                </button>
+                {!readOnly && (
+                  <button
+                    onClick={() => deleteContact(selected.id, selected.full_name)}
+                    style={{ background: 'rgba(239,68,68,0.12)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.35)', borderRadius: '0.4rem', padding: '0.45rem 0.7rem', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}
+                  >🗑️</button>
+                )}
                 <button style={{ ...S.btn('#374151'), padding: '0.45rem 0.6rem' }} onClick={() => { setSelected(null); setShowTaskForm(false); }}>✕</button>
               </div>
             </div>
