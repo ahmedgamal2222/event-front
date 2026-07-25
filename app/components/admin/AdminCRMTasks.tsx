@@ -8,18 +8,24 @@ const S = {
   label: { fontSize: '0.78rem', color: '#94a3b8', marginBottom: '0.3rem', display: 'block' } as React.CSSProperties,
 };
 
+interface Assignee {
+  admin_email: string;
+  admin_name?: string;
+  is_creator: number;
+}
+
 interface Task {
   id: number; title: string; task_type: string; assigned_to?: string;
   priority: string; status: string; due_date?: string;
   contact_name?: string; contact_phone?: string; org_name?: string;
   escalated_to?: string; escalation_note?: string;
   management_decision?: string; outcome?: string;
-  created_at: string;
+  created_at: string; assignees?: Assignee[];
 }
 
 interface Props {
   token: string; apiBase: string; eventId?: number;
-  mode?: 'all' | 'escalated';  // escalated = management view
+  mode?: 'all' | 'escalated';
 }
 
 const PRIORITY = { urgent: { label: 'عاجل', color: '#ef4444' }, high: { label: 'مرتفع', color: '#f97316' }, normal: { label: 'عادي', color: '#6b7280' }, low: { label: 'منخفض', color: '#374151' } };
@@ -35,6 +41,11 @@ export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all' }:
   const [saving, setSaving] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
+  // Multi-assignee state
+  const [extraAssignees, setExtraAssignees] = useState<string[]>([]);
+  const [assigneeInput, setAssigneeInput] = useState('');
+
+  const currentAdmin = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('admin_user') || '{}') : {};
 
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
@@ -55,14 +66,20 @@ export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all' }:
 
   useEffect(() => { load(); }, [load]);
 
-  const save = async (taskData: Partial<Task>) => {
+  const save = async (taskData: Partial<Task> & { assignees?: { email: string; name?: string }[] }) => {
     setSaving(true);
     try {
       const method = taskData.id ? 'PUT' : 'POST';
       const url = taskData.id ? `${apiBase}/api/crm/tasks/${taskData.id}` : `${apiBase}/api/crm/tasks`;
-      const res = await fetch(url, { method, headers, body: JSON.stringify({ ...taskData, event_id: eventId }) });
+      const body = { ...taskData, event_id: eventId };
+      // Add creator info for new tasks
+      if (!taskData.id) {
+        (body as any).creator_email = currentAdmin.email || '';
+        (body as any).creator_name = currentAdmin.name || '';
+      }
+      const res = await fetch(url, { method, headers, body: JSON.stringify(body) });
       const data = await res.json();
-      if (data.success) { setShowForm(false); setSelected(null); load(); }
+      if (data.success) { setShowForm(false); setSelected(null); setExtraAssignees([]); setAssigneeInput(''); load(); }
       else alert(data.error);
     } finally { setSaving(false); }
   };
@@ -72,6 +89,13 @@ export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all' }:
       ? { ...task, management_decision: decision, status: 'in_progress' }
       : { ...task, status: 'escalated', escalated_to: 'management' };
     await save(body);
+  };
+
+  const addAssignee = () => {
+    const email = assigneeInput.trim();
+    if (!email || extraAssignees.includes(email)) return;
+    setExtraAssignees(prev => [...prev, email]);
+    setAssigneeInput('');
   };
 
   return (
@@ -92,7 +116,7 @@ export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all' }:
         )}
         <input style={{ ...S.inp, flex: '1 1 180px' }} placeholder="🔍 فلتر بالمسؤول..." value={assignedTo} onChange={e => setAssignedTo(e.target.value)} />
         {mode !== 'escalated' && (
-          <button style={S.btn()} onClick={() => { setForm({ event_id: eventId } as any); setShowForm(true); }}>+ مهمة جديدة</button>
+          <button style={S.btn()} onClick={() => { setForm({ event_id: eventId } as any); setExtraAssignees([]); setAssigneeInput(''); setShowForm(true); }}>+ مهمة جديدة</button>
         )}
       </div>
 
@@ -136,6 +160,16 @@ export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all' }:
                         🔺 {t.escalation_note}
                       </div>
                     )}
+                    {/* Assignees badges */}
+                    {t.assignees && t.assignees.length > 0 && (
+                      <div style={{ display: 'flex', gap: 4, marginTop: 6, flexWrap: 'wrap' }}>
+                        {t.assignees.map((a, i) => (
+                          <span key={i} style={{ fontSize: '0.68rem', background: a.is_creator ? 'rgba(108,99,255,0.25)' : 'rgba(255,255,255,0.07)', color: a.is_creator ? '#818cf8' : '#94a3b8', padding: '1px 6px', borderRadius: 4 }}>
+                            {a.is_creator ? '👑 ' : ''}{a.admin_name || a.admin_email.split('@')[0]}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -147,6 +181,14 @@ export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all' }:
         {showForm ? (
           <div style={S.card}>
             <h3 style={{ color: 'white', marginBottom: 16 }}>{form.id ? 'تعديل المهمة' : 'مهمة جديدة'}</h3>
+
+            {/* Creator info for new tasks */}
+            {!form.id && currentAdmin.email && (
+              <div style={{ background: 'rgba(108,99,255,0.1)', border: '1px solid rgba(108,99,255,0.3)', borderRadius: '0.5rem', padding: '0.5rem 0.75rem', marginBottom: 12, fontSize: '0.8rem', color: '#818cf8' }}>
+                👑 أنت المسؤول الرئيسي تلقائياً: <strong>{currentAdmin.name || currentAdmin.email}</strong>
+              </div>
+            )}
+
             <div style={{ display: 'grid', gap: 10 }}>
               <div>
                 <label style={S.label}>العنوان *</label>
@@ -175,14 +217,43 @@ export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all' }:
                   </select>
                 </div>
                 <div>
-                  <label style={S.label}>المسؤول</label>
-                  <input style={S.inp} value={form.assigned_to || ''} onChange={e => setForm(f => ({ ...f, assigned_to: e.target.value }))} />
+                  <label style={S.label}>المسؤول الرئيسي</label>
+                  <input style={{ ...S.inp, opacity: 0.6 }} value={form.id ? (form.assigned_to || '') : (currentAdmin.email || '')} readOnly={!form.id} onChange={e => form.id ? setForm(f => ({ ...f, assigned_to: e.target.value })) : undefined} />
                 </div>
                 <div>
                   <label style={S.label}>الموعد النهائي</label>
                   <input style={{ ...S.inp, colorScheme: 'dark' }} type="date" value={form.due_date || ''} onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))} />
                 </div>
               </div>
+
+              {/* Multi-assignee (new tasks only) */}
+              {!form.id && (
+                <div>
+                  <label style={S.label}>مسؤولون إضافيون (اختياري)</label>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <input
+                      style={{ ...S.inp, flex: 1 }}
+                      type="email"
+                      placeholder="admin@example.com"
+                      value={assigneeInput}
+                      onChange={e => setAssigneeInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addAssignee(); } }}
+                    />
+                    <button style={S.btn('#374151')} type="button" onClick={addAssignee}>إضافة</button>
+                  </div>
+                  {extraAssignees.length > 0 && (
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
+                      {extraAssignees.map(email => (
+                        <span key={email} style={{ background: 'rgba(108,99,255,0.2)', color: '#818cf8', fontSize: '0.75rem', padding: '3px 8px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                          {email}
+                          <button onClick={() => setExtraAssignees(prev => prev.filter(e => e !== email))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0, fontSize: '0.9rem' }}>×</button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {form.status === 'done' && (
                 <div>
                   <label style={S.label}>نتيجة الإغلاق</label>
@@ -197,7 +268,10 @@ export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all' }:
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-              <button style={S.btn()} onClick={() => save(form)} disabled={saving}>{saving ? 'جاري الحفظ...' : 'حفظ'}</button>
+              <button style={S.btn()} onClick={() => save({
+                ...form,
+                assignees: extraAssignees.map(email => ({ email })),
+              })} disabled={saving}>{saving ? 'جاري الحفظ...' : 'حفظ'}</button>
               <button style={S.btn('#374151')} onClick={() => setShowForm(false)}>إلغاء</button>
             </div>
           </div>
@@ -206,7 +280,7 @@ export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all' }:
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
               <h3 style={{ color: 'white', margin: 0, fontSize: '0.95rem' }}>{selected.title}</h3>
               <div style={{ display: 'flex', gap: 6 }}>
-                {mode !== 'escalated' && <button style={S.btn('#374151')} onClick={() => { setForm({ ...selected }); setShowForm(true); }}>✏️</button>}
+                {mode !== 'escalated' && <button style={S.btn('#374151')} onClick={() => { setForm({ ...selected }); setExtraAssignees([]); setShowForm(true); }}>✏️</button>}
                 <button style={S.btn('#374151')} onClick={() => setSelected(null)}>✕</button>
               </div>
             </div>
@@ -214,14 +288,43 @@ export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all' }:
             <div style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
               {selected.contact_name && <div style={{ color: '#cbd5e1', fontSize: '0.85rem' }}>👤 {selected.contact_name} {selected.contact_phone ? `· ${selected.contact_phone}` : ''}</div>}
               {selected.org_name && <div style={{ color: '#cbd5e1', fontSize: '0.85rem' }}>🏢 {selected.org_name}</div>}
-              {selected.assigned_to && <div style={{ color: '#94a3b8', fontSize: '0.82rem' }}>📌 {selected.assigned_to}</div>}
               {selected.due_date && <div style={{ color: '#94a3b8', fontSize: '0.82rem' }}>📅 {selected.due_date}</div>}
+
+              {/* Assignees */}
+              {selected.assignees && selected.assignees.length > 0 && (
+                <div>
+                  <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginBottom: 6 }}>المسؤولون:</div>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {selected.assignees.map((a, i) => (
+                      <span key={i} style={{
+                        fontSize: '0.78rem',
+                        background: a.is_creator ? 'rgba(108,99,255,0.2)' : 'rgba(255,255,255,0.07)',
+                        color: a.is_creator ? '#818cf8' : '#94a3b8',
+                        border: a.is_creator ? '1px solid rgba(108,99,255,0.4)' : '1px solid rgba(255,255,255,0.1)',
+                        padding: '3px 10px', borderRadius: 4,
+                      }}>
+                        {a.is_creator ? '👑 ' : '👤 '}{a.admin_name || a.admin_email}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {!selected.assignees?.length && selected.assigned_to && (
+                <div style={{ color: '#94a3b8', fontSize: '0.82rem' }}>📌 {selected.assigned_to}</div>
+              )}
             </div>
 
             {selected.escalation_note && (
               <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '0.5rem', padding: '0.75rem', marginBottom: 16 }}>
                 <div style={{ color: '#fca5a5', fontSize: '0.8rem', fontWeight: 600 }}>🔺 سبب التصعيد:</div>
                 <p style={{ color: '#fca5a5', fontSize: '0.85rem', margin: '4px 0 0' }}>{selected.escalation_note}</p>
+              </div>
+            )}
+
+            {selected.management_decision && (
+              <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '0.5rem', padding: '0.75rem', marginBottom: 16 }}>
+                <div style={{ color: '#34d399', fontSize: '0.8rem', fontWeight: 600 }}>قرار الإدارة: {selected.management_decision}</div>
               </div>
             )}
 

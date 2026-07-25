@@ -63,7 +63,7 @@ const TABS = [
   { key: 'crm_contacts',     label: '👥 جهات الاتصال',       group: 'CRM' },
   { key: 'crm_tasks',        label: '✅ المهام والمتابعة',   group: 'CRM' },
   { key: 'crm_escalated',    label: '🔺 المصعّدات',          group: 'CRM' },
-  { key: 'crm_sponsorships', label: '🤝 خط الرعايات',        group: 'CRM' },
+  // crm_sponsorships مخفي مؤقتاً
   // إدارة الحدث
   { key: 'event',            label: '⚙️ معلومات الحدث',     group: 'الحدث' },
   { key: 'video',            label: '🎬 الفيديو التعريفي',   group: 'الحدث' },
@@ -456,6 +456,14 @@ function AdminDashboardInner() {
             onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(59,130,246,0.1)')}
           >
             👁️ عرض الحدث
+          </a>
+          {/* Approvals link — visible to super admins */}
+          <a href="/admin/approvals"
+            style={{ fontSize: '0.85rem', color: '#f59e0b', textDecoration: 'none', padding: '0.5rem', textAlign: 'center', background: 'rgba(245,158,11,0.1)', borderRadius: '0.4rem', border: '1px solid rgba(245,158,11,0.2)', cursor: 'pointer', transition: 'all 0.2s' }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(245,158,11,0.2)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(245,158,11,0.1)')}
+          >
+            👥 طلبات الانضمام
           </a>
           <button onClick={logout}
             style={{ fontSize: '0.85rem', color: '#f87171', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', padding: '0.5rem', borderRadius: '0.4rem', cursor: 'pointer', transition: 'all 0.2s' }}

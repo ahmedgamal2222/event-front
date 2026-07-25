@@ -1,27 +1,34 @@
 'use client';
 /**
  * HomeClient — fetches events live on every visit.
- * This replaces the static server-rendered homepage so new events
- * appear immediately without needing a site rebuild.
+ * Auto-redirects if only one visible event exists.
  */
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
 
 export default function HomeClient() {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     fetch(`${API_BASE}/api/events`, { cache: 'no-store' })
       .then(r => r.json())
       .then(d => {
-        const list = d.success ? (d.data as any[]) : [];
+        if (!d.success) { setLoading(false); return; }
+        // Auto-redirect when only one visible event
+        if (d.shouldRedirect && d.redirectSlug) {
+          router.replace(`/${d.redirectSlug}`);
+          return;
+        }
+        const list = d.data as any[];
         setEvents(list);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [router]);
 
   if (loading || events.length === 0) {
     return (
@@ -46,6 +53,7 @@ export default function HomeClient() {
 
   return <EventSelector events={events} />;
 }
+
 
 function EventSelector({ events }: { events: any[] }) {
   return (

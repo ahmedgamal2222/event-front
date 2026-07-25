@@ -12,7 +12,7 @@ const S = {
 interface Contact {
   id: number; full_name: string; email?: string; phone?: string; city?: string;
   org_name?: string; org_type?: string; is_vip: number; source: string;
-  reg_count?: number; payment_count?: number; created_at: string;
+  reg_count?: number; payment_count?: number; tasks_count?: number; created_at: string;
 }
 
 interface ContactDetail extends Contact {
@@ -25,6 +25,18 @@ interface ContactDetail extends Contact {
 
 interface TimelineEntry {
   record_type: string; detail: string; status: string; at_time: string; record_id: number;
+}
+
+interface Registration {
+  id: number; event_name?: string; event_name_ar?: string;
+  reg_type?: string; status?: string; created_at: string;
+  full_name?: string; email?: string;
+}
+
+interface Task {
+  id: number; title: string; task_type: string; status: string;
+  priority: string; due_date?: string; event_name?: string;
+  assigned_to?: string;
 }
 
 interface Props {
@@ -40,12 +52,15 @@ export default function AdminCRMContacts({ token, apiBase }: Props) {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<ContactDetail | null>(null);
   const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [aiSummary, setAiSummary] = useState<any>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<Partial<ContactDetail>>({});
   const [saving, setSaving] = useState(false);
   const [showInteraction, setShowInteraction] = useState(false);
   const [interaction, setInteraction] = useState({ channel: 'call', direction: 'outbound', subject: '', summary: '', logged_by: '' });
+  const [detailTab, setDetailTab] = useState<'info' | 'registrations' | 'tasks' | 'timeline'>('info');
 
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
@@ -66,8 +81,11 @@ export default function AdminCRMContacts({ token, apiBase }: Props) {
     if (data.success) {
       setSelected(data.data);
       setTimeline(data.timeline || []);
+      setRegistrations(data.registrations || []);
+      setTasks(data.tasks || []);
       setAiSummary(data.ai_summary || null);
       setShowForm(false);
+      setDetailTab('info');
     }
   };
 
@@ -103,6 +121,13 @@ export default function AdminCRMContacts({ token, apiBase }: Props) {
   const typeLabel: Record<string, string> = {
     registration: '📋 تسجيل', payment: '💳 دفعة',
     interaction: '💬 تواصل', task: '✅ مهمة',
+  };
+
+  const priorityColors: Record<string, string> = {
+    urgent: '#ef4444', high: '#f97316', normal: '#6b7280', low: '#374151',
+  };
+  const priorityLabels: Record<string, string> = {
+    urgent: 'عاجل', high: 'مرتفع', normal: 'عادي', low: 'منخفض',
   };
 
   return (
@@ -149,9 +174,10 @@ export default function AdminCRMContacts({ token, apiBase }: Props) {
                   <div style={{ color: '#94a3b8', fontSize: '0.78rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {c.org_name ? `🏢 ${c.org_name}` : c.email || c.phone || ''}
                   </div>
-                  <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-                    {c.reg_count ? <span style={{ fontSize: '0.7rem', background: 'rgba(108,99,255,0.2)', color: '#818cf8', padding: '1px 6px', borderRadius: 4 }}>{c.reg_count} تسجيل</span> : null}
-                    {c.payment_count ? <span style={{ fontSize: '0.7rem', background: 'rgba(16,185,129,0.2)', color: '#34d399', padding: '1px 6px', borderRadius: 4 }}>دفع ✓</span> : null}
+                  <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                    {c.reg_count ? <span style={{ fontSize: '0.7rem', background: 'rgba(108,99,255,0.2)', color: '#818cf8', padding: '1px 6px', borderRadius: 4 }}>📋 {c.reg_count} تسجيل</span> : null}
+                    {c.payment_count ? <span style={{ fontSize: '0.7rem', background: 'rgba(16,185,129,0.2)', color: '#34d399', padding: '1px 6px', borderRadius: 4 }}>💳 دفع ✓</span> : null}
+                    {c.tasks_count ? <span style={{ fontSize: '0.7rem', background: 'rgba(245,158,11,0.2)', color: '#fcd34d', padding: '1px 6px', borderRadius: 4 }}>✅ {c.tasks_count} مهمة</span> : null}
                   </div>
                 </div>
               </div>
@@ -212,7 +238,7 @@ export default function AdminCRMContacts({ token, apiBase }: Props) {
       ) : selected ? (
         <div style={S.card}>
           {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{
                 width: 48, height: 48, borderRadius: '50%',
@@ -234,76 +260,157 @@ export default function AdminCRMContacts({ token, apiBase }: Props) {
             </div>
           </div>
 
-          {/* AI Summary */}
-          {aiSummary && (
-            <div style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '0.75rem', padding: '0.75rem', marginBottom: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ color: '#a78bfa', fontSize: '0.8rem', fontWeight: 600 }}>🤖 ملخص AI</span>
-                {aiSummary.score && <span style={{ color: '#a78bfa', fontSize: '0.8rem' }}>درجة: {aiSummary.score}/100 — {aiSummary.verdict}</span>}
-              </div>
-              <p style={{ color: '#e2e8f0', fontSize: '0.85rem', margin: 0 }}>{aiSummary.summary}</p>
-            </div>
-          )}
-
-          {/* Contact Info */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+          {/* Tabs */}
+          <div style={{ display: 'flex', gap: 4, marginBottom: 14, borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 8 }}>
             {[
-              ['📧', selected.email], ['📱', selected.phone], ['💬', selected.whatsapp],
-              ['📍', selected.city], ['🏢', selected.org_name], ['👤', selected.role_in_org],
-            ].filter(([, v]) => v).map(([icon, value], i) => (
-              <div key={i} style={{ color: '#cbd5e1', fontSize: '0.82rem' }}><span style={{ opacity: 0.6 }}>{icon} </span>{value}</div>
+              { key: 'info', label: '👤 معلومات' },
+              { key: 'registrations', label: `📋 التسجيلات${registrations.length ? ` (${registrations.length})` : ''}` },
+              { key: 'tasks', label: `✅ المهام${tasks.length ? ` (${tasks.length})` : ''}` },
+              { key: 'timeline', label: '🕐 الخط الزمني' },
+            ].map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setDetailTab(tab.key as any)}
+                style={{
+                  background: detailTab === tab.key ? 'rgba(108,99,255,0.25)' : 'transparent',
+                  color: detailTab === tab.key ? '#818cf8' : '#64748b',
+                  border: detailTab === tab.key ? '1px solid rgba(108,99,255,0.4)' : '1px solid transparent',
+                  borderRadius: '0.4rem',
+                  padding: '0.3rem 0.7rem',
+                  cursor: 'pointer',
+                  fontSize: '0.78rem',
+                  fontWeight: detailTab === tab.key ? 600 : 400,
+                }}
+              >
+                {tab.label}
+              </button>
             ))}
           </div>
 
-          {/* Org Details (startup) */}
-          {selected.problem_statement && (
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>معلومات الشركة</div>
-              <div style={{ display: 'grid', gap: 6 }}>
-                {[
-                  ['المشكلة', selected.problem_statement],
-                  ['مرحلة التنفيذ', selected.execution_stage],
-                  ['نموذج الإيراد', selected.revenue_model],
-                  ['قابلية التوسع', selected.scalability_note],
-                  ['ملاءمة السوق', selected.local_fit_note],
-                ].filter(([, v]) => v).map(([label, value]) => (
-                  <div key={label as string} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '0.4rem', padding: '6px 10px' }}>
-                    <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>{label}: </span>
-                    <span style={{ color: '#e2e8f0', fontSize: '0.82rem' }}>{value}</span>
+          {/* Tab: Info */}
+          {detailTab === 'info' && (
+            <>
+              {aiSummary && (
+                <div style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '0.75rem', padding: '0.75rem', marginBottom: 14 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <span style={{ color: '#a78bfa', fontSize: '0.8rem', fontWeight: 600 }}>🤖 ملخص AI</span>
+                    {aiSummary.score && <span style={{ color: '#a78bfa', fontSize: '0.8rem' }}>درجة: {aiSummary.score}/100 — {aiSummary.verdict}</span>}
                   </div>
+                  <p style={{ color: '#e2e8f0', fontSize: '0.85rem', margin: 0 }}>{aiSummary.summary}</p>
+                </div>
+              )}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+                {[
+                  ['📧', selected.email], ['📱', selected.phone], ['💬', selected.whatsapp],
+                  ['📍', selected.city], ['🏢', selected.org_name], ['👤', selected.role_in_org],
+                ].filter(([, v]) => v).map(([icon, value], i) => (
+                  <div key={i} style={{ color: '#cbd5e1', fontSize: '0.82rem' }}><span style={{ opacity: 0.6 }}>{icon} </span>{value}</div>
                 ))}
               </div>
+              {selected.notes && (
+                <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '0.5rem', padding: '8px 12px', color: '#cbd5e1', fontSize: '0.82rem' }}>
+                  📝 {selected.notes}
+                </div>
+              )}
+              {selected.problem_statement && (
+                <div style={{ marginTop: 12 }}>
+                  <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginBottom: 8, fontWeight: 600 }}>معلومات الشركة / الناشئة</div>
+                  <div style={{ display: 'grid', gap: 6 }}>
+                    {[
+                      ['المشكلة', selected.problem_statement],
+                      ['مرحلة التنفيذ', selected.execution_stage],
+                      ['نموذج الإيراد', selected.revenue_model],
+                    ].filter(([, v]) => v).map(([label, value]) => (
+                      <div key={label as string} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '0.4rem', padding: '6px 10px' }}>
+                        <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>{label}: </span>
+                        <span style={{ color: '#e2e8f0', fontSize: '0.82rem' }}>{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Tab: Registrations */}
+          {detailTab === 'registrations' && (
+            <div>
+              {registrations.length === 0 ? (
+                <p style={{ color: '#6b7280', fontSize: '0.85rem', textAlign: 'center', padding: '2rem 0' }}>لا توجد تسجيلات مرتبطة</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {registrations.map(reg => (
+                    <div key={reg.id} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '0.5rem', padding: '10px 12px', borderRight: '3px solid #6C63FF' }}>
+                      <div style={{ color: 'white', fontWeight: 600, fontSize: '0.88rem' }}>
+                        {reg.event_name_ar || reg.event_name || `حدث #${reg.id}`}
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+                        {reg.reg_type && <span style={{ fontSize: '0.72rem', background: 'rgba(108,99,255,0.2)', color: '#818cf8', padding: '2px 8px', borderRadius: 4 }}>{reg.reg_type}</span>}
+                        {reg.status && <span style={{ fontSize: '0.72rem', background: `${statusColors[reg.status] || '#374151'}20`, color: statusColors[reg.status] || '#94a3b8', padding: '2px 8px', borderRadius: 4 }}>{reg.status}</span>}
+                        <span style={{ fontSize: '0.72rem', color: '#4b5563' }}>{new Date(reg.created_at).toLocaleDateString('ar-SA')}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
-          {/* Timeline 360° */}
-          <div>
-            <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              الخط الزمني 360°
-            </div>
-            {timeline.length === 0 ? (
-              <p style={{ color: '#6b7280', fontSize: '0.85rem', textAlign: 'center' }}>لا توجد سجلات بعد</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 300, overflowY: 'auto' }}>
-                {timeline.map((entry, i) => (
-                  <div key={i} style={{
-                    display: 'flex', gap: 10, padding: '8px 10px',
-                    background: 'rgba(255,255,255,0.04)', borderRadius: '0.5rem',
-                    borderRight: `3px solid ${statusColors[entry.status] || '#374151'}`,
-                  }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ color: '#e2e8f0', fontSize: '0.82rem' }}>
-                        {typeLabel[entry.record_type] || entry.record_type}: {entry.detail}
+          {/* Tab: Tasks */}
+          {detailTab === 'tasks' && (
+            <div>
+              {tasks.length === 0 ? (
+                <p style={{ color: '#6b7280', fontSize: '0.85rem', textAlign: 'center', padding: '2rem 0' }}>لا توجد مهام مرتبطة</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {tasks.map(task => {
+                    const pColor = priorityColors[task.priority] || '#6b7280';
+                    const overdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'done';
+                    return (
+                      <div key={task.id} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '0.5rem', padding: '10px 12px', borderRight: `3px solid ${pColor}` }}>
+                        <div style={{ color: overdue ? '#fca5a5' : 'white', fontWeight: 600, fontSize: '0.88rem' }}>{task.title}</div>
+                        <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.72rem', background: `${pColor}20`, color: pColor, padding: '2px 8px', borderRadius: 4 }}>{priorityLabels[task.priority] || task.priority}</span>
+                          <span style={{ fontSize: '0.72rem', background: 'rgba(255,255,255,0.05)', color: '#94a3b8', padding: '2px 8px', borderRadius: 4 }}>{task.status}</span>
+                          {task.event_name && <span style={{ fontSize: '0.72rem', color: '#4b5563' }}>📅 {task.event_name}</span>}
+                          {task.due_date && <span style={{ fontSize: '0.72rem', color: overdue ? '#ef4444' : '#4b5563' }}>{overdue ? '⏰ ' : '📅 '}{task.due_date}</span>}
+                        </div>
+                        {task.assigned_to && <div style={{ color: '#6b7280', fontSize: '0.72rem', marginTop: 4 }}>📌 {task.assigned_to}</div>}
                       </div>
-                      <div style={{ color: '#6b7280', fontSize: '0.72rem', marginTop: 2 }}>
-                        {entry.status} · {new Date(entry.at_time).toLocaleDateString('ar-SY')}
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Tab: Timeline */}
+          {detailTab === 'timeline' && (
+            <div>
+              {timeline.length === 0 ? (
+                <p style={{ color: '#6b7280', fontSize: '0.85rem', textAlign: 'center', padding: '2rem 0' }}>لا توجد سجلات بعد</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 350, overflowY: 'auto' }}>
+                  {timeline.map((entry, i) => (
+                    <div key={i} style={{
+                      display: 'flex', gap: 10, padding: '8px 10px',
+                      background: 'rgba(255,255,255,0.04)', borderRadius: '0.5rem',
+                      borderRight: `3px solid ${statusColors[entry.status] || '#374151'}`,
+                    }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ color: '#e2e8f0', fontSize: '0.82rem' }}>
+                          {typeLabel[entry.record_type] || entry.record_type}: {entry.detail}
+                        </div>
+                        <div style={{ color: '#6b7280', fontSize: '0.72rem', marginTop: 2 }}>
+                          {entry.status} · {new Date(entry.at_time).toLocaleDateString('ar-SY')}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Log Interaction Modal */}
           {showInteraction && (
