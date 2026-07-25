@@ -671,11 +671,17 @@ function EventTab({ eventId, eventSlug, token, save, saving }: any) {
     { key: 'start_date',     label: 'تاريخ البداية', type: 'date' },
     { key: 'end_date',       label: 'تاريخ النهاية', type: 'date' },
     { key: 'max_attendees',  label: 'الحد الأقصى للحضور', type: 'number' },
-    { key: 'email',          label: 'البريد الإلكتروني', type: 'email' },
-    { key: 'twitter',        label: 'تويتر' },
-    { key: 'instagram',      label: 'انستغرام' },
-    { key: 'linkedin',       label: 'لينكدإن' },
-    { key: 'primary_color',  label: 'اللون الرئيسي', type: 'color' },
+    { key: 'email',          label: '📧 البريد الإلكتروني', type: 'email' },
+    { key: 'twitter',        label: '𝕏 تويتر / X' },
+    { key: 'instagram',      label: '📸 انستغرام' },
+    { key: 'linkedin',       label: '💼 لينكدإن' },
+    { key: 'tiktok',         label: '🎵 تيك توك' },
+    { key: 'youtube',        label: '▶️ يوتيوب' },
+    { key: 'snapchat',       label: '👻 سناب شات' },
+    { key: 'facebook',       label: '👤 فيسبوك' },
+    { key: 'whatsapp_link',  label: '💬 واتساب (رابط المجموعة)' },
+    { key: 'telegram',       label: '✈️ تيليغرام' },
+    { key: 'primary_color',  label: '🎨 اللون الرئيسي', type: 'color' },
   ];
   return (
     <div>
