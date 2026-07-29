@@ -12,6 +12,28 @@
     --border: rgba(108, 99, 255, 0.2);
   }
 
+  /* ── Light Mode ── */
+  html[data-theme="light"] {
+    --bg-dark: #f8f7ff;
+    --bg-card: #ffffff;
+    --text: #1e1b4b;
+    --text-muted: #6b7280;
+    --border: rgba(108, 99, 255, 0.25);
+  }
+  html[data-theme="light"] body {
+    background-color: #f8f7ff;
+    color: #1e1b4b;
+  }
+  html[data-theme="light"] .glass {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(108, 99, 255, 0.2);
+  }
+  html[data-theme="light"] .card,
+  html[data-theme="light"] [class*="card"] {
+    background: #ffffff;
+    border-color: rgba(108, 99, 255, 0.15);
+  }
+
   html { scroll-behavior: smooth; }
 
   body {
@@ -19,6 +41,7 @@
     color: var(--text);
     font-family: 'Cairo', 'Segoe UI', sans-serif;
     direction: rtl;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   * { box-sizing: border-box; }

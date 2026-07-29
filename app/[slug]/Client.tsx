@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Event, Speaker, AgendaDay, Stats, Sponsor, Faq, FormConfig, SiteConfig } from '../../lib/types';
@@ -8,42 +8,63 @@ import PixelInjector from '../components/PixelInjector';
 import TicketsSection from '../components/TicketsSection';
 import SupportWidget from '../components/SupportWidget';
 import RegistrationSuccessMessage from '../components/RegistrationSuccessMessage';
+import { ThemeToggle, IconX, IconInstagram, IconLinkedIn, IconTikTok, IconYouTube, IconFacebook, IconWhatsApp, IconTelegram } from '../components/SiteIcons';
 
 const DEFAULT_EVENT_SLUG = ''; // No hardcoded fallback — slug MUST come from URL params
 
 // ─── Event Navigation Bar ──────────────────────────────────────────────────────
-function EventNavBar({ eventId, primaryColor, archiveLabel, showArchive }: { eventId: number; primaryColor: string; archiveLabel?: string; showArchive?: boolean }) {
+function EventNavBar({ eventId, primaryColor, archiveLabel, showArchive, showThemeToggle }: { eventId: number; primaryColor: string; archiveLabel?: string; showArchive?: boolean; showThemeToggle?: boolean }) {
   const [nav, setNav] = useState<{ prev: any; current: any; next: any } | null>(null);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const label = archiveLabel || '🗂 جميع النسخ';
-  const show  = showArchive !== false; // default true
+  const show  = showArchive !== false;
+
+  // Initialize theme from localStorage
+  useEffect(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('event_theme') : null;
+    const initial = (saved === 'light' ? 'light' : 'dark') as 'dark' | 'light';
+    setTheme(initial);
+    document.documentElement.setAttribute('data-theme', initial);
+  }, []);
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('event_theme', next);
+  };
 
   useEffect(() => {
     if (!eventId) return;
-    fetchEventNavigation(eventId)
-      .then(r => setNav(r.data))
-      .catch(() => {});
+    fetchEventNavigation(eventId).then(r => setNav(r.data)).catch(() => {});
   }, [eventId]);
 
-  if (!show) return null;
+  // إخفاء الناف بار فقط إذا كان الأرشيف مخفياً والثيم مخفياً معاً
+  if (!show && !showThemeToggle) return null;
+
+  // Theme Toggle Button Component
+  const ThemeBtn = showThemeToggle ? <ThemeToggle isDark={theme === 'dark'} onToggle={toggleTheme} size={40} /> : null;
 
   if (!nav) return (
     <div style={{ background: 'rgba(0,0,0,0.35)', borderBottom: `1px solid ${primaryColor}25`, padding: '0.5rem 1.5rem', direction: 'rtl' }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Link href="/archive" style={{ fontSize: '0.78rem', color: '#64748b', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
           {label}
         </Link>
+        {ThemeBtn}
       </div>
     </div>
   );
 
   if (!nav.prev && !nav.next) return (
     <div style={{ background: 'rgba(0,0,0,0.35)', borderBottom: `1px solid ${primaryColor}25`, padding: '0.5rem 1.5rem', direction: 'rtl' }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Link href="/archive" style={{ fontSize: '0.78rem', color: '#64748b', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
           onMouseEnter={e => (e.currentTarget.style.color = '#a5b4fc')}
           onMouseLeave={e => (e.currentTarget.style.color = '#64748b')}>
           {label}
         </Link>
+        {ThemeBtn}
       </div>
     </div>
   );
@@ -75,19 +96,22 @@ function EventNavBar({ eventId, primaryColor, archiveLabel, showArchive }: { eve
           {label}
         </Link>
 
-        {/* Next event */}
-        {nav.next ? (
-          <Link href={`/${nav.next.slug}`}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', color: '#94a3b8', fontSize: '0.82rem', transition: 'color 0.15s', textAlign: 'left' }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'white')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '0.68rem', color: '#475569' }}>الحدث التالي</div>
-              <div style={{ fontWeight: 600 }}>{nav.next.name_ar || nav.next.name} {nav.next.edition_number ? `(${nav.next.edition_number})` : fmt(nav.next.start_date)}</div>
-            </div>
-            <span style={{ fontSize: '1rem' }}>→</span>
-          </Link>
-        ) : <div />}
+        {/* Next event + Theme Toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {ThemeBtn}
+          {nav.next ? (
+            <Link href={`/${nav.next.slug}`}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', color: '#94a3b8', fontSize: '0.82rem', transition: 'color 0.15s', textAlign: 'left' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'white')}
+              onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '0.68rem', color: '#475569' }}>الحدث التالي</div>
+                <div style={{ fontWeight: 600 }}>{nav.next.name_ar || nav.next.name} {nav.next.edition_number ? `(${nav.next.edition_number})` : fmt(nav.next.start_date)}</div>
+              </div>
+              <span style={{ fontSize: '1rem' }}>→</span>
+            </Link>
+          ) : null}
+        </div>
       </div>
     </div>
   );
@@ -215,7 +239,7 @@ function TicketSelector({ eventId, onSelect, primaryColor }: { eventId: number; 
 }
 
 // ─── Registration Form ────────────────────────────────────────────────────────
-function RegistrationForm({ event, onClose, cfg, initialTab }: { event: Event; onClose: () => void; cfg: FormConfig; initialTab?: string }) {
+function RegistrationForm({ event, onClose, cfg, initialTab, ticketInstructions }: { event: Event; onClose: () => void; cfg: FormConfig; initialTab?: string; ticketInstructions?: any }) {
   const enabledTypes = cfg.enabled_types || ['startup', 'general'];
   const [tab, setTab] = useState<string>(initialTab && enabledTypes.includes(initialTab) ? initialTab : (enabledTypes[0] || 'general'));
   const [loading, setLoading] = useState(false);
@@ -315,6 +339,8 @@ function RegistrationForm({ event, onClose, cfg, initialTab }: { event: Event; o
         fullName={form.full_name}
         companyName={tab === 'startup' ? form.company_name : undefined}
         ticketCode={regData?.ticket_code}
+        eventName={(event as any)?.name_ar || (event as any)?.name}
+        customInstructions={ticketInstructions}
         onClose={onClose}
       />
     );
@@ -736,6 +762,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
           primaryColor={primaryColor}
           archiveLabel={siteCfg.archive_link_label}
           showArchive={siteCfg.archive_link_enabled !== false && siteCfg.archive_link_position !== 'none'}
+          showThemeToggle={(siteCfg as any)?.show_theme_toggle !== false}
         />
       )}
 
@@ -1158,34 +1185,15 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
           <div>
             <h4 className="text-white font-semibold mb-3">تواصل معنا</h4>
             {event?.email && <a href={`mailto:${event.email}`} className="block text-sm text-[var(--text-muted)] hover:text-white transition-colors mb-1">{event.email}</a>}
-            <div className="flex gap-3 mt-3 flex-wrap">
-              {event?.twitter && <a href={event.twitter.startsWith('http') ? event.twitter : `https://twitter.com/${event.twitter}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-white transition-colors" title="X (Twitter)">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-              </a>}
-              {event?.instagram && <a href={event.instagram.startsWith('http') ? event.instagram : `https://instagram.com/${event.instagram}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-white transition-colors" title="Instagram">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-              </a>}
-              {event?.linkedin && <a href={event.linkedin.startsWith('http') ? event.linkedin : `https://linkedin.com/company/${event.linkedin}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-white transition-colors" title="LinkedIn">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-              </a>}
-              {(event as any)?.tiktok && <a href={(event as any).tiktok.startsWith('http') ? (event as any).tiktok : `https://tiktok.com/@${(event as any).tiktok}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-white transition-colors" title="TikTok">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.28 6.28 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.94a8.19 8.19 0 004.79 1.54V7.03a4.85 4.85 0 01-1.02-.34z"/></svg>
-              </a>}
-              {(event as any)?.youtube && <a href={(event as any).youtube.startsWith('http') ? (event as any).youtube : `https://youtube.com/@${(event as any).youtube}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-white transition-colors" title="YouTube">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-              </a>}
-              {(event as any)?.snapchat && <a href={(event as any).snapchat.startsWith('http') ? (event as any).snapchat : `https://snapchat.com/add/${(event as any).snapchat}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-white transition-colors" title="Snapchat">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.166.02c.27-.005.54 0 .808.016C14.208.098 15.7.513 16.9 1.466c1.358 1.07 2.082 2.656 2.228 4.31.046.511.04 1.026.04 1.538v.356c.126-.025.248-.06.375-.077.305-.04.618-.025.905.083.517.192.806.69.736 1.226-.066.5-.435.88-.916 1.001-.254.064-.514.1-.771.148-.134.025-.268.053-.397.091-.073.022-.28.093-.28.265 0 .11.096.264.171.344.447.474.93.922 1.384 1.395.536.563.984 1.2 1.27 1.926.393 1.01.326 2.12-.134 3.09-.132.28-.306.541-.514.772a6.95 6.95 0 01-.562.552c-.178.157-.365.303-.555.443-.203.15-.414.29-.625.426-.16.103-.318.207-.479.308-.07.044-.142.088-.21.136-.122.082-.232.178-.32.294-.105.138-.156.307-.147.473.015.267.18.506.413.618.327.156.665.244 1.006.307.293.054.592.085.887.126.254.036.508.09.74.202.445.216.72.687.673 1.18-.04.436-.32.82-.73 1-.204.088-.425.124-.644.13-.255.006-.51-.022-.762-.057-.485-.066-.959-.186-1.434-.273-.342-.062-.689-.1-1.033-.04-.3.052-.572.182-.84.312-.453.219-.895.463-1.376.614-.618.193-1.28.256-1.926.213-.644-.043-1.277-.208-1.871-.472-.477-.213-.91-.498-1.36-.75-.285-.16-.573-.254-.89-.284-.317-.03-.639-.003-.95.065-.489.106-.97.25-1.462.328-.338.053-.683.075-1.022.047-.3-.026-.608-.104-.877-.247-.374-.198-.613-.578-.617-.998-.004-.468.27-.903.69-1.103.237-.113.49-.162.744-.198.32-.043.643-.071.963-.116.347-.05.69-.133 1.014-.284.218-.103.38-.312.38-.555 0-.186-.085-.35-.22-.46-.256-.2-.558-.322-.85-.448-.227-.097-.459-.186-.685-.285-.23-.101-.452-.22-.664-.35-.42-.256-.804-.579-1.085-.98-.396-.563-.566-1.248-.527-1.924.04-.676.266-1.341.67-1.886.414-.558.975-.988 1.583-1.316.49-.264.996-.468 1.5-.68.14-.058.278-.118.415-.183.11-.052.225-.12.3-.215.099-.123.099-.296.099-.447v-.36c0-.512-.006-1.027.04-1.537.146-1.655.87-3.241 2.228-4.31C9.534.512 11.026.097 12.168.02h-.002z"/></svg>
-              </a>}
-              {(event as any)?.facebook && <a href={(event as any).facebook.startsWith('http') ? (event as any).facebook : `https://facebook.com/${(event as any).facebook}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-white transition-colors" title="Facebook">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-              </a>}
-              {(event as any)?.whatsapp_link && <a href={(event as any).whatsapp_link} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-white transition-colors" title="WhatsApp">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-              </a>}
-              {(event as any)?.telegram && <a href={(event as any).telegram.startsWith('http') ? (event as any).telegram : `https://t.me/${(event as any).telegram}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-white transition-colors" title="Telegram">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
-              </a>}
+            <div className="flex gap-3 mt-3 flex-wrap" style={{ alignItems: 'center' }}>
+              {event?.twitter && <a href={event.twitter.startsWith('http') ? event.twitter : `https://twitter.com/${event.twitter}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-white transition-colors" title="X (Twitter)"><IconX size={18} /></a>}
+              {event?.instagram && <a href={event.instagram.startsWith('http') ? event.instagram : `https://instagram.com/${event.instagram}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-white transition-colors" title="Instagram"><IconInstagram size={18} /></a>}
+              {event?.linkedin && <a href={event.linkedin.startsWith('http') ? event.linkedin : `https://linkedin.com/company/${event.linkedin}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-white transition-colors" title="LinkedIn"><IconLinkedIn size={18} /></a>}
+              {(event as any)?.tiktok && <a href={(event as any).tiktok.startsWith('http') ? (event as any).tiktok : `https://tiktok.com/@${(event as any).tiktok}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-white transition-colors" title="TikTok"><IconTikTok size={18} /></a>}
+              {(event as any)?.youtube && <a href={(event as any).youtube.startsWith('http') ? (event as any).youtube : `https://youtube.com/@${(event as any).youtube}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-white transition-colors" title="YouTube"><IconYouTube size={18} /></a>}
+              {(event as any)?.facebook && <a href={(event as any).facebook.startsWith('http') ? (event as any).facebook : `https://facebook.com/${(event as any).facebook}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-white transition-colors" title="Facebook"><IconFacebook size={18} /></a>}
+              {(event as any)?.whatsapp_link && <a href={(event as any).whatsapp_link} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-white transition-colors" title="WhatsApp"><IconWhatsApp size={18} /></a>}
+              {(event as any)?.telegram && <a href={(event as any).telegram.startsWith('http') ? (event as any).telegram : `https://t.me/${(event as any).telegram}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-white transition-colors" title="Telegram"><IconTelegram size={18} /></a>}
             </div>
           </div>
         </div>
@@ -1306,7 +1314,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
               <h3 className="text-xl font-bold text-white">التسجيل في القمة</h3>
               <button onClick={() => setShowRegModal(false)} className="text-[var(--text-muted)] hover:text-white text-2xl leading-none">×</button>
             </div>
-            {event && <RegistrationForm event={event} onClose={() => setShowRegModal(false)} cfg={cfg} initialTab={regInitialTab} />}
+            {event && <RegistrationForm event={event} onClose={() => setShowRegModal(false)} cfg={cfg} initialTab={regInitialTab} ticketInstructions={(siteCfg as any)?.ticket_instructions} />}
           </div>
         </div>
       )}

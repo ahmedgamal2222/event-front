@@ -2,51 +2,109 @@
 'use client';
 
 export interface SuccessMessageProps {
-  registrationType: 'startup' | 'member' | 'general';
+  registrationType: 'startup' | 'member' | 'general' | string;
   fullName: string;
   companyName?: string;
   ticketCode?: string;
   eventId?: number;
   eventName?: string;
   onClose: () => void;
+  // Custom instructions from admin
+  customInstructions?: TicketInstructions;
 }
+
+export interface TicketInstructions {
+  // For startup/company registrations
+  startup_step1_title?: string;
+  startup_step1_desc?: string;
+  startup_step2_title?: string;
+  startup_step2_desc?: string;
+  startup_step3_title?: string;
+  startup_step3_desc?: string;
+  startup_step4_title?: string;
+  startup_step4_desc?: string;
+  startup_note?: string;
+  // For general registrations
+  general_confirm_title?: string;
+  general_confirm_desc?: string;
+  general_ticket_title?: string;
+  general_ticket_desc?: string;
+  general_note?: string;
+  // Button
+  close_btn_text?: string;
+  // Success title
+  startup_success_title?: string;
+  general_success_title?: string;
+}
+
+const DEFAULT: TicketInstructions = {
+  startup_step1_title: 'طلبك قيد المراجعة',
+  startup_step1_desc: 'يراجع الفريق طلبك ومعلومات مشروعك خلال 24-48 ساعة',
+  startup_step2_title: 'مكالمة استعلام',
+  startup_step2_desc: 'سيتواصل معك أحد أعضاء الفريق عبر واتساب لتحديد موعد مكالمة قصيرة (15 دقيقة) عن مشروعكم',
+  startup_step3_title: 'القبول والدفع',
+  startup_step3_desc: 'في حال القبول ستصلك رسالة تأكيد مع تفاصيل الدفع',
+  startup_step4_title: 'تذكرتك ومقعدك',
+  startup_step4_desc: 'بعد تأكيد الدفع تصلك تذاكر الفريق برموز QR مباشرة على واتساب',
+  startup_note: 'تأكد من إبقاء واتساب مفعلاً على الرقم المسجل – سيتواصل معك الفريق خلاله',
+  general_confirm_title: 'رسالة تأكيد',
+  general_confirm_desc: 'ستصلك رسالة تأكيد على البريد الإلكتروني المسجل تتضمن تفاصيل الحدث وكيفية الحضور',
+  general_ticket_title: 'تذكرتك',
+  general_ticket_desc: 'تذكرة الدخول ستصلك برمز QR قبل انطلاق الفعالية. احتفظ برقم هاتفك المسجل لاستقبالها',
+  general_note: 'تأكد من إبقاء واتساب مفعلاً على الرقم المسجل – سيتواصل معك الفريق خلاله',
+  close_btn_text: 'حسناً، شكراً!',
+  startup_success_title: 'استلمنا طلب شركتك!',
+  general_success_title: 'تم التسجيل بنجاح!',
+};
 
 export default function RegistrationSuccessMessage({
   registrationType,
   fullName,
   companyName,
-  eventName = 'Ø§Ù„Ø­Ø¯Ø«',
-  onClose
+  ticketCode,
+  eventName = 'الحدث',
+  onClose,
+  customInstructions,
 }: SuccessMessageProps) {
   const isStartup = registrationType === 'startup' || !!companyName;
+  const c = { ...DEFAULT, ...customInstructions };
+
+  const startupSteps = [
+    { icon: '📋', title: c.startup_step1_title!, desc: c.startup_step1_desc! },
+    { icon: '📞', title: c.startup_step2_title!, desc: c.startup_step2_desc! },
+    { icon: '💳', title: c.startup_step3_title!, desc: c.startup_step3_desc! },
+    { icon: '🎫', title: c.startup_step4_title!, desc: c.startup_step4_desc! },
+  ];
 
   return (
     <div style={{ textAlign: 'center', padding: '2rem 1rem', direction: 'rtl' }}>
       {/* Icon */}
-      <div style={{ fontSize: '3.5rem', marginBottom: '1rem', animation: 'bounce 1s infinite' }}>
-        {isStartup ? 'ðŸš€' : 'ðŸŽ‰'}
+      <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>
+        {isStartup ? '🚀' : '🎉'}
       </div>
 
       {/* Title */}
       <h3 style={{ color: 'white', fontSize: '1.4rem', fontWeight: 700, margin: '0 0 0.5rem' }}>
-        {isStartup ? 'âœ… Ø§Ø³ØªÙ„Ù…Ù†Ø§ Ø·Ù„Ø¨ Ø´Ø±ÙƒØªÙƒ!' : 'âœ… ØªÙ… Ø§Ù„ØªØ³Ø¬ÙŠÙ„ Ø¨Ù†Ø¬Ø§Ø­!'}
+        ✅ {isStartup ? c.startup_success_title : c.general_success_title}
       </h3>
-      <p style={{ color: '#94a3b8', margin: '0 0 1.5rem' }}>
-        Ø´ÙƒØ±Ø§Ù‹ Ù„Ùƒ ÙŠØ§ {fullName}{companyName ? ` Ù…Ù† ${companyName}` : ''}
+      <p style={{ color: '#94a3b8', margin: '0 0 0.35rem' }}>
+        شكراً لك يا <strong style={{ color: 'white' }}>{fullName}</strong>
+        {companyName ? ` من ${companyName}` : ''}
       </p>
+      {ticketCode && (
+        <p style={{ color: '#64748b', fontSize: '0.82rem', margin: '0 0 1.5rem' }}>
+          رقم التسجيل: <span style={{ color: '#818cf8', fontWeight: 700 }}>{ticketCode}</span>
+        </p>
+      )}
+      {!ticketCode && <div style={{ marginBottom: '1.5rem' }} />}
 
-      {/* Steps â€” Startup */}
+      {/* Steps – Startup */}
       {isStartup ? (
         <div style={{ marginBottom: '1.5rem', textAlign: 'right' }}>
           <div style={{ color: '#6C63FF', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Ø§Ù„Ø®Ø·ÙˆØ§Øª Ø§Ù„ØªØ§Ù„ÙŠØ©
+            الخطوات التالية
           </div>
-          {[
-            { icon: 'ðŸ“‹', title: 'Ø·Ù„Ø¨Ùƒ Ù‚ÙŠØ¯ Ø§Ù„Ù…Ø±Ø§Ø¬Ø¹Ø©', desc: 'ÙŠØ±Ø§Ø¬Ø¹ Ø§Ù„ÙØ±ÙŠÙ‚ Ø·Ù„Ø¨Ùƒ ÙˆÙ…Ø¹Ù„ÙˆÙ…Ø§Øª Ù…Ø´Ø±ÙˆØ¹Ùƒ Ø®Ù„Ø§Ù„ 24-48 Ø³Ø§Ø¹Ø©' },
-            { icon: 'ðŸ“ž', title: 'Ù…ÙƒØ§Ù„Ù…Ø© Ø§Ø³ØªØ¹Ù„Ø§Ù…', desc: 'Ø³ÙŠØªÙˆØ§ØµÙ„ Ù…Ø¹Ùƒ Ø£Ø­Ø¯ Ø£Ø¹Ø¶Ø§Ø¡ Ø§Ù„ÙØ±ÙŠÙ‚ Ø¹Ø¨Ø± ÙˆØ§ØªØ³Ø§Ø¨ Ù„ØªØ­Ø¯ÙŠØ¯ Ù…ÙˆØ¹Ø¯ Ù…ÙƒØ§Ù„Ù…Ø© Ù‚ØµÙŠØ±Ø© (15 Ø¯Ù‚ÙŠÙ‚Ø©) Ø¹Ù† Ù…Ø´Ø±ÙˆØ¹ÙƒÙ…' },
-            { icon: 'ðŸ’³', title: 'Ø§Ù„Ù‚Ø¨ÙˆÙ„ ÙˆØ§Ù„Ø¯ÙØ¹', desc: 'ÙÙŠ Ø­Ø§Ù„ Ø§Ù„Ù‚Ø¨ÙˆÙ„ Ø³ØªØµÙ„Ùƒ Ø±Ø³Ø§Ù„Ø© ØªØ£ÙƒÙŠØ¯ Ù…Ø¹ ØªÙØ§ØµÙŠÙ„ Ø§Ù„Ø¯ÙØ¹ ($100 â€” ØªØ°ÙƒØ±Ø© Ø´Ø±ÙƒØ§Øª Ù†Ø§Ø´Ø¦Ø© ÙˆØªØ´Ù…Ù„ 3 ØªØ°Ø§ÙƒØ± Ù„Ù„ÙØ±ÙŠÙ‚)' },
-            { icon: 'ðŸŽ«', title: 'ØªØ°ÙƒØ±ØªÙƒ ÙˆÙ…Ù‚Ø¹Ø¯Ùƒ', desc: 'Ø¨Ø¹Ø¯ ØªØ£ÙƒÙŠØ¯ Ø§Ù„Ø¯ÙØ¹ ØªØµÙ„Ùƒ ØªØ°Ø§ÙƒØ± Ø§Ù„ÙØ±ÙŠÙ‚ Ø¨Ø±Ù…ÙˆØ² QR Ù…Ø¨Ø§Ø´Ø±Ø© Ø¹Ù„Ù‰ ÙˆØ§ØªØ³Ø§Ø¨' },
-          ].map((step, i) => (
+          {startupSteps.map((step, i) => (
             <div key={i} style={{
               display: 'flex', gap: '0.75rem', alignItems: 'flex-start',
               padding: '0.75rem', marginBottom: '0.5rem',
@@ -73,9 +131,9 @@ export default function RegistrationSuccessMessage({
             textAlign: 'right',
             marginBottom: '0.75rem',
           }}>
-            <div style={{ color: '#10b981', fontWeight: 600, marginBottom: '0.4rem' }}>ðŸ“§ Ø±Ø³Ø§Ù„Ø© ØªØ£ÙƒÙŠØ¯</div>
+            <div style={{ color: '#10b981', fontWeight: 600, marginBottom: '0.4rem' }}>📧 {c.general_confirm_title}</div>
             <div style={{ color: '#cbd5e1', fontSize: '0.88rem' }}>
-              Ø³ØªØµÙ„Ùƒ Ø±Ø³Ø§Ù„Ø© ØªØ£ÙƒÙŠØ¯ Ø¹Ù„Ù‰ Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ Ø§Ù„Ù…Ø³Ø¬Ù„ ØªØªØ¶Ù…Ù† ØªÙØ§ØµÙŠÙ„ {eventName} ÙˆÙƒÙŠÙÙŠØ© Ø§Ù„Ø­Ø¶ÙˆØ±.
+              {c.general_confirm_desc!.replace('{eventName}', eventName)}
             </div>
           </div>
           <div style={{
@@ -85,15 +143,13 @@ export default function RegistrationSuccessMessage({
             borderRadius: '0.75rem',
             textAlign: 'right',
           }}>
-            <div style={{ color: '#818cf8', fontWeight: 600, marginBottom: '0.4rem' }}>ðŸŽ« ØªØ°ÙƒØ±ØªÙƒ</div>
-            <div style={{ color: '#94a3b8', fontSize: '0.88rem' }}>
-              ØªØ°ÙƒØ±Ø© Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø³ØªØµÙ„Ùƒ Ø¨Ø±Ù…Ø² QR Ù‚Ø¨Ù„ Ø§Ù†Ø·Ù„Ø§Ù‚ Ø§Ù„ÙØ¹Ø§Ù„ÙŠØ©. Ø§Ø­ØªÙØ¸ Ø¨Ø±Ù‚Ù… Ù‡Ø§ØªÙÙƒ Ø§Ù„Ù…Ø³Ø¬Ù„ Ù„Ø§Ø³ØªÙ‚Ø¨Ø§Ù„Ù‡Ø§.
-            </div>
+            <div style={{ color: '#818cf8', fontWeight: 600, marginBottom: '0.4rem' }}>🎫 {c.general_ticket_title}</div>
+            <div style={{ color: '#94a3b8', fontSize: '0.88rem' }}>{c.general_ticket_desc}</div>
           </div>
         </div>
       )}
 
-      {/* Important note */}
+      {/* Note */}
       <div style={{
         padding: '0.75rem 1rem',
         background: 'rgba(245,158,11,0.08)',
@@ -104,20 +160,29 @@ export default function RegistrationSuccessMessage({
         fontSize: '0.83rem',
         color: '#fbbf24',
       }}>
-        ðŸ’¬ ØªØ£ÙƒØ¯ Ù…Ù† Ø¥Ø¨Ù‚Ø§Ø¡ ÙˆØ§ØªØ³Ø§Ø¨ Ù…ÙØ¹Ù„Ø§Ù‹ Ø¹Ù„Ù‰ Ø§Ù„Ø±Ù‚Ù… Ø§Ù„Ù…Ø³Ø¬Ù„ â€” Ø³ÙŠØªÙˆØ§ØµÙ„ Ù…Ø¹Ùƒ Ø§Ù„ÙØ±ÙŠÙ‚ Ø®Ù„Ø§Ù„Ù‡
+        💬 {isStartup ? c.startup_note : c.general_note}
       </div>
 
-      {/* Close */}
+      {/* Close button */}
       <button
-        onClick={onClose}
-        style={{
-          background: '#6C63FF', color: 'white', border: 'none',
-          borderRadius: '0.5rem', padding: '0.65rem 2rem',
-          fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer',
-          width: '100%',
+        onClick={() => {
+          onClose();
+          // Scroll to top after closing
+          setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
         }}
+        style={{
+          background: 'linear-gradient(135deg, #6C63FF, #8b5cf6)',
+          color: 'white', border: 'none',
+          borderRadius: '0.6rem', padding: '0.75rem 2.5rem',
+          fontSize: '1rem', fontWeight: 700, cursor: 'pointer',
+          width: '100%', letterSpacing: '0.02em',
+          boxShadow: '0 4px 20px rgba(108,99,255,0.4)',
+          transition: 'transform 0.15s, box-shadow 0.15s',
+        }}
+        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 25px rgba(108,99,255,0.5)'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = ''; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(108,99,255,0.4)'; }}
       >
-        حسناً، شكراً!
+        {c.close_btn_text}
       </button>
     </div>
   );

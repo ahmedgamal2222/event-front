@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { TicketType } from '@/lib/types';
+import { TicketType, TicketFeature } from '@/lib/types';
+import { TicketIcon } from './TicketIcons';
 import { fetchTickets, fetchTicketsConfig } from '@/lib/api';
 
 interface TicketsConfigData {
@@ -12,6 +13,18 @@ interface TicketsConfigData {
   feature_2: string;
   feature_3: string;
   info_text: string;
+  global_features?: any[]; // supports string[] and TicketFeature[]
+}
+
+// Parse features: supports old string[] and new TicketFeature[]
+function parseFeatures(raw: any): TicketFeature[] {
+  if (!raw) return [];
+  let arr: any[] = [];
+  try { arr = typeof raw === 'string' ? JSON.parse(raw) : (Array.isArray(raw) ? raw : []); } catch { return []; }
+  return arr.map(item => {
+    if (typeof item === 'string') return { icon: 'check', title: item, desc: '' };
+    return { icon: item.icon || 'check', title: item.title || item, desc: item.desc || '' };
+  });
 }
 
 export default function TicketsSection({ eventId }: { eventId: number }) {
@@ -149,24 +162,43 @@ export default function TicketsSection({ eventId }: { eventId: number }) {
                   <p className="text-sm text-[var(--text-muted)] mb-6 leading-relaxed">{ticket.description}</p>
                 )}
 
-                {/* Features - per-ticket if available, else global config */}
+                {/* Features - rich display with icon + title + desc */}
                 <div className="space-y-3 mb-8 flex-1">
                   {(() => {
-                    const perks: string[] = Array.isArray(ticket.features)
-                      ? ticket.features
-                      : (typeof ticket.features === 'string' && ticket.features ? JSON.parse(ticket.features) : []);
-                    if (perks.length > 0) {
-                      return perks.map((feat: string, i: number) => (
-                        <div key={i} className="flex items-start gap-2 text-sm">
-                          <span className="text-[var(--primary)] flex-shrink-0 mt-0.5">✓</span>
-                          <span className="text-[var(--text-muted)]">{feat}</span>
+                    const perks = parseFeatures(ticket.features);
+                    const globalFeatures: TicketFeature[] = [
+                      ...([config.feature_1, config.feature_2, config.feature_3].filter(Boolean).map(f => ({ icon: 'check', title: f as string, desc: '' }))),
+                      ...((config.global_features || []).map((f: any) => typeof f === 'string' ? { icon: 'check', title: f, desc: '' } : f as TicketFeature)),
+                    ].filter((v, i, arr) => arr.findIndex(x => x.title === v.title) === i);
+
+                    const displayFeatures = perks.length > 0 ? perks : globalFeatures;
+                    if (displayFeatures.length === 0) return null;
+
+                    return displayFeatures.map((feat, i) => (
+                      <div key={i} style={{
+                        display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
+                        padding: '0.65rem 0.85rem',
+                        borderRadius: '0.6rem',
+                        background: 'rgba(16,185,129,0.05)',
+                        border: '1px solid rgba(16,185,129,0.15)',
+                        transition: 'background 0.2s',
+                      }}>
+                        {/* Icon */}
+                        <div style={{
+                          width: 32, height: 32, borderRadius: '0.4rem', flexShrink: 0,
+                          background: 'rgba(16,185,129,0.15)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          marginTop: 1,
+                        }}>
+                          <TicketIcon iconKey={feat.icon} size={16} color="#10b981" />
                         </div>
-                      ));
-                    }
-                    return [config.feature_1, config.feature_2, config.feature_3].filter(Boolean).map((feat, i) => (
-                      <div key={i} className="flex items-start gap-2 text-sm">
-                        <span className="text-[var(--primary)] flex-shrink-0 mt-0.5">✓</span>
-                        <span className="text-[var(--text-muted)]">{feat}</span>
+                        {/* Text */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.85rem', lineHeight: 1.3 }}>{feat.title}</div>
+                          {feat.desc && (
+                            <div style={{ color: '#64748b', fontSize: '0.76rem', marginTop: '0.2rem', lineHeight: 1.4 }}>{feat.desc}</div>
+                          )}
+                        </div>
                       </div>
                     ));
                   })()}

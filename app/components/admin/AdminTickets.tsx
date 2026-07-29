@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { TicketType } from '@/lib/types';
+import { useState, useEffect, useCallback } from 'react';
+import { TicketType, TicketFeature } from '@/lib/types';
+import { TICKET_ICONS, TicketIcon } from '../TicketIcons';
 import { fetchTickets, createTicketType, updateTicketType, deleteTicketType, fetchTicketsConfig, updateTicketsConfig, clearApiCacheFor } from '@/lib/api';
 
 interface AdminTicketsProps {
@@ -20,6 +21,30 @@ const S = {
   td: { padding: '0.75rem', borderBottom: '1px solid rgba(108,99,255,0.1)', color: '#e2e8f0', fontSize: '0.9rem' } as React.CSSProperties,
 };
 
+// تحويل المزايا من الصيغة القديمة (string[]) أو الجديدة (TicketFeature[])
+function parseFeatures(raw: any): TicketFeature[] {
+  if (!raw && raw !== 0) return [];
+  let arr: any[] = [];
+  try {
+    if (typeof raw === 'string') {
+      if (!raw.trim() || raw.trim() === '[]') return [];
+      arr = JSON.parse(raw);
+    } else if (Array.isArray(raw)) {
+      arr = raw;
+    } else {
+      return [];
+    }
+  } catch { return []; }
+  if (!Array.isArray(arr)) return [];
+  return arr.filter(Boolean).map(item => {
+    if (typeof item === 'string') return { icon: 'check', title: item, desc: '' };
+    if (typeof item === 'object' && item !== null) {
+      return { icon: item.icon || 'check', title: String(item.title || ''), desc: String(item.desc || '') };
+    }
+    return null;
+  }).filter(Boolean) as TicketFeature[];
+}
+
 export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
   const [tickets, setTickets] = useState<TicketType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +55,7 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
   const [activeTab, setActiveTab] = useState<'tickets' | 'config'>('tickets');
   const [configLoading, setConfigLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showIconPicker, setShowIconPicker] = useState<number | null>(null); // index of feature being edited
 
   const [form, setForm] = useState({
     name_ar: '',
@@ -39,9 +65,9 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
     duration_type: 'single_day' as const,
     custom_days: 1,
     sort_order: 0,
-    features: [] as string[],
+    features: [] as TicketFeature[],
   });
-  const [newFeature, setNewFeature] = useState('');
+  const [newFeature, setNewFeature] = useState<TicketFeature>({ icon: 'check', title: '', desc: '' });
 
   const [configForm, setConfigForm] = useState({
     section_title: 'احصل على تذكرتك الآن',
@@ -52,7 +78,10 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
     feature_3: 'شهادة حضور رسمية',
     info_text: '💡 هل تحتاج مساعدة؟ تواصل معنا عبر نموذج الدعم الفني',
     reg_type_mapping: {} as Record<string, number>,
+    global_features: [] as TicketFeature[], // مزايا افتراضية غنية (أيقونة + عنوان + وصف)
   });
+  const [newGlobalFeature, setNewGlobalFeature] = useState<TicketFeature>({ icon: 'check', title: '', desc: '' });
+  const [showGlobalIconPicker, setShowGlobalIconPicker] = useState<number | 'new' | null>(null);
 
   useEffect(() => {
     loadTickets();
@@ -79,11 +108,15 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
     try {
       const res = await fetchTicketsConfig(eventId);
       if (res.data) {
-        setConfigForm(res.data);
+        // تحليل global_features لدعم الصيغتين القديمة والجديدة
+        const rawGlobal = res.data.global_features;
+        const parsedGlobal = Array.isArray(rawGlobal)
+          ? rawGlobal.map((f: any) => typeof f === 'string' ? { icon: 'check', title: f, desc: '' } : f)
+          : [];
+        setConfigForm({ ...res.data, global_features: parsedGlobal });
       }
     } catch (err) {
       console.error('Error loading config:', err);
-      // Use defaults
     }
   }, [eventId]);
 
@@ -92,6 +125,7 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
     setIsSubmitting(true);
     try {
       // Ensure all values are defined
+      const safeFeatures = Array.isArray(form.features) ? form.features.filter(f => f && f.title) : [];
       const dataToSend = {
         name_ar: form.name_ar || '',
         name_en: form.name_en || '',
@@ -100,10 +134,8 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
         duration_type: form.duration_type || 'single_day',
         custom_days: form.duration_type === 'custom_days' ? (form.custom_days ?? 1) : null,
         sort_order: form.sort_order ?? 0,
-        features: form.features || [],
+        features: safeFeatures,
       };
-
-      console.log('📝 Submitting ticket:', dataToSend);
 
       if (editingId) {
         await updateTicketType(eventId, editingId, dataToSend, token);
@@ -150,7 +182,7 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
       duration_type: ticket.duration_type,
       custom_days: ticket.custom_days || 1,
       sort_order: ticket.sort_order,
-      features: Array.isArray(ticket.features) ? ticket.features : (typeof ticket.features === 'string' ? JSON.parse(ticket.features || '[]') : []),
+      features: parseFeatures(ticket.features),
     });
     setEditingId(ticket.id);
     setIsFormOpen(true);
@@ -308,39 +340,162 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
 
       {/* Config Tab */}
       {activeTab === 'config' && (
-        <form onSubmit={handleSubmitConfig} style={{ ...S.card, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div>
-            <label style={S.label}>عنوان السكشن الرئيسي</label>
-            <input type="text" name="section_title" value={configForm.section_title} onChange={handleConfigChange} style={S.inp} />
+        <form onSubmit={handleSubmitConfig} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {/* Section Settings */}
+          <div style={S.card}>
+            <div style={{ color: '#818cf8', fontWeight: 700, fontSize: '0.88rem', marginBottom: 14 }}>🎨 إعدادات السكشن</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div>
+                <label style={S.label}>عنوان السكشن الرئيسي</label>
+                <input type="text" name="section_title" value={configForm.section_title} onChange={handleConfigChange} style={S.inp} />
+              </div>
+              <div>
+                <label style={S.label}>الوصف الفرعي</label>
+                <input type="text" name="section_subtitle" value={configForm.section_subtitle} onChange={handleConfigChange} style={S.inp} />
+              </div>
+              <div>
+                <label style={S.label}>شارة السكشن (Badge)</label>
+                <input type="text" name="section_badge" value={configForm.section_badge} onChange={handleConfigChange} placeholder="مثال: 🎫 التذاكر المتاحة" style={S.inp} />
+              </div>
+              <div>
+                <label style={S.label}>نص الفوتر / ملاحظة</label>
+                <input type="text" name="info_text" value={configForm.info_text} onChange={handleConfigChange} style={S.inp} />
+              </div>
+            </div>
           </div>
-          <div>
-            <label style={S.label}>الوصف الفرعي</label>
-            <input type="text" name="section_subtitle" value={configForm.section_subtitle} onChange={handleConfigChange} style={S.inp} />
-          </div>
-          <div>
-            <label style={S.label}>شارة السكشن (Badge)</label>
-            <input type="text" name="section_badge" value={configForm.section_badge} onChange={handleConfigChange} placeholder="مثال: 🎫 التذاكر المتاحة" style={S.inp} />
-          </div>
-          <div>
-            <label style={S.label}>الميزة الأولى</label>
-            <input type="text" name="feature_1" value={configForm.feature_1} onChange={handleConfigChange} style={S.inp} />
-          </div>
-          <div>
-            <label style={S.label}>الميزة الثانية</label>
-            <input type="text" name="feature_2" value={configForm.feature_2} onChange={handleConfigChange} style={S.inp} />
-          </div>
-          <div>
-            <label style={S.label}>الميزة الثالثة</label>
-            <input type="text" name="feature_3" value={configForm.feature_3} onChange={handleConfigChange} style={S.inp} />
-          </div>
-          <div>
-            <label style={S.label}>نص المعلومات الإضافية (Footer)</label>
-            <textarea name="info_text" value={configForm.info_text} onChange={handleConfigChange} style={{ ...S.inp, minHeight: '80px' }} />
+
+          {/* Global Features - Rich Format */}
+          <div style={S.card}>
+            <div style={{ color: '#818cf8', fontWeight: 700, fontSize: '0.88rem', marginBottom: 4 }}>✨ مزايا التذاكر الافتراضية</div>
+            <p style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: 14 }}>
+              تظهر على كل تذكرة لا تملك مزايا خاصة. كل ميزة: أيقونة + عنوان + وصف توضيحي.
+            </p>
+
+            {/* Existing global features */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+              {/* Legacy feature_1/2/3 */}
+              {[configForm.feature_1, configForm.feature_2, configForm.feature_3].map((f, i) => f ? (
+                <div key={`legacy-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.55rem 0.85rem', background: 'rgba(255,255,255,0.04)', borderRadius: '0.5rem', border: '1px solid rgba(108,99,255,0.12)' }}>
+                  <div style={{ width: 28, height: 28, borderRadius: '0.3rem', background: 'rgba(16,185,129,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <TicketIcon iconKey="check" size={14} color="#10b981" />
+                  </div>
+                  <input style={{ ...S.inp, flex: 1, border: 'none', background: 'transparent', padding: 0, fontSize: '0.85rem' }}
+                    value={f}
+                    onChange={e => { const k = `feature_${i + 1}` as any; setConfigForm(cf => ({ ...cf, [k]: e.target.value })); }} />
+                  <button type="button" onClick={() => { const k = `feature_${i + 1}` as any; setConfigForm(cf => ({ ...cf, [k]: '' })); }}
+                    style={{ background: 'rgba(239,68,68,0.12)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '0.3rem', padding: '0.2rem 0.4rem', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0 }}>✕</button>
+                </div>
+              ) : null)}
+
+              {/* Rich global_features */}
+              {(configForm.global_features || []).map((feat: TicketFeature, i: number) => (
+                <div key={`gf-${i}`} style={{ background: 'rgba(108,99,255,0.08)', border: '1px solid rgba(108,99,255,0.2)', borderRadius: '0.6rem', padding: '0.75rem', display: 'flex', gap: 10 }}>
+                  {/* Icon */}
+                  <div style={{ position: 'relative', flexShrink: 0 }}>
+                    <button type="button"
+                      onClick={() => setShowGlobalIconPicker(showGlobalIconPicker === i ? null : i)}
+                      style={{ width: 34, height: 34, borderRadius: '0.4rem', background: 'rgba(108,99,255,0.2)', border: '1px solid rgba(108,99,255,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <TicketIcon iconKey={feat.icon} size={16} color="#818cf8" />
+                    </button>
+                    {showGlobalIconPicker === i && (
+                      <div style={{ position: 'absolute', top: 38, right: 0, zIndex: 100, background: '#0d0b1a', border: '1px solid rgba(108,99,255,0.3)', borderRadius: '0.75rem', padding: '0.75rem', width: 260, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
+                        {Object.entries(TICKET_ICONS).map(([key, ic]) => (
+                          <button key={key} type="button" title={ic.label}
+                            onClick={() => { setConfigForm(cf => ({ ...cf, global_features: (cf.global_features || []).map((ff: TicketFeature, idx: number) => idx === i ? { ...ff, icon: key } : ff) })); setShowGlobalIconPicker(null); }}
+                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '0.35rem', borderRadius: '0.3rem', border: feat.icon === key ? '1px solid #6C63FF' : '1px solid transparent', background: feat.icon === key ? 'rgba(108,99,255,0.2)' : 'transparent', cursor: 'pointer' }}>
+                            <TicketIcon iconKey={key} size={16} color="#94a3b8" />
+                            <span style={{ fontSize: '0.58rem', color: '#64748b', textAlign: 'center', lineHeight: 1.1 }}>{ic.label.split(' ').slice(1).join(' ')}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {/* Content */}
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                    <input style={{ ...S.inp, padding: '0.3rem 0.5rem', fontSize: '0.84rem' }}
+                      placeholder="عنوان الميزة *" value={feat.title}
+                      onChange={e => setConfigForm(cf => ({ ...cf, global_features: (cf.global_features || []).map((ff: TicketFeature, idx: number) => idx === i ? { ...ff, title: e.target.value } : ff) }))} />
+                    <input style={{ ...S.inp, padding: '0.3rem 0.5rem', fontSize: '0.78rem' }}
+                      placeholder="وصف توضيحي اختياري..." value={feat.desc || ''}
+                      onChange={e => setConfigForm(cf => ({ ...cf, global_features: (cf.global_features || []).map((ff: TicketFeature, idx: number) => idx === i ? { ...ff, desc: e.target.value } : ff) }))} />
+                  </div>
+                  <button type="button"
+                    onClick={() => setConfigForm(cf => ({ ...cf, global_features: (cf.global_features || []).filter((_: TicketFeature, idx: number) => idx !== i) }))}
+                    style={{ alignSelf: 'flex-start', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', color: '#fca5a5', borderRadius: '0.35rem', padding: '0.25rem 0.45rem', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0 }}>✕</button>
+                </div>
+              ))}
+
+              {/* Empty state */}
+              {[configForm.feature_1, configForm.feature_2, configForm.feature_3].every(f => !f) && (!(configForm.global_features || []).length) && (
+                <div style={{ textAlign: 'center', color: '#4b5563', padding: '1.5rem', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: '0.5rem', fontSize: '0.82rem' }}>
+                  لا توجد مزايا افتراضية بعد
+                </div>
+              )}
+            </div>
+
+            {/* Add new global feature */}
+            <div style={{ background: 'rgba(16,185,129,0.05)', border: '1px dashed rgba(16,185,129,0.3)', borderRadius: '0.6rem', padding: '0.75rem' }}>
+              <div style={{ color: '#34d399', fontSize: '0.75rem', fontWeight: 600, marginBottom: 8 }}>+ إضافة ميزة افتراضية</div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                <div style={{ position: 'relative', flexShrink: 0 }}>
+                  <button type="button" onClick={() => setShowGlobalIconPicker(showGlobalIconPicker === 'new' ? null : 'new')}
+                    style={{ width: 34, height: 34, borderRadius: '0.4rem', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <TicketIcon iconKey={newGlobalFeature.icon} size={16} color="#34d399" />
+                  </button>
+                  {showGlobalIconPicker === 'new' && (
+                    <div style={{ position: 'absolute', bottom: 38, right: 0, zIndex: 100, background: '#0d0b1a', border: '1px solid rgba(108,99,255,0.3)', borderRadius: '0.75rem', padding: '0.75rem', width: 260, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
+                      {Object.entries(TICKET_ICONS).map(([key, ic]) => (
+                        <button key={key} type="button" title={ic.label}
+                          onClick={() => { setNewGlobalFeature(f => ({ ...f, icon: key })); setShowGlobalIconPicker(null); }}
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '0.35rem', borderRadius: '0.3rem', border: newGlobalFeature.icon === key ? '1px solid #6C63FF' : '1px solid transparent', background: newGlobalFeature.icon === key ? 'rgba(108,99,255,0.2)' : 'transparent', cursor: 'pointer' }}>
+                          <TicketIcon iconKey={key} size={16} color="#94a3b8" />
+                          <span style={{ fontSize: '0.58rem', color: '#64748b', textAlign: 'center', lineHeight: 1.1 }}>{ic.label.split(' ').slice(1).join(' ')}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  <input style={{ ...S.inp, padding: '0.3rem 0.5rem', fontSize: '0.84rem' }}
+                    placeholder="عنوان الميزة..."
+                    value={newGlobalFeature.title}
+                    onChange={e => setNewGlobalFeature(f => ({ ...f, title: e.target.value }))}
+                    onKeyDown={e => { if (e.key === 'Enter' && newGlobalFeature.title.trim()) { e.preventDefault(); setConfigForm(cf => ({ ...cf, global_features: [...(cf.global_features || []), { ...newGlobalFeature }] })); setNewGlobalFeature({ icon: 'check', title: '', desc: '' }); }}} />
+                  <input style={{ ...S.inp, padding: '0.3rem 0.5rem', fontSize: '0.78rem' }}
+                    placeholder="وصف توضيحي..."
+                    value={newGlobalFeature.desc || ''}
+                    onChange={e => setNewGlobalFeature(f => ({ ...f, desc: e.target.value }))} />
+                </div>
+                <button type="button"
+                  onClick={() => { if (newGlobalFeature.title.trim()) { setConfigForm(cf => ({ ...cf, global_features: [...(cf.global_features || []), { ...newGlobalFeature }] })); setNewGlobalFeature({ icon: 'check', title: '', desc: '' }); } }}
+                  style={S.btn('#10b981')}>+ إضافة</button>
+              </div>
+            </div>
+
+            {/* Preview */}
+            {((configForm.global_features || []).length > 0 || [configForm.feature_1, configForm.feature_2, configForm.feature_3].some(Boolean)) && (
+              <div style={{ marginTop: 14, padding: '1rem', background: 'rgba(108,99,255,0.06)', border: '1px solid rgba(108,99,255,0.2)', borderRadius: '0.75rem' }}>
+                <div style={{ color: '#818cf8', fontSize: '0.72rem', fontWeight: 700, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>معاينة الميزات</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {[...([configForm.feature_1, configForm.feature_2, configForm.feature_3].filter(Boolean).map(t => ({ icon: 'check', title: t, desc: '' }))), ...(configForm.global_features || [])].map((feat: TicketFeature, i: number) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '0.5rem 0.75rem', background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: '0.5rem' }}>
+                      <div style={{ width: 28, height: 28, borderRadius: '0.35rem', background: 'rgba(16,185,129,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <TicketIcon iconKey={feat.icon} size={14} color="#10b981" />
+                      </div>
+                      <div>
+                        <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.84rem' }}>{feat.title}</div>
+                        {feat.desc && <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: 2 }}>{feat.desc}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Reg Type → Ticket Mapping */}
-          <div style={{ borderTop: '1px solid rgba(108,99,255,0.2)', paddingTop: '1rem' }}>
-            <div style={{ fontWeight: 700, color: '#a5b4fc', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+          <div style={S.card}>
+            <div style={{ fontWeight: 700, color: '#818cf8', marginBottom: 4, fontSize: '0.88rem' }}>
               🔗 ربط نوع التسجيل بتذكرة محددة
             </div>
             <p style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: '0.75rem' }}>
@@ -377,7 +532,7 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
             </div>
           </div>
 
-          <button type="submit" disabled={configLoading} style={{ ...S.btn('#10b981'), opacity: configLoading ? 0.5 : 1 }} onMouseEnter={(e) => (e.currentTarget.style.background = '#059669')} onMouseLeave={(e) => (e.currentTarget.style.background = '#10b981')}>
+          <button type="submit" disabled={configLoading} style={{ ...S.btn('#10b981'), opacity: configLoading ? 0.5 : 1 }}>
             {configLoading ? '💾 جاري الحفظ...' : '💾 حفظ الإعدادات'}
           </button>
         </form>
@@ -438,25 +593,86 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
                   ✕ إلغاء
                 </button>
               </div>
-              {/* Features/Perks */}
+              {/* Features/Perks - Rich Format */}
               <div style={{ borderTop: '1px solid rgba(108,99,255,0.15)', paddingTop: '0.75rem' }}>
-                <label style={{ ...S.label, marginBottom: '0.6rem' }}>🎁 ميزات هذه التذكرة (تظهر للزوار)</label>
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.6rem' }}>
-                  <input value={newFeature} onChange={e => setNewFeature(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (newFeature.trim()) { setForm(f => ({ ...f, features: [...(f.features || []), newFeature.trim()] })); setNewFeature(''); } } }}
-                    style={{ ...S.inp, flex: 1 }} placeholder="مثال: الدخول الكامل للحدث، شهادة حضور، حقيبة الحدث..." />
-                  <button type="button" onClick={() => { if (newFeature.trim()) { setForm(f => ({ ...f, features: [...(f.features || []), newFeature.trim()] })); setNewFeature(''); } }}
-                    style={S.btn()}>+ إضافة</button>
-                </div>
-                {(form.features || []).length === 0 && <p style={{ color: '#64748b', fontSize: '0.78rem' }}>لا توجد ميزات. اكتب ميزة واضغط Enter أو زر الإضافة.</p>}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                  {(form.features || []).map((feat: string, i: number) => (
-                    <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.25rem 0.65rem', background: 'rgba(108,99,255,0.12)', border: '1px solid rgba(108,99,255,0.25)', borderRadius: 20, fontSize: '0.8rem', color: '#a5b4fc' }}>
-                      ✓ {feat}
-                      <button type="button" onClick={() => setForm(ff => ({ ...ff, features: (ff.features || []).filter((_: string, j: number) => j !== i) }))}
-                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0, fontSize: '0.9rem', lineHeight: 1 }}>×</button>
-                    </span>
+                <label style={{ ...S.label, marginBottom: 4 }}>✨ مزايا هذه التذكرة</label>
+                <p style={{ color: '#64748b', fontSize: '0.75rem', marginBottom: 12 }}>كل ميزة تملك أيقونة + عنوان + وصف توضيحي اختياري</p>
+
+                {/* Existing features */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+                  {(form.features || []).map((feat: TicketFeature, i: number) => (
+                    <div key={i} style={{ background: 'rgba(108,99,255,0.08)', border: '1px solid rgba(108,99,255,0.2)', borderRadius: '0.6rem', padding: '0.75rem', display: 'flex', gap: 10 }}>
+                      {/* Icon picker */}
+                      <div style={{ position: 'relative', flexShrink: 0 }}>
+                        <button type="button"
+                          onClick={() => setShowIconPicker(showIconPicker === i ? null : i)}
+                          style={{ width: 36, height: 36, borderRadius: '0.4rem', background: 'rgba(108,99,255,0.2)', border: '1px solid rgba(108,99,255,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8' }}>
+                          <TicketIcon iconKey={feat.icon} size={18} color="#818cf8" />
+                        </button>
+                        {showIconPicker === i && (
+                          <div style={{ position: 'absolute', top: 40, right: 0, zIndex: 100, background: '#0d0b1a', border: '1px solid rgba(108,99,255,0.3)', borderRadius: '0.75rem', padding: '0.75rem', width: 280, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
+                            {Object.entries(TICKET_ICONS).map(([key, ic]) => (
+                              <button key={key} type="button" title={ic.label}
+                                onClick={() => { setForm(f => ({ ...f, features: f.features.map((ff, idx) => idx === i ? { ...ff, icon: key } : ff) })); setShowIconPicker(null); }}
+                                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '0.4rem', borderRadius: '0.4rem', border: feat.icon === key ? '1px solid #6C63FF' : '1px solid transparent', background: feat.icon === key ? 'rgba(108,99,255,0.2)' : 'transparent', cursor: 'pointer' }}>
+                                <TicketIcon iconKey={key} size={18} color="#94a3b8" />
+                                <span style={{ fontSize: '0.6rem', color: '#64748b', textAlign: 'center', lineHeight: 1.1 }}>{ic.label.split(' ').slice(1).join(' ')}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      {/* Content */}
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <input style={{ ...S.inp, padding: '0.3rem 0.5rem', fontSize: '0.85rem' }}
+                          placeholder="عنوان الميزة *" value={feat.title}
+                          onChange={e => setForm(f => ({ ...f, features: f.features.map((ff, idx) => idx === i ? { ...ff, title: e.target.value } : ff) }))} />
+                        <input style={{ ...S.inp, padding: '0.3rem 0.5rem', fontSize: '0.8rem' }}
+                          placeholder="وصف توضيحي (اختياري)..." value={feat.desc || ''}
+                          onChange={e => setForm(f => ({ ...f, features: f.features.map((ff, idx) => idx === i ? { ...ff, desc: e.target.value } : ff) }))} />
+                      </div>
+                      <button type="button" onClick={() => setForm(f => ({ ...f, features: f.features.filter((_: any, j: number) => j !== i) }))}
+                        style={{ alignSelf: 'flex-start', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5', borderRadius: '0.35rem', padding: '0.25rem 0.5rem', cursor: 'pointer', fontSize: '0.8rem', flexShrink: 0 }}>✕</button>
+                    </div>
                   ))}
+                </div>
+
+                {/* Add new feature */}
+                <div style={{ background: 'rgba(16,185,129,0.06)', border: '1px dashed rgba(16,185,129,0.3)', borderRadius: '0.6rem', padding: '0.75rem' }}>
+                  <div style={{ color: '#34d399', fontSize: '0.78rem', fontWeight: 600, marginBottom: 8 }}>+ إضافة ميزة جديدة</div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                    <div style={{ position: 'relative', flexShrink: 0 }}>
+                      <button type="button"
+                        onClick={() => setShowIconPicker(showIconPicker === -1 ? null : -1)}
+                        style={{ width: 36, height: 36, borderRadius: '0.4rem', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <TicketIcon iconKey={newFeature.icon} size={18} color="#34d399" />
+                      </button>
+                      {showIconPicker === -1 && (
+                        <div style={{ position: 'absolute', bottom: 40, right: 0, zIndex: 100, background: '#0d0b1a', border: '1px solid rgba(108,99,255,0.3)', borderRadius: '0.75rem', padding: '0.75rem', width: 280, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
+                          {Object.entries(TICKET_ICONS).map(([key, ic]) => (
+                            <button key={key} type="button" title={ic.label}
+                              onClick={() => { setNewFeature(f => ({ ...f, icon: key })); setShowIconPicker(null); }}
+                              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '0.4rem', borderRadius: '0.4rem', border: newFeature.icon === key ? '1px solid #6C63FF' : '1px solid transparent', background: newFeature.icon === key ? 'rgba(108,99,255,0.2)' : 'transparent', cursor: 'pointer' }}>
+                              <TicketIcon iconKey={key} size={18} color="#94a3b8" />
+                              <span style={{ fontSize: '0.6rem', color: '#64748b', textAlign: 'center', lineHeight: 1.1 }}>{ic.label.split(' ').slice(1).join(' ')}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <input style={{ ...S.inp, padding: '0.3rem 0.5rem', fontSize: '0.85rem' }}
+                        placeholder="عنوان الميزة..." value={newFeature.title}
+                        onChange={e => setNewFeature(f => ({ ...f, title: e.target.value }))}
+                        onKeyDown={e => { if (e.key === 'Enter' && newFeature.title.trim()) { e.preventDefault(); setForm(f => ({ ...f, features: [...f.features, { ...newFeature }] })); setNewFeature({ icon: 'check', title: '', desc: '' }); }}} />
+                      <input style={{ ...S.inp, padding: '0.3rem 0.5rem', fontSize: '0.8rem' }}
+                        placeholder="وصف توضيحي..." value={newFeature.desc || ''}
+                        onChange={e => setNewFeature(f => ({ ...f, desc: e.target.value }))} />
+                    </div>
+                    <button type="button"
+                      onClick={() => { if (newFeature.title.trim()) { setForm(f => ({ ...f, features: [...f.features, { ...newFeature }] })); setNewFeature({ icon: 'check', title: '', desc: '' }); } }}
+                      style={S.btn('#10b981')}>+ إضافة</button>
+                  </div>
                 </div>
               </div>
             </form>

@@ -1926,6 +1926,7 @@ const DEFAULT_SITE_CFG: SiteConfig = {
   archive_link_enabled: true,
   archive_link_label: '🗂 النسخ السابقة',
   archive_link_position: 'both',
+  show_theme_toggle: true,
 };
 const STAT_FIELDS = ['days_count','startup_count','speaker_count','total_registrations','approved_count','investor_count'];
 
@@ -1962,6 +1963,7 @@ function normalizeSiteConfig(raw: any): SiteConfig {
     archive_link_enabled:  raw.archive_link_enabled  !== undefined ? !!raw.archive_link_enabled  : true,
     archive_link_label:    typeof raw.archive_link_label === 'string' ? raw.archive_link_label : '🗂 النسخ السابقة',
     archive_link_position: ['navbar','footer','both','none'].includes(raw.archive_link_position) ? raw.archive_link_position : 'both',
+    show_theme_toggle:     raw.show_theme_toggle !== undefined ? !!raw.show_theme_toggle : true,
   };
 }
 
@@ -2177,7 +2179,91 @@ function SiteConfigTab({ eventId, eventSlug, token, save, saving }: any) {
         )}
       </div>
 
+      {/* زر تبديل الثيم */}
+      <div style={S.card}>
+        <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 4 }}>🌙 زر تبديل الوضع (داكن / فاتح)</h3>
+        <p style={{ color: '#64748b', fontSize: '0.82rem', marginBottom: 14 }}>
+          يظهر زر في شريط التنقل يتيح للزوار التبديل بين الوضع الداكن والفاتح.
+        </p>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '0.75rem', border: `1px solid ${(sc as any).show_theme_toggle !== false ? 'rgba(108,99,255,0.35)' : 'rgba(255,255,255,0.06)'}` }}>
+          <div onClick={() => set('show_theme_toggle' as any, !(sc as any).show_theme_toggle)}
+            style={{ width: 38, height: 22, borderRadius: 11, background: (sc as any).show_theme_toggle !== false ? '#6C63FF' : 'rgba(255,255,255,0.1)', position: 'relative', transition: 'background 0.2s', flexShrink: 0, border: `1px solid ${(sc as any).show_theme_toggle !== false ? '#6C63FF' : 'rgba(255,255,255,0.2)'}`, cursor: 'pointer' }}>
+            <div style={{ width: 16, height: 16, borderRadius: '50%', background: 'white', position: 'absolute', top: 2, left: (sc as any).show_theme_toggle !== false ? 19 : 2, transition: 'left 0.2s' }} />
+          </div>
+          <div>
+            <div style={{ color: (sc as any).show_theme_toggle !== false ? 'white' : '#64748b', fontSize: '0.88rem', fontWeight: 600 }}>
+              {(sc as any).show_theme_toggle !== false ? '✅ الزر مفعّل' : '❌ الزر مخفي'}
+            </div>
+            <div style={{ color: '#64748b', fontSize: '0.75rem' }}>
+              {(sc as any).show_theme_toggle !== false ? 'يظهر للزوار في شريط التنقل' : 'لن يرى الزوار زر تبديل الثيم'}
+            </div>
+          </div>
+        </label>
+      </div>
+
       <div style={{ paddingBottom: 8 }}><SaveBtn loading={saving} onClick={saveAll} /></div>
+
+      {/* ── قسم تعليمات التسجيل ── */}
+      <div style={S.card}>
+        <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 4 }}>🎫 رسالة نجاح التسجيل</h3>
+        <p style={{ color: '#64748b', fontSize: '0.82rem', marginBottom: 16 }}>
+          تخصيص النص الذي يظهر للمشارك بعد إتمام التسجيل. اتركها فارغة لاستخدام النص الافتراضي.
+        </p>
+
+        {/* General */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ color: '#818cf8', fontWeight: 600, fontSize: '0.82rem', marginBottom: 10 }}>👤 تسجيل الحضور العام</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <Field label="عنوان النجاح">
+              <input style={S.inp} placeholder="تم التسجيل بنجاح!" value={(sc as any).ticket_instructions?.general_success_title || ''} onChange={e => set('ticket_instructions' as any, { ...((sc as any).ticket_instructions || {}), general_success_title: e.target.value })} />
+            </Field>
+            <Field label="نص زر الإغلاق">
+              <input style={S.inp} placeholder="حسناً، شكراً!" value={(sc as any).ticket_instructions?.close_btn_text || ''} onChange={e => set('ticket_instructions' as any, { ...((sc as any).ticket_instructions || {}), close_btn_text: e.target.value })} />
+            </Field>
+            <Field label="عنوان رسالة التأكيد">
+              <input style={S.inp} placeholder="رسالة تأكيد" value={(sc as any).ticket_instructions?.general_confirm_title || ''} onChange={e => set('ticket_instructions' as any, { ...((sc as any).ticket_instructions || {}), general_confirm_title: e.target.value })} />
+            </Field>
+            <Field label="نص تفاصيل التذكرة">
+              <input style={S.inp} placeholder="تذكرة الدخول ستصلك برمز QR..." value={(sc as any).ticket_instructions?.general_ticket_desc || ''} onChange={e => set('ticket_instructions' as any, { ...((sc as any).ticket_instructions || {}), general_ticket_desc: e.target.value })} />
+            </Field>
+            <div style={{ gridColumn: '1/-1' }}>
+              <Field label="ملاحظة مهمة (تظهر باللون الأصفر)">
+                <input style={S.inp} placeholder="تأكد من إبقاء واتساب مفعلاً على الرقم المسجل..." value={(sc as any).ticket_instructions?.general_note || ''} onChange={e => set('ticket_instructions' as any, { ...((sc as any).ticket_instructions || {}), general_note: e.target.value })} />
+              </Field>
+            </div>
+          </div>
+        </div>
+
+        {/* Startup */}
+        <div>
+          <div style={{ color: '#818cf8', fontWeight: 600, fontSize: '0.82rem', marginBottom: 10 }}>🚀 تسجيل الشركات الناشئة</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <Field label="عنوان النجاح">
+              <input style={S.inp} placeholder="استلمنا طلب شركتك!" value={(sc as any).ticket_instructions?.startup_success_title || ''} onChange={e => set('ticket_instructions' as any, { ...((sc as any).ticket_instructions || {}), startup_success_title: e.target.value })} />
+            </Field>
+            {[
+              { k: 'startup_step1_title', p: 'عنوان الخطوة 1', d: 'طلبك قيد المراجعة' },
+              { k: 'startup_step1_desc',  p: 'وصف الخطوة 1', d: '' },
+              { k: 'startup_step2_title', p: 'عنوان الخطوة 2', d: 'مكالمة استعلام' },
+              { k: 'startup_step2_desc',  p: 'وصف الخطوة 2', d: '' },
+              { k: 'startup_step3_title', p: 'عنوان الخطوة 3', d: 'القبول والدفع' },
+              { k: 'startup_step3_desc',  p: 'وصف الخطوة 3', d: '' },
+              { k: 'startup_step4_title', p: 'عنوان الخطوة 4', d: 'تذكرتك ومقعدك' },
+              { k: 'startup_step4_desc',  p: 'وصف الخطوة 4', d: '' },
+            ].map(({ k, p, d }) => (
+              <Field key={k} label={p}>
+                <input style={S.inp} placeholder={d} value={(sc as any).ticket_instructions?.[k] || ''} onChange={e => set('ticket_instructions' as any, { ...((sc as any).ticket_instructions || {}), [k]: e.target.value })} />
+              </Field>
+            ))}
+            <div style={{ gridColumn: '1/-1' }}>
+              <Field label="ملاحظة مهمة (تظهر باللون الأصفر)">
+                <input style={S.inp} placeholder="تأكد من إبقاء واتساب مفعلاً..." value={(sc as any).ticket_instructions?.startup_note || ''} onChange={e => set('ticket_instructions' as any, { ...((sc as any).ticket_instructions || {}), startup_note: e.target.value })} />
+              </Field>
+            </div>
+          </div>
+        </div>
+        <div style={{ marginTop: 14 }}><SaveBtn loading={saving} onClick={saveAll} /></div>
+      </div>
     </div>
   );
 }

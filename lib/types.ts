@@ -1,4 +1,24 @@
 // lib/types.ts
+export interface TicketInstructions {
+  startup_step1_title?: string;
+  startup_step1_desc?: string;
+  startup_step2_title?: string;
+  startup_step2_desc?: string;
+  startup_step3_title?: string;
+  startup_step3_desc?: string;
+  startup_step4_title?: string;
+  startup_step4_desc?: string;
+  startup_note?: string;
+  general_confirm_title?: string;
+  general_confirm_desc?: string;
+  general_ticket_title?: string;
+  general_ticket_desc?: string;
+  general_note?: string;
+  close_btn_text?: string;
+  startup_success_title?: string;
+  general_success_title?: string;
+}
+
 export interface SiteConfig {
   hero_abbr: string;
   hero_btn_primary: string;
@@ -9,10 +29,11 @@ export interface SiteConfig {
   about_cards: Array<{ emoji: string; title: string; desc: string }>;
   logo_url?: string;
   logo_position?: 'navbar' | 'footer' | 'both';
-  // رابط الأرشيف — تحكم الأدمن
   archive_link_enabled?: boolean;
   archive_link_label?:   string;
   archive_link_position?: 'navbar' | 'footer' | 'both' | 'none';
+  ticket_instructions?: TicketInstructions;
+  show_theme_toggle?: boolean; // إظهار زر تبديل الثيم في الناف بار
 }
 
 export interface ExtraField {
@@ -166,6 +187,12 @@ export interface Registration {
 
 // ── Tickets ────────────────────────────────────────────────────────────────────
 
+export interface TicketFeature {
+  icon: string;    // SVG key e.g. 'check', 'ticket', 'certificate', 'bag'...
+  title: string;   // العنوان الرئيسي للميزة
+  desc?: string;   // شرح/وصف اختياري
+}
+
 export interface TicketType {
   id: number;
   name_ar: string;
@@ -174,11 +201,12 @@ export interface TicketType {
   price_per_unit: number;
   duration_type: 'single_day' | 'three_days' | 'full_event' | 'custom_days';
   custom_days?: number;
-  day_numbers?: string; // JSON array
+  day_numbers?: string;
   quantity_available: number;
   quantity_sold: number;
   is_active: number;
   sort_order: number;
+  features?: TicketFeature[] | string; // supports both new rich format and old string[]
 }
 
 export interface Ticket {
