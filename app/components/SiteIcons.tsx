@@ -81,6 +81,79 @@ export const IconGift = ic('M20 12v10H4V12m16-6H4a2 2 0 0 0-2 2v2h20V8a2 2 0 0 0
 export const IconClock = ic('M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zm0-6V12l4-4');
 export const IconTrophy = ic('M8 21H5a2 2 0 0 1-2-2v-1a4 4 0 0 1 4-4h1m8 0h1a4 4 0 0 1 4 4v1a2 2 0 0 1-2 2h-3M12 3v9m0 0a3 3 0 0 1-3 3m3-3a3 3 0 0 0 3 3m-3 0v6');
 
+// Extra content icons (for about cards & features)
+export const IconBook = ic('M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z');
+export const IconShield = ic('M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z');
+export const IconHeart = icFill('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z');
+export const IconBulb = ({ size = 20, color = 'currentColor', style, className }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} style={style}>
+    <path d="M9 18h6M10 22h4" />
+    <path d="M12 2a6 6 0 0 0-3.6 10.8c.5.4.8 1 .9 1.6l.2 1.6h5l.2-1.6c.1-.6.4-1.2.9-1.6A6 6 0 0 0 12 2z" />
+  </svg>
+);
+export const IconTarget = ({ size = 20, color = 'currentColor', style, className }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" className={className} style={style}>
+    <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" />
+  </svg>
+);
+export const IconChart = ({ size = 20, color = 'currentColor', style, className }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} style={style}>
+    <path d="M3 3v18h18" /><rect x="7" y="11" width="3" height="7" rx="0.5" /><rect x="12" y="7" width="3" height="11" rx="0.5" /><rect x="17" y="4" width="3" height="14" rx="0.5" />
+  </svg>
+);
+export const IconHandshake = ic('M11 17l2 2a1 1 0 1 0 3-3m-3 3l-2-2m5-1 2 2a1 1 0 1 0 3-3l-3.5-3.5a2 2 0 0 0-2.8 0L11 12M6 8l-4 4 4 4m1-8 3.5-3.5a2 2 0 0 1 2.8 0L18 8');
+
+// ─── About-card icon registry ───────────────────────────────────────────────
+export const ABOUT_ICONS: Record<string, { Icon: (p: IconProps) => React.ReactElement; label: string }> = {
+  rocket:    { Icon: IconRocket,      label: 'انطلاق' },
+  bulb:      { Icon: IconBulb,        label: 'فكرة' },
+  users:     { Icon: IconUsers,       label: 'تواصل' },
+  handshake: { Icon: IconHandshake,   label: 'شراكة' },
+  trophy:    { Icon: IconTrophy,      label: 'جائزة' },
+  award:     { Icon: IconAward,       label: 'وسام' },
+  star:      { Icon: IconStar,        label: 'تميّز' },
+  target:    { Icon: IconTarget,      label: 'هدف' },
+  chart:     { Icon: IconChart,       label: 'نمو' },
+  mic:       { Icon: IconMic,         label: 'متحدث' },
+  briefcase: { Icon: IconBriefcase,   label: 'أعمال' },
+  book:      { Icon: IconBook,        label: 'تعلّم' },
+  heart:     { Icon: IconHeart,       label: 'شغف' },
+  shield:    { Icon: IconShield,      label: 'موثوقية' },
+  gift:      { Icon: IconGift,        label: 'هدية' },
+  world:     { Icon: IconWorld,       label: 'عالمي' },
+  zap:       { Icon: IconZap,         label: 'طاقة' },
+  check:     { Icon: IconCheckCircle, label: 'جودة' },
+  calendar:  { Icon: IconCalendar,    label: 'فعالية' },
+  speaker:   { Icon: IconSpeaker,     label: 'إعلان' },
+  location:  { Icon: IconLocation,    label: 'مكان' },
+};
+
+// Fallback: map legacy emojis to a matching vector icon key
+export const EMOJI_TO_ICON: Record<string, string> = {
+  '🚀': 'rocket', '💡': 'bulb', '🤝': 'handshake', '👥': 'users',
+  '🏆': 'trophy', '🥇': 'award', '🏅': 'award', '⭐': 'star', '🌟': 'star', '✨': 'star',
+  '🎯': 'target', '📈': 'chart', '📊': 'chart', '🎤': 'mic', '💼': 'briefcase',
+  '📚': 'book', '📖': 'book', '❤️': 'heart', '💗': 'heart', '🛡️': 'shield',
+  '🎁': 'gift', '🌍': 'world', '🌐': 'world', '⚡': 'zap', '✅': 'check', '☑️': 'check',
+  '📅': 'calendar', '📆': 'calendar', '📢': 'speaker', '📍': 'location',
+};
+
+// Renders a vector icon from an icon key, falling back to a mapped emoji, then raw emoji
+export function AboutIcon({ name, emoji, size = 34, color = 'currentColor' }: { name?: string; emoji?: string; size?: number; color?: string }) {
+  const key = name && ABOUT_ICONS[name]
+    ? name
+    : emoji && EMOJI_TO_ICON[emoji]
+      ? EMOJI_TO_ICON[emoji]
+      : null;
+  if (key) {
+    const C = ABOUT_ICONS[key].Icon;
+    return <C size={size} color={color} />;
+  }
+  if (emoji) return <span style={{ fontSize: size, lineHeight: 1 }}>{emoji}</span>;
+  const Fallback = ABOUT_ICONS.star.Icon;
+  return <Fallback size={size} color={color} />;
+}
+
 // ThemeToggle Component
 export function ThemeToggle({ isDark, onToggle, size = 38 }: { isDark: boolean; onToggle: () => void; size?: number }) {
   return (

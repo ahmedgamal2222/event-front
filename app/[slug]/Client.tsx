@@ -8,7 +8,7 @@ import PixelInjector from '../components/PixelInjector';
 import TicketsSection from '../components/TicketsSection';
 import SupportWidget from '../components/SupportWidget';
 import RegistrationSuccessMessage from '../components/RegistrationSuccessMessage';
-import { ThemeToggle, IconX, IconInstagram, IconLinkedIn, IconTikTok, IconYouTube, IconFacebook, IconWhatsApp, IconTelegram, IconArchive, IconArrowRight, IconArrowLeft } from '../components/SiteIcons';
+import { ThemeToggle, IconX, IconInstagram, IconLinkedIn, IconTikTok, IconYouTube, IconFacebook, IconWhatsApp, IconTelegram, IconArchive, IconArrowRight, IconArrowLeft, AboutIcon } from '../components/SiteIcons';
 
 const DEFAULT_EVENT_SLUG = ''; // No hardcoded fallback — slug MUST come from URL params
 
@@ -542,7 +542,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       about_cards: Array.isArray(raw.about_cards)
         ? raw.about_cards
             .filter((c: any) => c && typeof c.title === 'string')
-            .map((c: any) => ({ emoji: c.emoji || '✨', title: c.title, desc: c.desc || '' }))
+            .map((c: any) => ({ emoji: c.emoji || '✨', icon: typeof c.icon === 'string' ? c.icon : undefined, title: c.title, desc: c.desc || '' }))
         : fallback.about_cards,
       logo_url: typeof raw.logo_url === 'string' ? raw.logo_url : fallback.logo_url,
       logo_position: ['navbar', 'footer', 'both'].includes(raw.logo_position) ? raw.logo_position : fallback.logo_position,
@@ -862,9 +862,9 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
             <h2 className="section-title">{siteCfg.about_title}</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {(siteCfg.about_cards || []).map(({ emoji, title, desc }) => (
+            {(siteCfg.about_cards || []).map(({ emoji, icon, title, desc }) => (
               <div key={title} className="card hover:border-[var(--primary)] transition-all group">
-                <div className="text-4xl mb-4">{emoji}</div>
+                <div className="mb-4" style={{ color: 'var(--primary)' }}><AboutIcon name={icon} emoji={emoji} size={40} /></div>
                 <h3 className="text-white font-bold text-lg mb-2 group-hover:text-[var(--primary)] transition-colors">{title}</h3>
                 <p className="text-[var(--text-muted)] text-sm leading-relaxed">{desc}</p>
               </div>

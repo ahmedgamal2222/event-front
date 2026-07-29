@@ -26,7 +26,7 @@ export interface SiteConfig {
   stats: Array<{ label: string; field: string; fallback: number }>;
   about_badge: string;
   about_title: string;
-  about_cards: Array<{ emoji: string; title: string; desc: string }>;
+  about_cards: Array<{ emoji: string; icon?: string; title: string; desc: string }>;
   logo_url?: string;
   logo_position?: 'navbar' | 'footer' | 'both';
   archive_link_enabled?: boolean;

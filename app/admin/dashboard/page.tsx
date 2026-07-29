@@ -35,6 +35,7 @@ import AdminCRMUnified from '../../../app/components/admin/AdminCRMUnified';
 import AdminCRMMain from '../../../app/components/admin/AdminCRMMain';
 import AdminManagement from '../../../app/components/admin/AdminManagement';
 import type { FormConfig, SiteConfig } from '../../../lib/types';
+import { AboutIcon, ABOUT_ICONS } from '../../../app/components/SiteIcons';
 
 function getToken() { return typeof window !== 'undefined' ? localStorage.getItem('admin_token') || '' : ''; }
 
@@ -1954,6 +1955,7 @@ function normalizeSiteConfig(raw: any): SiteConfig {
     about_cards: Array.isArray(raw.about_cards)
       ? raw.about_cards.filter((c: any) => c && typeof c.title === 'string').map((c: any) => ({
           emoji: c.emoji || '✨',
+          icon: typeof c.icon === 'string' ? c.icon : undefined,
           title: c.title,
           desc: c.desc || '',
         }))
@@ -1985,7 +1987,7 @@ function SiteConfigTab({ eventId, eventSlug, token, save, saving }: any) {
   const set = (k: keyof SiteConfig, v: any) => setSc(f => ({ ...f, [k]: v }));
   const setStat = (i: number, k: string, v: any) => setSc(f => ({ ...f, stats: f.stats.map((s, idx) => idx === i ? { ...s, [k]: v } : s) }));
   const setCard = (i: number, k: string, v: string) => setSc(f => ({ ...f, about_cards: f.about_cards.map((c, idx) => idx === i ? { ...c, [k]: v } : c) }));
-  const addCard = () => setSc(f => ({ ...f, about_cards: [...f.about_cards, { emoji: '✨', title: 'عنوان جديد', desc: 'وصف البطاقة' }] }));
+  const addCard = () => setSc(f => ({ ...f, about_cards: [...f.about_cards, { emoji: '✨', icon: 'star', title: 'عنوان جديد', desc: 'وصف البطاقة' }] }));
   const removeCard = (i: number) => setSc(f => ({ ...f, about_cards: f.about_cards.filter((_, idx) => idx !== i) }));
   const addStat = () => setSc(f => ({ ...f, stats: [...f.stats, { label: 'إحصاء جديد', field: 'total_registrations', fallback: 0 }] }));
   const removeStat = (i: number) => setSc(f => ({ ...f, stats: f.stats.filter((_, idx) => idx !== i) }));
@@ -2084,14 +2086,32 @@ function SiteConfigTab({ eventId, eventSlug, token, save, saving }: any) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 12 }}>
           {sc.about_cards.map((card, i) => (
             <div key={i} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '0.85rem', display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <div style={{ width: 58, flexShrink: 0 }}>
-                  <label style={S.label}>إيموجي</label>
-                  <input value={card.emoji} onChange={e => setCard(i, 'emoji', e.target.value)} style={{ ...S.inp, fontSize: '1.3rem', textAlign: 'center', padding: '0.3rem' }} maxLength={4} />
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div style={{ width: 46, height: 46, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(108,99,255,0.15)', borderRadius: 8, color: '#a5b4fc' }}>
+                  <AboutIcon name={card.icon} emoji={card.emoji} size={26} />
                 </div>
                 <div style={{ flex: 1 }}>
                   <label style={S.label}>العنوان</label>
                   <input value={card.title} onChange={e => setCard(i, 'title', e.target.value)} style={S.inp} />
+                </div>
+              </div>
+              <div>
+                <label style={S.label}>الأيقونة (فيكتور)</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(48px,1fr))', gap: 6, maxHeight: 140, overflowY: 'auto', padding: 4, background: 'rgba(0,0,0,0.2)', borderRadius: 6 }}>
+                  {Object.entries(ABOUT_ICONS).map(([key, meta]) => {
+                    const Ico = meta.Icon;
+                    const active = card.icon === key;
+                    return (
+                      <button key={key} type="button" title={meta.label} onClick={() => setCard(i, 'icon', key)}
+                        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '6px 2px', borderRadius: 6, cursor: 'pointer',
+                          background: active ? 'rgba(108,99,255,0.35)' : 'rgba(255,255,255,0.04)',
+                          border: `1px solid ${active ? '#6C63FF' : 'rgba(255,255,255,0.08)'}`,
+                          color: active ? '#c7d2fe' : '#94a3b8' }}>
+                        <Ico size={18} />
+                        <span style={{ fontSize: '0.55rem' }}>{meta.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
               <Field label="الوصف">
