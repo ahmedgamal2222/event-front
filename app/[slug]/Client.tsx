@@ -8,7 +8,7 @@ import PixelInjector from '../components/PixelInjector';
 import TicketsSection from '../components/TicketsSection';
 import SupportWidget from '../components/SupportWidget';
 import RegistrationSuccessMessage from '../components/RegistrationSuccessMessage';
-import { ThemeToggle, IconX, IconInstagram, IconLinkedIn, IconTikTok, IconYouTube, IconFacebook, IconWhatsApp, IconTelegram } from '../components/SiteIcons';
+import { ThemeToggle, IconX, IconInstagram, IconLinkedIn, IconTikTok, IconYouTube, IconFacebook, IconWhatsApp, IconTelegram, IconArchive, IconArrowRight, IconArrowLeft } from '../components/SiteIcons';
 
 const DEFAULT_EVENT_SLUG = ''; // No hardcoded fallback — slug MUST come from URL params
 
@@ -16,15 +16,15 @@ const DEFAULT_EVENT_SLUG = ''; // No hardcoded fallback — slug MUST come from 
 function EventNavBar({ eventId, primaryColor, archiveLabel, showArchive, showThemeToggle }: { eventId: number; primaryColor: string; archiveLabel?: string; showArchive?: boolean; showThemeToggle?: boolean }) {
   const [nav, setNav] = useState<{ prev: any; current: any; next: any } | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  const label = archiveLabel || '🗂 جميع النسخ';
-  const show  = showArchive !== false;
+  const label = archiveLabel || '\uD83D\uDDC2 \u062C\u0645\u064A\u0639 \u0627\u0644\u0646\u0633\u062E';
+  const showArc = showArchive !== false;
+  const showTheme = showThemeToggle !== false;
 
-  // Initialize theme from localStorage
   useEffect(() => {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('event_theme') : null;
-    const initial = (saved === 'light' ? 'light' : 'dark') as 'dark' | 'light';
-    setTheme(initial);
-    document.documentElement.setAttribute('data-theme', initial);
+    const t = saved === 'light' ? 'light' : 'dark';
+    setTheme(t as 'dark' | 'light');
+    document.documentElement.setAttribute('data-theme', t);
   }, []);
 
   const toggleTheme = () => {
@@ -39,85 +39,62 @@ function EventNavBar({ eventId, primaryColor, archiveLabel, showArchive, showThe
     fetchEventNavigation(eventId).then(r => setNav(r.data)).catch(() => {});
   }, [eventId]);
 
-  // إخفاء الناف بار فقط إذا كان الأرشيف مخفياً والثيم مخفياً معاً
-  if (!show && !showThemeToggle) return null;
-
-  // Theme Toggle Button Component
-  const ThemeBtn = showThemeToggle ? <ThemeToggle isDark={theme === 'dark'} onToggle={toggleTheme} size={40} /> : null;
-
-  if (!nav) return (
-    <div style={{ background: 'rgba(0,0,0,0.35)', borderBottom: `1px solid ${primaryColor}25`, padding: '0.5rem 1.5rem', direction: 'rtl' }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Link href="/archive" style={{ fontSize: '0.78rem', color: '#64748b', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-          {label}
-        </Link>
-        {ThemeBtn}
-      </div>
-    </div>
-  );
-
-  if (!nav.prev && !nav.next) return (
-    <div style={{ background: 'rgba(0,0,0,0.35)', borderBottom: `1px solid ${primaryColor}25`, padding: '0.5rem 1.5rem', direction: 'rtl' }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Link href="/archive" style={{ fontSize: '0.78rem', color: '#64748b', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
-          onMouseEnter={e => (e.currentTarget.style.color = '#a5b4fc')}
-          onMouseLeave={e => (e.currentTarget.style.color = '#64748b')}>
-          {label}
-        </Link>
-        {ThemeBtn}
-      </div>
-    </div>
-  );
+  // \u0625\u0630\u0627 \u0644\u0645 \u064A\u0643\u0646 \u0647\u0646\u0627\u0643 \u0623\u064A \u0634\u064A\u0621 \u0644\u0644\u0639\u0631\u0636 \u0623\u062E\u0641\u0650 \u0627\u0644\u0634\u0631\u064A\u0637
+  if (!showArc && !showTheme) return null;
 
   const fmt = (d: string) => d ? new Date(d).getFullYear().toString() : '';
+  const hasPrev = nav?.prev;
+  const hasNext = nav?.next;
 
   return (
     <div style={{ background: 'rgba(0,0,0,0.4)', borderBottom: `1px solid ${primaryColor}30`, padding: '0.6rem 1.5rem', direction: 'rtl' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-        {/* Prev event */}
-        {nav.prev ? (
-          <Link href={`/${nav.prev.slug}`}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', color: '#94a3b8', fontSize: '0.82rem', transition: 'color 0.15s' }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'white')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}>
-            <span style={{ fontSize: '1rem' }}>←</span>
-            <div>
-              <div style={{ fontSize: '0.68rem', color: '#475569' }}>الحدث السابق</div>
-              <div style={{ fontWeight: 600 }}>{nav.prev.name_ar || nav.prev.name} {nav.prev.edition_number ? `(${nav.prev.edition_number})` : fmt(nav.prev.start_date)}</div>
-            </div>
-          </Link>
-        ) : <div />}
+        {/* \u0627\u0644\u062C\u0647\u0629 \u0627\u0644\u064A\u0645\u0646\u0649: \u0627\u0644\u062D\u062F\u062B \u0627\u0644\u0633\u0627\u0628\u0642 + \u0627\u0644\u0623\u0631\u0634\u064A\u0641 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+          {showArc && hasPrev && (
+            <Link href={`/${nav!.prev.slug}`}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', color: '#94a3b8', fontSize: '0.82rem', transition: 'color 0.15s' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'white')}
+              onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}>
+              <IconArrowRight size={16} />
+              <div>
+                <div style={{ fontSize: '0.68rem', color: '#475569' }}>\u0627\u0644\u062D\u062F\u062B \u0627\u0644\u0633\u0627\u0628\u0642</div>
+                <div style={{ fontWeight: 600 }}>{nav!.prev.name_ar || nav!.prev.name} {nav!.prev.edition_number ? `(${nav!.prev.edition_number})` : fmt(nav!.prev.start_date)}</div>
+              </div>
+            </Link>
+          )}
+          {showArc && (
+            <Link href="/archive"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.78rem', color: '#64748b', textDecoration: 'none', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '2rem', transition: 'all 0.15s' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${primaryColor}60`; (e.currentTarget as HTMLElement).style.color = '#a5b4fc'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLElement).style.color = '#64748b'; }}>
+              <IconArchive size={13} /> {label}
+            </Link>
+          )}
+        </div>
 
-        {/* Archive link */}
-        <Link href="/archive"
-          style={{ fontSize: '0.78rem', color: '#64748b', textDecoration: 'none', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '2rem', transition: 'all 0.15s' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${primaryColor}60`; (e.currentTarget as HTMLElement).style.color = '#a5b4fc'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLElement).style.color = '#64748b'; }}>
-          {label}
-        </Link>
-
-        {/* Next event + Theme Toggle */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {ThemeBtn}
-          {nav.next ? (
-            <Link href={`/${nav.next.slug}`}
+        {/* \u0627\u0644\u062C\u0647\u0629 \u0627\u0644\u064A\u0633\u0631\u0649: \u0632\u0631 \u0627\u0644\u062B\u064A\u0645 + \u0627\u0644\u062D\u062F\u062B \u0627\u0644\u062A\u0627\u0644\u064A */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {showTheme && <ThemeToggle isDark={theme === 'dark'} onToggle={toggleTheme} size={42} />}
+          {showArc && hasNext && (
+            <Link href={`/${nav!.next.slug}`}
               style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', color: '#94a3b8', fontSize: '0.82rem', transition: 'color 0.15s', textAlign: 'left' }}
               onMouseEnter={e => (e.currentTarget.style.color = 'white')}
               onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '0.68rem', color: '#475569' }}>الحدث التالي</div>
-                <div style={{ fontWeight: 600 }}>{nav.next.name_ar || nav.next.name} {nav.next.edition_number ? `(${nav.next.edition_number})` : fmt(nav.next.start_date)}</div>
+                <div style={{ fontSize: '0.68rem', color: '#475569' }}>\u0627\u0644\u062D\u062F\u062B \u0627\u0644\u062A\u0627\u0644\u064A</div>
+                <div style={{ fontWeight: 600 }}>{nav!.next.name_ar || nav!.next.name} {nav!.next.edition_number ? `(${nav!.next.edition_number})` : fmt(nav!.next.start_date)}</div>
               </div>
-              <span style={{ fontSize: '1rem' }}>→</span>
+              <IconArrowLeft size={16} />
             </Link>
-          ) : null}
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Session type colors & labels ──────────────────────────────────────────────
+// Session type colors & labels
 const SESSION_STYLES: Record<string, { bg: string; label: string }> = {
   keynote:     { bg: '#6C63FF', label: 'رئيسية' },
   talk:        { bg: '#0ea5e9', label: 'محاضرة' },
