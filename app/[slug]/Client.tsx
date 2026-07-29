@@ -569,6 +569,11 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
         : fallback.about_cards,
       logo_url: typeof raw.logo_url === 'string' ? raw.logo_url : fallback.logo_url,
       logo_position: ['navbar', 'footer', 'both'].includes(raw.logo_position) ? raw.logo_position : fallback.logo_position,
+      archive_link_enabled: raw.archive_link_enabled !== undefined ? !!raw.archive_link_enabled : true,
+      archive_link_label: typeof raw.archive_link_label === 'string' ? raw.archive_link_label : '🗂 النسخ السابقة',
+      archive_link_position: ['navbar', 'footer', 'both', 'none'].includes(raw.archive_link_position) ? raw.archive_link_position : 'both',
+      show_theme_toggle: raw.show_theme_toggle !== undefined ? !!raw.show_theme_toggle : true,
+      ticket_instructions: raw.ticket_instructions || undefined,
     };
   };
   const [activeDay, setActiveDay] = useState(0);
