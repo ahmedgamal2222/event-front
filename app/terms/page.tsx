@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 // app/terms/page.tsx - Terms & Privacy page
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -52,7 +52,7 @@ function TermsContent() {
   // Render custom static page
   if (pageSlug) {
     return (
-      <div style={{ minHeight: '100vh', background: '#0d0b1a', color: '#e2e8f0', fontFamily: 'Cairo,sans-serif', direction: 'rtl' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--bg-dark)', color: 'var(--text)', fontFamily: 'Cairo,sans-serif', direction: 'rtl' }}>
         <PixelInjector eventId={EVENT_ID} />
         <div style={{ background: 'rgba(108,99,255,0.06)', borderBottom: '1px solid rgba(108,99,255,0.2)', padding: '1.5rem' }}>
           <div style={{ maxWidth: 820, margin: '0 auto' }}>
@@ -86,7 +86,7 @@ function TermsContent() {
 
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0d0b1a', color: '#e2e8f0', fontFamily: 'Cairo,sans-serif', direction: 'rtl' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-dark)', color: 'var(--text)', fontFamily: 'Cairo,sans-serif', direction: 'rtl' }}>
       <PixelInjector eventId={EVENT_ID} />
       <div style={{ background: 'rgba(108,99,255,0.06)', borderBottom: '1px solid rgba(108,99,255,0.2)', padding: '1.5rem' }}>
         <div style={{ maxWidth: 820, margin: '0 auto' }}>
@@ -125,7 +125,7 @@ function TermsContent() {
 export default function TermsPage() {
   return (
     <Suspense fallback={
-      <div style={{ minHeight: '100vh', background: '#0d0b1a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--bg-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
         <div style={{ width: 40, height: 40, border: '3px solid #6C63FF', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
       </div>

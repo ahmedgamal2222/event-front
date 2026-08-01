@@ -1,6 +1,7 @@
 'use client';
 // app/components/SiteIcons.tsx
 // Comprehensive SVG vector icons for the entire site
+import { useState, useEffect } from 'react';
 
 interface IconProps {
   size?: number;
@@ -187,4 +188,28 @@ export function ThemeToggle({ isDark, onToggle, size = 38 }: { isDark: boolean; 
       </span>
     </button>
   );
+}
+
+// Self-contained theme toggle: manages its own dark/light state + persistence.
+// Drop it anywhere (e.g. inside the fixed navbar) with no props required.
+export function ThemeToggleAuto({ size = 40 }: { size?: number }) {
+  const [isDark, setIsDark] = useState(true);
+
+  useEffect(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('event_theme') : null;
+    const dark = saved !== 'light';
+    setIsDark(dark);
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  }, []);
+
+  const toggle = () => {
+    setIsDark(prev => {
+      const next = !prev;
+      document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light');
+      try { localStorage.setItem('event_theme', next ? 'dark' : 'light'); } catch {}
+      return next;
+    });
+  };
+
+  return <ThemeToggle isDark={isDark} onToggle={toggle} size={size} />;
 }

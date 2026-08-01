@@ -8,7 +8,7 @@ import PixelInjector from '../components/PixelInjector';
 import TicketsSection from '../components/TicketsSection';
 import SupportWidget from '../components/SupportWidget';
 import RegistrationSuccessMessage from '../components/RegistrationSuccessMessage';
-import { ThemeToggle, IconX, IconInstagram, IconLinkedIn, IconTikTok, IconYouTube, IconFacebook, IconWhatsApp, IconTelegram, IconArchive, IconArrowRight, IconArrowLeft, AboutIcon } from '../components/SiteIcons';
+import { ThemeToggle, ThemeToggleAuto, IconX, IconInstagram, IconLinkedIn, IconTikTok, IconYouTube, IconFacebook, IconWhatsApp, IconTelegram, IconArchive, IconArrowRight, IconArrowLeft, AboutIcon } from '../components/SiteIcons';
 
 const DEFAULT_EVENT_SLUG = ''; // No hardcoded fallback — slug MUST come from URL params
 
@@ -685,7 +685,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
   const ed = formatDateAr(endDate);
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: '#0d0b1a' }}>
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-dark)' }}>
       <div className="text-center">
         <div className="w-12 h-12 border-2 border-t-transparent rounded-full mx-auto mb-4 animate-spin" style={{ borderColor: primaryColor, borderTopColor: 'transparent' }} />
         <p className="text-[var(--text-muted)]">جار التحميل...</p>
@@ -695,7 +695,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
 
   // If event failed to load, show error with retry button
   if (!event) return (
-    <div style={{ minHeight: '100vh', background: '#0d0b1a', display: 'flex', alignItems: 'center', justifyContent: 'center', direction: 'rtl', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center', direction: 'rtl', fontFamily: 'system-ui, sans-serif' }}>
       <div style={{ textAlign: 'center', padding: '2rem' }}>
         <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
         <h2 style={{ color: 'white', fontSize: '1.25rem', marginBottom: '0.5rem' }}>تعذّر تحميل بيانات الفعالية</h2>
@@ -710,7 +710,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
   );
 
   return (
-    <div className="min-h-screen" style={{ background: '#0d0b1a' }}>
+    <div className="min-h-screen" style={{ background: 'var(--bg-dark)' }}>
       {/* Pixel Tracking */}
       <PixelInjector eventId={event?.id || 1} />
       {/* ── Navbar ───────────────────────────────────────────────────────────── */}
@@ -731,20 +731,23 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
                 : <a key={l.href} href={l.href} className="text-sm text-[var(--text-muted)] hover:text-white transition-colors">{l.label}</a>
             ))}
           </div>
-          <button onClick={() => openModal()} className="btn-primary text-sm py-2 px-4">
-            سجّل الآن
-          </button>
+          <div className="flex items-center gap-3">
+            {(siteCfg as any)?.show_theme_toggle !== false && <ThemeToggleAuto size={42} />}
+            <button onClick={() => openModal()} className="btn-primary text-sm py-2 px-4">
+              سجّل الآن
+            </button>
+          </div>
         </div>
       </nav>
 
-      {/* ── Event Navigation Bar (prev / next events) ──────────────────────── */}
-      {event && (
+      {/* ── Event Navigation Bar (prev / next events + archive) ─────────────── */}
+      {event && siteCfg.archive_link_enabled !== false && siteCfg.archive_link_position !== 'none' && (
         <EventNavBar
           eventId={event.id}
           primaryColor={primaryColor}
           archiveLabel={siteCfg.archive_link_label}
-          showArchive={siteCfg.archive_link_enabled !== false && siteCfg.archive_link_position !== 'none'}
-          showThemeToggle={(siteCfg as any)?.show_theme_toggle !== false}
+          showArchive={true}
+          showThemeToggle={false}
         />
       )}
 
@@ -974,7 +977,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       </section>
       )}
       {venueGallery.length > 0 && (
-        <section id="venue" className="py-20 px-6" style={{ background: 'rgba(0,0,0,0.3)' }}>
+        <section id="venue" className="py-20 px-6" style={{ background: 'var(--band)' }}>
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <div className="section-badge">مكان الحدث</div>
@@ -1033,7 +1036,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
                     }}
                   >
                     {item.media_type === 'video' ? (
-                      <div className="w-full h-full flex items-center justify-center" style={{ background: '#1a1730' }}>
+                      <div className="w-full h-full flex items-center justify-center" style={{ background: 'var(--bg-card)' }}>
                         <span className="text-white text-lg">▶</span>
                       </div>
                     ) : (
@@ -1201,7 +1204,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
         >
           <div
             className="w-full max-w-lg rounded-2xl p-8 relative"
-            style={{ background: '#13102a', border: '1px solid rgba(108,99,255,0.3)', maxHeight: '90vh', overflowY: 'auto' }}
+            style={{ background: 'var(--bg-card)', border: '1px solid rgba(108,99,255,0.3)', maxHeight: '90vh', overflowY: 'auto' }}
             onClick={e => e.stopPropagation()}
           >
             <button
@@ -1291,7 +1294,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       {showRegModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
           <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl p-6"
-               style={{ background: '#13102a', border: '1px solid rgba(108,99,255,0.3)' }}>
+               style={{ background: 'var(--bg-card)', border: '1px solid rgba(108,99,255,0.3)' }}>
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold text-white">التسجيل في القمة</h3>
               <button onClick={() => setShowRegModal(false)} className="text-[var(--text-muted)] hover:text-white text-2xl leading-none">×</button>
@@ -1303,7 +1306,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
 
       {/* ── Footer ────────────────────────────────────────────────────────────── */}
       {(footerPages.length > 0 || (termsData?.show_in_footer && (termsData?.terms_content || termsData?.privacy_content))) && (
-        <footer style={{ background: 'rgba(0,0,0,0.4)', borderTop: '1px solid rgba(108,99,255,0.15)', padding: '1.5rem 1.5rem', textAlign: 'center' }}>
+        <footer style={{ background: 'var(--footer-bg)', borderTop: '1px solid rgba(108,99,255,0.15)', padding: '1.5rem 1.5rem', textAlign: 'center' }}>
           <div style={{ maxWidth: 900, margin: '0 auto', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.5rem 1.5rem' }}>
             {footerPages.map(page => (
               <a key={page.id} href={`/terms?page=${page.slug}`}

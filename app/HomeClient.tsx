@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 /**
  * HomeClient — fetches events live on every visit.
  * Auto-redirects if only one visible event exists.
@@ -33,7 +33,7 @@ export default function HomeClient() {
   if (loading || events.length === 0) {
     return (
       <div style={{
-        minHeight: '100vh', background: '#0a0818',
+        minHeight: '100vh', background: 'var(--bg-dark)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         {loading ? (
@@ -57,7 +57,7 @@ export default function HomeClient() {
 
 function EventSelector({ events }: { events: any[] }) {
   return (
-    <div style={{ margin: 0, background: '#0a0818', fontFamily: "'Cairo', system-ui, -apple-system, sans-serif", minHeight: '100vh', direction: 'rtl' }}>
+    <div style={{ margin: 0, background: 'var(--bg-dark)', fontFamily: "'Cairo', system-ui, -apple-system, sans-serif", minHeight: '100vh', direction: 'rtl' }}>
       {/* Background effect */}
       <div style={{ position: 'fixed', inset: 0, background: 'radial-gradient(ellipse 80% 50% at 50% -20%, rgba(108,99,255,0.18) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
@@ -67,7 +67,7 @@ function EventSelector({ events }: { events: any[] }) {
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(108,99,255,0.12)', border: '1px solid rgba(108,99,255,0.25)', borderRadius: '2rem', padding: '6px 18px', marginBottom: '1.5rem' }}>
             <span style={{ fontSize: '0.75rem', color: '#818cf8', fontWeight: 600, letterSpacing: '0.05em' }}>🎯 اختر الحدث</span>
           </div>
-          <h1 style={{ color: 'white', fontSize: 'clamp(1.6rem, 4vw, 2.4rem)', margin: '0 0 0.75rem', fontWeight: 800, lineHeight: 1.2 }}>
+          <h1 style={{ color: 'var(--heading)', fontSize: 'clamp(1.6rem, 4vw, 2.4rem)', margin: '0 0 0.75rem', fontWeight: 800, lineHeight: 1.2 }}>
             فعاليات ومؤتمرات
           </h1>
           <p style={{ color: '#64748b', fontSize: '1rem', margin: 0 }}>
@@ -112,7 +112,7 @@ function EventCard({ event, color, isOpen }: { event: any; color: string; isOpen
       href={`/${event.slug}`}
       style={{
         display: 'block', textDecoration: 'none',
-        background: 'rgba(19,16,42,0.9)',
+        background: 'var(--bg-card)',
         border: `1px solid ${hovered ? color + '70' : color + '30'}`,
         borderRadius: '1.25rem',
         overflow: 'hidden',
@@ -127,7 +127,7 @@ function EventCard({ event, color, isOpen }: { event: any; color: string; isOpen
       {event.cover_image ? (
         <div style={{
           height: 180, position: 'relative',
-          background: `linear-gradient(to bottom, transparent 40%, rgba(19,16,42,0.9)), url(${event.cover_image}) center/cover no-repeat`,
+          background: `linear-gradient(to bottom, transparent 40%, var(--bg-card)), url(${event.cover_image}) center/cover no-repeat`,
         }}>
           {event.logo && (
             <div style={{ position: 'absolute', bottom: 12, right: 16 }}>
@@ -146,7 +146,7 @@ function EventCard({ event, color, isOpen }: { event: any; color: string; isOpen
 
       {/* Content */}
       <div style={{ padding: '1.25rem', textAlign: 'right' }}>
-        <h2 style={{ color: 'white', margin: '0 0 0.35rem', fontSize: '1.15rem', fontWeight: 700, lineHeight: 1.3 }}>
+        <h2 style={{ color: 'var(--heading)', margin: '0 0 0.35rem', fontSize: '1.15rem', fontWeight: 700, lineHeight: 1.3 }}>
           {event.name_ar || event.name}
         </h2>
         {event.tagline_ar && (

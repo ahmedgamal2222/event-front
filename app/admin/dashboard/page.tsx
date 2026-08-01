@@ -285,10 +285,20 @@ function AdminDashboardInner() {
     const t = getToken();
     if (!t) { router.replace('/admin'); return; }
     setToken(t);
+    // Session-expiry helper: on 401 clear session and send to admin login immediately
+    const handleExpired = () => {
+      localStorage.removeItem('admin_token');
+      localStorage.removeItem('admin_user');
+      router.replace('/admin');
+    };
     // Load permissions
     fetch(`${API_BASE}/api/auth/me/permissions`, { headers: { Authorization: `Bearer ${t}` } })
-      .then(r => r.json())
+      .then(r => {
+        if (r.status === 401 || r.status === 403) { handleExpired(); return null; }
+        return r.json();
+      })
       .then(d => {
+        if (!d) return;
         if (d.success) {
           setIsSuperAdmin(d.isSuperAdmin);
           if (d.permissions) {
@@ -306,6 +316,7 @@ function AdminDashboardInner() {
     const loadEvents = async () => {
       try {
         const r = await fetch(`${API_BASE}/api/events/all`, { headers: { Authorization: `Bearer ${t}` } });
+        if (r.status === 401 || r.status === 403) { handleExpired(); return; }
         const d = await r.json();
         if (d.success && d.data?.length > 0) {
           setEvents(d.data);

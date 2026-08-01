@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 // app/blog/page.tsx - Blog listing + single article (query params for static export)
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -50,11 +50,11 @@ function ArticleView({ slug }: { slug: string }) {
   return (
     <div>
       {/* Hero */}
-      <div style={{ position: 'relative', background: '#13102a', marginBottom: 0 }}>
+      <div style={{ position: 'relative', background: 'var(--bg-card)', marginBottom: 0 }}>
         {article.cover_image && (
           <>
             <img src={article.cover_image} alt={title} style={{ width: '100%', height: 320, objectFit: 'cover', opacity: 0.35 }} />
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #0d0b1a 40%, transparent)' }} />
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--bg-dark) 40%, transparent)' }} />
           </>
         )}
         <div style={{ maxWidth: 820, margin: '0 auto', padding: article.cover_image ? '0 1.5rem 2.5rem' : '2.5rem 1.5rem', position: 'relative' }}>
@@ -172,7 +172,7 @@ function ArticlesList() {
             {articles.map(article => (
               <a key={article.id} href={`/blog?article=${article.slug}`}
                 style={{ textDecoration: 'none', display: 'block' }}>
-                <article style={{ background: '#13102a', border: '1px solid rgba(108,99,255,0.2)', borderRadius: '1rem', overflow: 'hidden', transition: 'border-color 0.2s', height: '100%' }}
+                <article style={{ background: 'var(--bg-card)', border: '1px solid rgba(108,99,255,0.2)', borderRadius: '1rem', overflow: 'hidden', transition: 'border-color 0.2s', height: '100%' }}
                   onMouseEnter={e => (e.currentTarget.style.borderColor = '#6C63FF')}
                   onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(108,99,255,0.2)')}>
                   {article.cover_image && (
@@ -214,7 +214,7 @@ function BlogContent() {
   const articleSlug = searchParams?.get('article');
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0d0b1a', color: '#e2e8f0', fontFamily: 'Cairo, sans-serif', direction: 'rtl' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-dark)', color: 'var(--text)', fontFamily: 'Cairo, sans-serif', direction: 'rtl' }}>
       <PixelInjector eventId={EVENT_ID} />
       {articleSlug ? <ArticleView slug={articleSlug} /> : <ArticlesList />}
     </div>
@@ -224,7 +224,7 @@ function BlogContent() {
 export default function BlogPage() {
   return (
     <Suspense fallback={
-      <div style={{ minHeight: '100vh', background: '#0d0b1a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontFamily: 'Cairo,sans-serif' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--bg-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontFamily: 'Cairo,sans-serif' }}>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
         <div style={{ width: 40, height: 40, border: '3px solid #6C63FF', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
       </div>

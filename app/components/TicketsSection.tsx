@@ -113,7 +113,7 @@ export default function TicketsSection({ eventId }: { eventId: number }) {
   };
 
   return (
-    <section className="py-20 px-6" style={{ background: '#0d0b1a' }}>
+    <section className="py-20 px-6" style={{ background: 'var(--bg-dark)' }}>
       <div className="max-w-6xl mx-auto">
         {/* Section Header */}
         <div className="text-center mb-16">
