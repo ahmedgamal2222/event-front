@@ -38,7 +38,7 @@ const REG_TYPE_CONFIG: Record<string, { label: string; color: string; icon: stri
 
 interface Reg {
   id: number; name?: string; full_name?: string; email?: string; phone?: string;
-  city?: string; reg_type?: string; type?: string; status: string;
+  city?: string; reg_type?: string; type?: string; reg_types?: string; status: string;
   created_at: string; contact_id?: number;
   participation_reason?: string; work_field?: string;
 }
@@ -76,6 +76,15 @@ export default function AdminEventRegistrations({ token, eventId, readOnly }: Pr
   const [adminsList, setAdminsList] = useState<AdminUser[]>([]);
   const [assigneeSearch, setAssigneeSearch] = useState('');
   const [extraAssignees, setExtraAssignees] = useState<number[]>([]);
+
+  // Multi-type editing
+  const [showTypeEdit, setShowTypeEdit] = useState(false);
+  const [pendingTypes, setPendingTypes] = useState<string[]>([]);
+
+  // Interaction logging
+  const [showInteraction, setShowInteraction] = useState(false);
+  const [interactionForm, setInteractionForm] = useState({ channel: 'call', direction: 'outbound', subject: '', summary: '' });
+  const [savingInteraction, setSavingInteraction] = useState(false);
 
   const currentUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('admin_user') || '{}') : {};
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
@@ -184,6 +193,45 @@ export default function AdminEventRegistrations({ token, eventId, readOnly }: Pr
     } finally { setSavingTask(false); }
   };
 
+  // Save additional types (reg_types field)
+  const saveTypes = async () => {
+    if (!selected) return;
+    const typesStr = pendingTypes.join(',');
+    await fetch(`${API_BASE}/api/events/${eventId}/registrations/${selected.id}`, {
+      method: 'PUT', headers, body: JSON.stringify({ reg_types: typesStr }),
+    });
+    setRegs(prev => prev.map(r => r.id === selected.id ? { ...r, reg_types: typesStr } : r));
+    setSelected(s => s ? { ...s, reg_types: typesStr } : null);
+    setShowTypeEdit(false);
+  };
+
+  // Save interaction log
+  const saveInteraction = async () => {
+    if (!selected || !interactionForm.subject) return;
+    setSavingInteraction(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/crm/interactions`, {
+        method: 'POST', headers,
+        body: JSON.stringify({
+          contact_id: selected.contact_id || null,
+          registration_id: selected.id,
+          event_id: eventId,
+          channel: interactionForm.channel,
+          direction: interactionForm.direction,
+          subject: interactionForm.subject,
+          summary: interactionForm.summary,
+          logged_by: currentUser.name || currentUser.email || 'admin',
+        }),
+      });
+      const d = await res.json();
+      if (d.success) {
+        setShowInteraction(false);
+        setInteractionForm({ channel: 'call', direction: 'outbound', subject: '', summary: '' });
+        alert('✅ تم تسجيل التواصل');
+      } else alert(d.error || 'خطأ في التسجيل');
+    } finally { setSavingInteraction(false); }
+  };
+
   const filteredAdmins = adminsList.filter(a =>
     !assigneeSearch || a.name.toLowerCase().includes(assigneeSearch.toLowerCase()) || a.email.includes(assigneeSearch)
   );
@@ -255,7 +303,7 @@ export default function AdminEventRegistrations({ token, eventId, readOnly }: Pr
                   return (
                     <tr
                       key={reg.id}
-                      onClick={() => { setSelected(reg); setShowTaskForm(false); }}
+                      onClick={() => { setSelected(reg); setShowTaskForm(false); setShowTypeEdit(false); setShowInteraction(false); }}
                       style={{
                         borderTop: '1px solid rgba(255,255,255,0.04)',
                         cursor: 'pointer',
@@ -365,7 +413,7 @@ export default function AdminEventRegistrations({ token, eventId, readOnly }: Pr
                   <div style={{ color: '#64748b', fontSize: '0.78rem' }}>{selected.email || selected.phone}</div>
                 </div>
               </div>
-              <button style={{ ...S.btn('#374151'), padding: '0.3rem 0.6rem' }} onClick={() => { setSelected(null); setShowTaskForm(false); }}>✕</button>
+              <button style={{ ...S.btn('#374151'), padding: '0.3rem 0.6rem' }} onClick={() => { setSelected(null); setShowTaskForm(false); setShowTypeEdit(false); setShowInteraction(false); }}>✕</button>
             </div>
 
             {/* Info grid */}
@@ -379,6 +427,21 @@ export default function AdminEventRegistrations({ token, eventId, readOnly }: Pr
                 <div key={i} style={{ color: '#cbd5e1', fontSize: '0.8rem' }}><span style={{ opacity: 0.6 }}>{icon} </span>{val}</div>
               ))}
             </div>
+
+            {/* Additional types */}
+            {selected.reg_types && (
+              <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                <span style={{ color: '#64748b', fontSize: '0.72rem', alignSelf: 'center' }}>أنواع إضافية:</span>
+                {selected.reg_types.split(',').filter(Boolean).map(t => {
+                  const info = REG_TYPE_CONFIG[t] || { label: t, color: '#6b7280', icon: '👤' };
+                  return (
+                    <span key={t} style={{ fontSize: '0.7rem', background: `${info.color}20`, color: info.color, border: `1px solid ${info.color}40`, borderRadius: 99, padding: '2px 8px' }}>
+                      {info.icon} {info.label}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
 
             {selected.participation_reason && (
               <div style={{ marginTop: 10, padding: '8px 10px', background: 'rgba(255,255,255,0.04)', borderRadius: '0.5rem', color: '#94a3b8', fontSize: '0.78rem' }}>
@@ -436,6 +499,44 @@ export default function AdminEventRegistrations({ token, eventId, readOnly }: Pr
                 {showTaskForm ? '✕ إلغاء' : '✅ + مهمة'}
               </button>
 
+              {/* Multi-type button */}
+              <button
+                onClick={() => {
+                  const cur = selected.reg_types ? selected.reg_types.split(',').filter(Boolean) : [];
+                  setPendingTypes(cur);
+                  setShowTypeEdit(!showTypeEdit);
+                }}
+                style={{
+                  background: showTypeEdit ? 'rgba(16,185,129,0.2)' : 'rgba(16,185,129,0.1)',
+                  border: '1px solid rgba(16,185,129,0.4)',
+                  color: '#34d399',
+                  borderRadius: '0.5rem',
+                  padding: '0.5rem 1rem',
+                  cursor: 'pointer',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                }}
+              >
+                {showTypeEdit ? '✕ إلغاء' : '🏷️ أنواع إضافية'}
+              </button>
+
+              {/* Interaction log button */}
+              <button
+                onClick={() => setShowInteraction(!showInteraction)}
+                style={{
+                  background: showInteraction ? 'rgba(139,92,246,0.2)' : 'rgba(139,92,246,0.1)',
+                  border: '1px solid rgba(139,92,246,0.4)',
+                  color: '#a78bfa',
+                  borderRadius: '0.5rem',
+                  padding: '0.5rem 1rem',
+                  cursor: 'pointer',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                }}
+              >
+                {showInteraction ? '✕ إلغاء' : '💬 تواصل'}
+              </button>
+
               {/* Status change */}
               <select
                 value={selected.status}
@@ -447,7 +548,90 @@ export default function AdminEventRegistrations({ token, eventId, readOnly }: Pr
             </div>
           </div>
 
-          {/* Task Form */}
+          {/* Multi-type edit panel */}
+          {showTypeEdit && (
+            <div style={{ ...S.card, borderColor: 'rgba(16,185,129,0.35)', background: 'rgba(16,185,129,0.05)' }}>
+              <div style={{ color: '#34d399', fontWeight: 700, fontSize: '0.88rem', marginBottom: 12 }}>
+                🏷️ الأنواع الإضافية — {getName(selected)}
+              </div>
+              <div style={{ color: '#64748b', fontSize: '0.75rem', marginBottom: 10 }}>
+                النوع الأساسي: <strong style={{ color: '#a5f3fc' }}>{getType(selected)}</strong><br/>
+                أضف أنواعاً إضافية (مثل: راعٍ ومستثمر في نفس الوقت)
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                {Object.entries(REG_TYPE_CONFIG).map(([k, v]) => {
+                  const isPrimary = (selected.reg_type || selected.type) === k;
+                  const isSelected = pendingTypes.includes(k);
+                  return (
+                    <button key={k} disabled={isPrimary}
+                      onClick={() => setPendingTypes(prev => prev.includes(k) ? prev.filter(x=>x!==k) : [...prev, k])}
+                      style={{
+                        padding: '0.35rem 0.85rem', borderRadius: 6, fontSize: '0.78rem', fontWeight: 600,
+                        cursor: isPrimary ? 'default' : 'pointer',
+                        border: `1px solid ${isSelected ? v.color + '80' : 'rgba(255,255,255,0.12)'}`,
+                        background: isPrimary ? v.color + '30' : isSelected ? v.color + '20' : 'transparent',
+                        color: isPrimary ? v.color : isSelected ? v.color : '#64748b',
+                        opacity: isPrimary ? 0.6 : 1,
+                      }}>
+                      {v.icon} {v.label} {isPrimary ? '(أساسي)' : ''}
+                    </button>
+                  );
+                })}
+              </div>
+              <button onClick={saveTypes} style={{ ...S.btn('#10b981') }}>💾 حفظ الأنواع</button>
+            </div>
+          )}
+
+          {/* Interaction form (item 8) */}
+          {showInteraction && (
+            <div style={{ ...S.card, borderColor: 'rgba(139,92,246,0.35)', background: 'rgba(139,92,246,0.05)' }}>
+              <div style={{ color: '#a78bfa', fontWeight: 700, fontSize: '0.88rem', marginBottom: 12 }}>
+                💬 تسجيل تواصل — {getName(selected)}
+              </div>
+              <div style={{ display: 'grid', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <div>
+                    <label style={S.label}>قناة التواصل</label>
+                    <select style={S.inp} value={interactionForm.channel} onChange={e => setInteractionForm(f => ({ ...f, channel: e.target.value }))}>
+                      <option value="call">📞 مكالمة هاتفية</option>
+                      <option value="whatsapp">💬 واتساب</option>
+                      <option value="email">📧 بريد إلكتروني</option>
+                      <option value="meeting">🤝 اجتماع</option>
+                      <option value="sms">📱 رسالة نصية</option>
+                      <option value="other">أخرى</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={S.label}>الاتجاه</label>
+                    <select style={S.inp} value={interactionForm.direction} onChange={e => setInteractionForm(f => ({ ...f, direction: e.target.value }))}>
+                      <option value="outbound">صادر (من عندنا)</option>
+                      <option value="inbound">وارد (من العميل)</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label style={S.label}>موضوع التواصل *</label>
+                  <input style={S.inp} value={interactionForm.subject}
+                    onChange={e => setInteractionForm(f => ({ ...f, subject: e.target.value }))}
+                    placeholder="مثل: متابعة طلب المشاركة، تأكيد الدفع..." />
+                </div>
+                <div>
+                  <label style={S.label}>ملاحظات / ملخص المحادثة</label>
+                  <textarea style={{ ...S.inp, minHeight: 70, resize: 'vertical' as const }}
+                    value={interactionForm.summary}
+                    onChange={e => setInteractionForm(f => ({ ...f, summary: e.target.value }))}
+                    placeholder="ما الذي تم مناقشته؟ ما هو القرار أو الخطوة التالية؟" />
+                </div>
+                <div style={{ color: '#475569', fontSize: '0.72rem' }}>
+                  💡 سيتم حفظ هذا التواصل في صفحة جهة الاتصال CRM وأرشفته هناك.
+                </div>
+                <button onClick={saveInteraction} disabled={savingInteraction || !interactionForm.subject}
+                  style={{ ...S.btn('#8b5cf6') }}>
+                  {savingInteraction ? '⏳ جاري الحفظ...' : '💾 حفظ التواصل'}
+                </button>
+              </div>
+            </div>
+          )}
           {showTaskForm && (
             <div style={{ ...S.card, borderColor: 'rgba(108,99,255,0.35)', background: 'rgba(108,99,255,0.06)' }}>
               <div style={{ color: '#818cf8', fontWeight: 700, fontSize: '0.88rem', marginBottom: 12 }}>

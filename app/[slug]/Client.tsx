@@ -727,8 +727,8 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
           <div className="hidden md:flex items-center gap-6">
             {navLinks.map(l => (
               l.href.startsWith('/') && l.href !== '#'
-                ? <Link key={l.href} href={l.href} className="text-sm text-[var(--text-muted)] hover:text-white transition-colors">{l.label}</Link>
-                : <a key={l.href} href={l.href} className="text-sm text-[var(--text-muted)] hover:text-white transition-colors">{l.label}</a>
+                ? <Link key={l.href} href={l.href} className="text-sm text-[var(--text-muted)] hover:text-white transition-colors" style={{ color: undefined }}>{l.label}</Link>
+                : <a key={l.href} href={l.href} className="text-sm text-[var(--text-muted)] hover:text-white transition-colors" style={{ color: undefined }}>{l.label}</a>
             ))}
           </div>
           <div className="flex items-center gap-3">

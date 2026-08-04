@@ -3,8 +3,9 @@ import { useState, useEffect } from 'react';
 import AdminEventRegistrations from './AdminEventRegistrations';
 import AdminCRMUnified from './AdminCRMUnified';
 import AdminCRMTasks from './AdminCRMTasks';
+import AdminInteractions from './AdminInteractions';
 
-type View = 'registrations' | 'contacts' | 'tasks' | 'escalated';
+type View = 'registrations' | 'contacts' | 'interactions' | 'tasks' | 'escalated';
 
 interface Props {
   token: string;
@@ -18,6 +19,7 @@ interface Props {
 const VIEW_PERMISSION_KEYS: Record<View, string[]> = {
   registrations: ['registrations'],
   contacts:      ['crm_contacts', 'crm_unified', 'crm_main'],
+  interactions:  ['crm_contacts', 'crm_unified', 'crm_main'],
   tasks:         ['crm_tasks'],
   escalated:     ['crm_escalated'],
 };
@@ -25,6 +27,7 @@ const VIEW_PERMISSION_KEYS: Record<View, string[]> = {
 const ALL_VIEWS: { key: View; label: string; desc: string }[] = [
   { key: 'registrations', label: 'التسجيلات',       desc: 'عرض الطلبات وتغيير الحالات وتحويل للجهات' },
   { key: 'contacts',      label: 'جهات الاتصال',   desc: 'ملفات شاملة مع التاريخ والمهام' },
+  { key: 'interactions',  label: '💬 سجل التواصل',  desc: 'جميع المكالمات والرسائل والاجتماعات مع العملاء' },
   { key: 'tasks',         label: 'لوحة المهام',     desc: 'جميع المهام والمتابعات' },
   { key: 'escalated',     label: 'المصعدات',        desc: 'الحالات التي تتطلب قرارا من الادارة' },
 ];
@@ -89,6 +92,7 @@ export default function AdminCRMMain({ token, apiBase, eventId, isSuperAdmin, my
       </div>
       {view === 'registrations' && <AdminEventRegistrations key={`regs-${eventId}`} token={token} eventId={eventId} readOnly={readOnly} />}
       {view === 'contacts' && <AdminCRMUnified key={`contacts-${eventId}`} token={token} apiBase={apiBase} eventId={eventId} readOnly={readOnly} />}
+      {view === 'interactions' && <AdminInteractions key={`inter-${eventId}`} token={token} apiBase={apiBase} eventId={eventId} readOnly={readOnly} />}
       {view === 'tasks' && <AdminCRMTasks key={`tasks-${eventId}`} token={token} apiBase={apiBase} eventId={eventId} mode="all" readOnly={readOnly} />}
       {view === 'escalated' && <AdminCRMTasks key={`esc-${eventId}`} token={token} apiBase={apiBase} eventId={eventId} mode="escalated" readOnly={readOnly} />}
     </div>

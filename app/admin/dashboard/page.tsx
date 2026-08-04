@@ -19,6 +19,7 @@ import AdminTickets from '../../../app/components/admin/AdminTickets';
 import AdminSupport from '../../../app/components/admin/AdminSupport';
 import AdminPixels from '../../../app/components/admin/AdminPixels';
 import AdminEmailSettings from '../../../app/components/admin/AdminEmailSettings';
+import AdminEmailTemplates from '../../../app/components/admin/AdminEmailTemplates';
 import AdminTerms from '../../../app/components/admin/AdminTerms';
 import AdminPages from '../../../app/components/admin/AdminPages';
 import AdminPayments from '../../../app/components/admin/AdminPayments';
@@ -82,6 +83,7 @@ const TABS = [
   { key: 'support',          label: '💬 الدعم الفني',        group: 'الدعم' },
   { key: 'pixels',           label: '📊 البكسل والتتبع',     group: 'الدعم' },
   { key: 'email',            label: '📧 إعدادات البريد',     group: 'الدعم' },
+  { key: 'email_templates',  label: '📝 قوالب البريد',        group: 'الدعم' },
   { key: 'terms',            label: '⚖️ الشروط والأحكام',   group: 'الدعم' },
   { key: 'campaigns',        label: '📧 الحملات البريدية',   group: 'الدعم' },
 ] as const;
@@ -594,7 +596,6 @@ function AdminDashboardInner() {
           {activeTab === 'overview'      && <OverviewTab key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'event'         && <EventTab key={eventId} eventId={eventId} eventSlug={eventSlug} token={token} save={save} saving={saving} />}
           {activeTab === 'video'         && <VideoTab key={eventId} eventId={eventId} eventSlug={eventSlug} token={token} save={save} saving={saving} />}
-          {activeTab === 'registrations' && <RegistrationsTab key={eventId} eventId={eventId} eventSlug={eventSlug} token={token} router={router} showToast={showToast} onPaid={() => setActiveTab('payments')} />}
           {activeTab === 'speakers'      && <SpeakersTab key={eventId} eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
           {activeTab === 'venue'         && <VenueGalleryTab key={eventId} eventId={eventId} token={token} showToast={showToast} />}
           {activeTab === 'agenda'        && <AgendaTab key={eventId} eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
@@ -605,7 +606,8 @@ function AdminDashboardInner() {
           {activeTab === 'tickets'       && <AdminTickets key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'support'       && <AdminSupport key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'pixels'        && <AdminPixels key={eventId} eventId={eventId} token={token} />}
-          {activeTab === 'email'         && <AdminEmailSettings key={eventId} eventId={eventId} token={token} />}
+          {activeTab === 'email'          && <AdminEmailSettings key={eventId} eventId={eventId} token={token} />}
+          {activeTab === 'email_templates' && <AdminEmailTemplates key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'articles'      && <ArticlesTab key={eventId} eventId={eventId} token={token} showToast={showToast} />}
           {activeTab === 'terms'         && <AdminTerms key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'pages'         && <AdminPages key={eventId} eventId={eventId} token={token} />}
@@ -616,7 +618,6 @@ function AdminDashboardInner() {
           {activeTab === 'events_mgmt'   && <AdminEvents token={token} />}
           {/* CRM Tabs - موحد في مكون واحد */}
           {activeTab === 'crm_main'          && <AdminCRMMain key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} isSuperAdmin={isSuperAdmin} myPermissions={myPermissions} readOnly={isReadOnly} />}
-          {activeTab === 'crm_sponsorships'  && <AdminCRMSponsorships key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} />}
           </>}
         </div>
 
@@ -1700,6 +1701,8 @@ function FormConfigTab({ eventId, eventSlug, token, save, saving }: any) {
   const [newSector, setNewSector] = useState('');
   const [newStage, setNewStage] = useState('');
   const [newFieldOptions, setNewFieldOptions] = useState<Record<number,string>>({});
+  const [newTypeKey, setNewTypeKey] = useState('');
+  const [newTypeLabel, setNewTypeLabel] = useState('');
 
   useEffect(() => {
     if (!token) return; const slug = eventSlug || 's3-summit-2026';
@@ -1769,21 +1772,46 @@ function FormConfigTab({ eventId, eventSlug, token, save, saving }: any) {
       {/* أنواع التسجيل */}
       <div style={S.card}>
         <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 12 }}>أنواع التسجيل المتاحة</h3>
+        {/* الأنواع المدمجة (ثابتة + مخصصة) */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
-          {ALL_REG_TYPES.map(t => {
+          {[...new Set([...ALL_REG_TYPES, ...Object.keys(cfg.type_labels || {})])].map(t => {
             const enabled = (cfg.enabled_types || []).includes(t);
+            const isCustom = !ALL_REG_TYPES.includes(t);
             return (
-              <button key={t} onClick={() => toggleType(t)}
-                style={{ padding: '0.4rem 1rem', borderRadius: 6, border: `1px solid ${enabled ? '#6C63FF' : 'rgba(255,255,255,0.15)'}`, background: enabled ? 'rgba(108,99,255,0.25)' : 'transparent', color: enabled ? 'white' : '#94a3b8', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
-                {TYPE_LABEL_DEFAULTS[t]}
-              </button>
+              <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <button onClick={() => toggleType(t)}
+                  style={{ padding: '0.4rem 1rem', borderRadius: 6, border: `1px solid ${enabled ? '#6C63FF' : 'rgba(255,255,255,0.15)'}`, background: enabled ? 'rgba(108,99,255,0.25)' : 'transparent', color: enabled ? 'white' : '#94a3b8', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
+                  {cfg.type_labels?.[t] || TYPE_LABEL_DEFAULTS[t] || t}
+                </button>
+                {isCustom && (
+                  <button onClick={() => {
+                    const newLabels = { ...cfg.type_labels }; delete newLabels[t];
+                    setCfg(f => ({ ...f, type_labels: newLabels, enabled_types: (f.enabled_types||[]).filter(x=>x!==t) }));
+                  }} style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', borderRadius: 4, width: 20, height: 20, cursor: 'pointer', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} title="حذف هذا النوع">✕</button>
+                )}
+              </div>
             );
           })}
         </div>
+        {/* إضافة نوع مخصص جديد */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap', background: 'rgba(108,99,255,0.06)', padding: '0.75rem', borderRadius: '0.5rem', border: '1px dashed rgba(108,99,255,0.3)' }}>
+          <span style={{ color: '#818cf8', fontSize: '0.8rem', alignSelf: 'center', flexShrink: 0 }}>➕ نوع جديد:</span>
+          <input value={newTypeKey} onChange={e => setNewTypeKey(e.target.value.replace(/\s/g,'_').toLowerCase())}
+            placeholder="مفتاح (مثل: vip)" style={{ ...S.inp, flex: '1 1 100px', minWidth: 80 }} />
+          <input value={newTypeLabel} onChange={e => setNewTypeLabel(e.target.value)}
+            placeholder="التسمية (مثل: ⭐ VIP)" style={{ ...S.inp, flex: '1 1 140px', minWidth: 120 }} />
+          <button onClick={() => {
+            if (!newTypeKey.trim() || !newTypeLabel.trim()) return;
+            const k = newTypeKey.trim();
+            setLabel(k, newTypeLabel.trim());
+            if (!(cfg.enabled_types||[]).includes(k)) toggleType(k);
+            setNewTypeKey(''); setNewTypeLabel('');
+          }} style={{ ...S.btn(), flexShrink: 0 }}>إضافة</button>
+        </div>
         <h4 style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: 8 }}>تخصيص تسميات الأنواع</h4>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          {ALL_REG_TYPES.map(t => (
-            <Field key={t} label={TYPE_LABEL_DEFAULTS[t]}>
+          {[...new Set([...ALL_REG_TYPES, ...Object.keys(cfg.type_labels || {})])].map(t => (
+            <Field key={t} label={TYPE_LABEL_DEFAULTS[t] || t}>
               <input value={cfg.type_labels?.[t] || ''} onChange={e => setLabel(t, e.target.value)} style={S.inp} />
             </Field>
           ))}
