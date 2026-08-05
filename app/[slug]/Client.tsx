@@ -614,6 +614,14 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
   const [selectedSpeaker, setSelectedSpeaker] = useState<any | null>(null);
   const [venueGallery, setVenueGallery] = useState<VenueMedia[]>([]);
   const [activeGalleryIndex, setActiveGalleryIndex] = useState(0);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+  // Initialize theme from localStorage
+  useEffect(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('event_theme') : null;
+    const t = saved === 'light' ? 'light' : 'dark';
+    setTheme(t);
+  }, []);
 
   useEffect(() => {
     // Reset state when slug changes to avoid showing stale data
