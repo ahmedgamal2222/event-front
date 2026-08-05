@@ -38,9 +38,19 @@ const REG_TYPE_CONFIG: Record<string, { label: string; color: string; icon: stri
 
 interface Reg {
   id: number; name?: string; full_name?: string; email?: string; phone?: string;
-  city?: string; reg_type?: string; type?: string; reg_types?: string; status: string;
+  city?: string; country?: string; reg_type?: string; type?: string; reg_types?: string; status: string;
   created_at: string; contact_id?: number;
   participation_reason?: string; work_field?: string;
+}
+
+// Returns location string: for non-Syria users shows "Country / City", for Syria shows city only
+function cityDisplay(r: Reg): string {
+  if (r.country && r.country !== 'Syria') {
+    const parts = [r.country];
+    if (r.city && r.city !== 'خارج سوريا') parts.push(r.city);
+    return parts.join(' / ');
+  }
+  return r.city || '—';
 }
 
 interface AdminUser { id: number; name: string; email: string; google_picture?: string; }
@@ -49,9 +59,10 @@ interface Props {
   token: string;
   eventId: number;
   readOnly?: boolean;
+  onInteractionSaved?: () => void;
 }
 
-export default function AdminEventRegistrations({ token, eventId, readOnly }: Props) {
+export default function AdminEventRegistrations({ token, eventId, readOnly, onInteractionSaved }: Props) {
 
   const roAlert = () => {
     if (readOnly) alert('أنت في وضع المشاهدة فقط. تواصل مع المسؤول الرئيسي لتفعيل صلاحياتك.');
@@ -80,6 +91,8 @@ export default function AdminEventRegistrations({ token, eventId, readOnly }: Pr
   // Multi-type editing
   const [showTypeEdit, setShowTypeEdit] = useState(false);
   const [pendingTypes, setPendingTypes] = useState<string[]>([]);
+  const [formConfigTypes, setFormConfigTypes] = useState<string[]>([]);
+  const [formConfigLabels, setFormConfigLabels] = useState<Record<string, string>>({});
 
   // Interaction logging
   const [showInteraction, setShowInteraction] = useState(false);
@@ -95,6 +108,20 @@ export default function AdminEventRegistrations({ token, eventId, readOnly }: Pr
       if (d.success) setAdminsList(d.data || []);
     }).catch(() => {});
   }, [token]);
+
+  // Load form_config types for the type dropdown
+  useEffect(() => {
+    if (!eventId) return;
+    fetch(`${API_BASE}/api/events/${eventId}`, { headers }).then(r => r.json()).then(d => {
+      if (d.data?.form_config) {
+        try {
+          const fc = JSON.parse(d.data.form_config);
+          setFormConfigTypes(fc.enabled_types || []);
+          setFormConfigLabels(fc.type_labels || {});
+        } catch {}
+      }
+    }).catch(() => {});
+  }, [eventId, token]);
 
   const load = useCallback(async () => {
     if (!token || !eventId) return;
@@ -118,6 +145,22 @@ export default function AdminEventRegistrations({ token, eventId, readOnly }: Pr
     if (selected?.id === id) setSelected(s => s ? { ...s, status } : null);
     await fetch(`${API_BASE}/api/events/${eventId}/registrations/${id}`, {
       method: 'PUT', headers, body: JSON.stringify({ status }),
+    });
+  };
+
+  const changeType = async (id: number, reg_type: string) => {
+    // If new primary type was in additional types, remove it from there
+    const reg = regs.find(r => r.id === id);
+    const newRegTypes = reg?.reg_types
+      ? reg.reg_types.split(',').filter(t => t && t !== reg_type).join(',')
+      : null;
+
+    setRegs(prev => prev.map(r => r.id === id ? { ...r, reg_type, type: reg_type, ...(newRegTypes !== null ? { reg_types: newRegTypes } : {}) } : r));
+    if (selected?.id === id) setSelected(s => s ? { ...s, reg_type, type: reg_type, ...(newRegTypes !== null ? { reg_types: newRegTypes } : {}) } : null);
+
+    await fetch(`${API_BASE}/api/events/${eventId}/registrations/${id}`, {
+      method: 'PUT', headers,
+      body: JSON.stringify({ reg_type, ...(newRegTypes !== null ? { reg_types: newRegTypes } : {}) }),
     });
   };
 
@@ -227,7 +270,11 @@ export default function AdminEventRegistrations({ token, eventId, readOnly }: Pr
       if (d.success) {
         setShowInteraction(false);
         setInteractionForm({ channel: 'call', direction: 'outbound', subject: '', summary: '' });
-        alert('✅ تم تسجيل التواصل');
+        if (onInteractionSaved) {
+          onInteractionSaved();
+        } else {
+          alert('✅ تم تسجيل التواصل');
+        }
       } else alert(d.error || 'خطأ في التسجيل');
     } finally { setSavingInteraction(false); }
   };
@@ -239,7 +286,10 @@ export default function AdminEventRegistrations({ token, eventId, readOnly }: Pr
   const getName = (r: Reg) => r.full_name || r.name || '—';
   const getTypeInfo = (r: Reg) => {
     const key = r.reg_type || r.type || 'general';
-    return REG_TYPE_CONFIG[key] || { label: key, color: '#6b7280', icon: '👤' };
+    const base = REG_TYPE_CONFIG[key] || { label: key, color: '#6b7280', icon: '👤' };
+    // Use formConfig label if available (respects admin's custom labels/deletions)
+    if (formConfigLabels[key]) return { ...base, label: formConfigLabels[key] };
+    return base;
   };
   const getType = (r: Reg) => {
     const info = getTypeInfo(r);
@@ -278,13 +328,13 @@ export default function AdminEventRegistrations({ token, eventId, readOnly }: Pr
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(0,0,0,0.18)' }}>
                   {[
-                    { h: 'الاسم',   w: '' },
-                    { h: 'البريد',  w: '' },
-                    { h: 'النوع',   w: '90px' },
-                    { h: 'المدينة', w: '80px' },
-                    { h: 'الحالة',  w: '90px' },
-                    { h: 'تغيير',   w: '110px' },
-                    { h: '',         w: '50px' },
+                    { h: 'الاسم',       w: '' },
+                    { h: 'البريد',      w: '' },
+                    { h: 'النوع',       w: '120px' },
+                    { h: 'المدينة',     w: '80px' },
+                    { h: 'الحالة',      w: '90px' },
+                    { h: 'تغيير الحالة', w: '110px' },
+                    { h: '',             w: '50px' },
                   ].map(({ h, w }) => (
                     <th key={h} style={{ textAlign: 'right', padding: '0.55rem 0.85rem', color: '#64748b', fontWeight: 600, fontSize: '0.68rem', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', width: w || undefined }}>{h}</th>
                   ))}
@@ -327,19 +377,59 @@ export default function AdminEventRegistrations({ token, eventId, readOnly }: Pr
                       </td>
                       {/* البريد */}
                       <td style={{ padding: '0.55rem 0.85rem', color: '#64748b', fontSize: '0.75rem', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{reg.email || '—'}</td>
-                      {/* النوع - badge صغير نظيف */}
-                      <td style={{ padding: '0.55rem 0.85rem' }}>
-                        <span style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 3,
-                          background: `${ti.color}18`, color: ti.color,
-                          fontSize: '0.68rem', fontWeight: 600,
-                          padding: '2px 7px', borderRadius: '999px',
-                          border: `1px solid ${ti.color}30`,
-                          whiteSpace: 'nowrap',
-                        }}>{ti.icon} {ti.label}</span>
+                      {/* النوع — compact chips + dropdown */}
+                      <td style={{ padding: '0.4rem 0.7rem', minWidth: 110 }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          {/* Primary type — dropdown filtered to exclude already-added extra types */}
+                          <select
+                            value={reg.reg_type || reg.type || 'general'}
+                            onChange={e => { if (roAlert()) return; changeType(reg.id, e.target.value); }}
+                            disabled={readOnly}
+                            style={{
+                              background: `${ti.color}15`, border: `1px solid ${ti.color}50`,
+                              borderRadius: '0.4rem', color: ti.color, fontSize: '0.72rem',
+                              padding: '0.25rem 0.5rem', outline: 'none', fontWeight: 700,
+                              cursor: readOnly ? 'not-allowed' : 'pointer', maxWidth: 140,
+                              ...(readOnly ? roStyle : {}),
+                            }}
+                            title={readOnly ? 'وضع المشاهدة فقط' : 'تغيير النوع الأساسي'}
+                          >
+                            {(formConfigTypes.length > 0 ? formConfigTypes : Object.keys(REG_TYPE_CONFIG))
+                              .map(t => {
+                                const info = REG_TYPE_CONFIG[t] || { label: formConfigLabels[t] || t, color: '#6b7280', icon: '👤' };
+                                const inAdditional = (reg.reg_types || '').split(',').filter(Boolean).includes(t);
+                                const isCurrent = (reg.reg_type || reg.type || 'general') === t;
+                                return (
+                                  <option key={t} value={t}>
+                                    {info.icon} {formConfigLabels[t] || info.label}{inAdditional && !isCurrent ? ' ←إضافي' : ''}
+                                  </option>
+                                );
+                              })
+                            }
+                          </select>
+                          {/* Additional types — compact colored chips */}
+                          {reg.reg_types && reg.reg_types.split(',').filter(Boolean).length > 0 && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                              {reg.reg_types.split(',').filter(Boolean).map(t => {
+                                const info = REG_TYPE_CONFIG[t] || { label: formConfigLabels[t] || t, color: '#6b7280', icon: '👤' };
+                                return (
+                                  <span key={t} style={{
+                                    fontSize: '0.6rem', fontWeight: 600,
+                                    background: `${info.color}18`, color: info.color,
+                                    border: `1px solid ${info.color}40`, borderRadius: 99,
+                                    padding: '2px 6px', whiteSpace: 'nowrap',
+                                    display: 'inline-flex', alignItems: 'center', gap: 2,
+                                  }}>
+                                    {info.icon} {formConfigLabels[t] || info.label}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       </td>
                       {/* المدينة */}
-                      <td style={{ padding: '0.55rem 0.85rem', color: '#64748b', fontSize: '0.75rem' }}>{reg.city || '—'}</td>
+                      <td style={{ padding: '0.55rem 0.85rem', color: '#64748b', fontSize: '0.75rem' }}>{cityDisplay(reg)}</td>
                       {/* الحالة - dot بسيط */}
                       <td style={{ padding: '0.55rem 0.85rem' }}>
                         <span style={{
@@ -420,7 +510,7 @@ export default function AdminEventRegistrations({ token, eventId, readOnly }: Pr
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {[
                 ['📱', selected.phone || '—'],
-                ['🏙️', selected.city || '—'],
+                ['🏙️', cityDisplay(selected)],
                 ['📋', getType(selected)],
                 ['📅', new Date(selected.created_at).toLocaleDateString('ar-SA')],
               ].map(([icon, val], i) => (
@@ -428,15 +518,29 @@ export default function AdminEventRegistrations({ token, eventId, readOnly }: Pr
               ))}
             </div>
 
-            {/* Additional types */}
-            {selected.reg_types && (
-              <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+            {/* Additional types — chips with ✕ to remove */}
+            {selected.reg_types && selected.reg_types.split(',').filter(Boolean).length > 0 && (
+              <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 5, alignItems: 'center' }}>
                 <span style={{ color: '#64748b', fontSize: '0.72rem', alignSelf: 'center' }}>أنواع إضافية:</span>
                 {selected.reg_types.split(',').filter(Boolean).map(t => {
-                  const info = REG_TYPE_CONFIG[t] || { label: t, color: '#6b7280', icon: '👤' };
+                  const info = REG_TYPE_CONFIG[t] || { label: formConfigLabels[t] || t, color: '#6b7280', icon: '👤' };
+                  const lbl = formConfigLabels[t] || info.label;
                   return (
-                    <span key={t} style={{ fontSize: '0.7rem', background: `${info.color}20`, color: info.color, border: `1px solid ${info.color}40`, borderRadius: 99, padding: '2px 8px' }}>
-                      {info.icon} {info.label}
+                    <span key={t} style={{ fontSize: '0.72rem', background: `${info.color}20`, color: info.color, border: `1px solid ${info.color}40`, borderRadius: 99, padding: '2px 8px 2px 4px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      {info.icon} {lbl}
+                      {/* Remove this individual extra type */}
+                      <button
+                        onClick={async () => {
+                          const newTypes = selected.reg_types!.split(',').filter(x => x && x !== t).join(',');
+                          await fetch(`${API_BASE}/api/events/${eventId}/registrations/${selected.id}`, {
+                            method: 'PUT', headers, body: JSON.stringify({ reg_types: newTypes }),
+                          });
+                          setRegs(prev => prev.map(r => r.id === selected.id ? { ...r, reg_types: newTypes } : r));
+                          setSelected(s => s ? { ...s, reg_types: newTypes } : null);
+                        }}
+                        style={{ background: 'none', border: 'none', color: info.color, cursor: 'pointer', padding: 0, fontSize: '0.7rem', lineHeight: 1, opacity: 0.7 }}
+                        title={`حذف "${lbl}"`}
+                      >✕</button>
                     </span>
                   );
                 })}
@@ -559,21 +663,30 @@ export default function AdminEventRegistrations({ token, eventId, readOnly }: Pr
                 أضف أنواعاً إضافية (مثل: راعٍ ومستثمر في نفس الوقت)
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-                {Object.entries(REG_TYPE_CONFIG).map(([k, v]) => {
+                {(formConfigTypes.length > 0 ? formConfigTypes : Object.keys(REG_TYPE_CONFIG)).map(k => {
+                  const v = REG_TYPE_CONFIG[k] || { label: formConfigLabels[k] || k, color: '#6b7280', icon: '\uD83D\uDC64' };
+                  const lbl = formConfigLabels[k] || v.label;
                   const isPrimary = (selected.reg_type || selected.type) === k;
-                  const isSelected = pendingTypes.includes(k);
+                  const isChosen = pendingTypes.includes(k);
                   return (
-                    <button key={k} disabled={isPrimary}
-                      onClick={() => setPendingTypes(prev => prev.includes(k) ? prev.filter(x=>x!==k) : [...prev, k])}
+                    <button key={k}
+                      onClick={() => {
+                        if (isPrimary) return;
+                        // Toggle: add if not present, remove if already added
+                        setPendingTypes(prev => prev.includes(k) ? prev.filter(x=>x!==k) : [...prev, k]);
+                      }}
                       style={{
-                        padding: '0.35rem 0.85rem', borderRadius: 6, fontSize: '0.78rem', fontWeight: 600,
+                        padding: '0.4rem 0.9rem', borderRadius: 6, fontSize: '0.8rem', fontWeight: 600,
                         cursor: isPrimary ? 'default' : 'pointer',
-                        border: `1px solid ${isSelected ? v.color + '80' : 'rgba(255,255,255,0.12)'}`,
-                        background: isPrimary ? v.color + '30' : isSelected ? v.color + '20' : 'transparent',
-                        color: isPrimary ? v.color : isSelected ? v.color : '#64748b',
-                        opacity: isPrimary ? 0.6 : 1,
+                        border: `1px solid ${isPrimary ? v.color + '80' : isChosen ? v.color + '80' : 'rgba(255,255,255,0.12)'}`,
+                        background: isPrimary ? v.color + '30' : isChosen ? v.color + '20' : 'transparent',
+                        color: isPrimary ? v.color : isChosen ? v.color : '#64748b',
+                        opacity: isPrimary ? 0.7 : 1,
+                        display: 'flex', alignItems: 'center', gap: 5,
                       }}>
-                      {v.icon} {v.label} {isPrimary ? '(أساسي)' : ''}
+                      {v.icon} {lbl}
+                      {isPrimary && <span style={{ fontSize: '0.65rem', opacity: 0.7 }}>(أساسي)</span>}
+                      {isChosen && !isPrimary && <span style={{ fontSize: '0.7rem' }}>✓</span>}
                     </button>
                   );
                 })}

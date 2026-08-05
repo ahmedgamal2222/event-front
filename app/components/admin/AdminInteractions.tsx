@@ -22,7 +22,9 @@ const DIR_COLOR: Record<string, string> = { outbound: '#10b981', inbound: '#3b82
 const DIR_LABEL: Record<string, string> = { outbound: '↑ صادر', inbound: '↓ وارد' };
 
 interface Interaction {
-  id: number; contact_id?: number; contact_name?: string; registration_id?: number;
+  id: number; contact_id?: number; contact_name?: string; contact_email?: string;
+  contact_phone?: string; contact_org?: string;
+  registration_id?: number; reg_type?: string; reg_status?: string;
   event_id?: number; event_name_ar?: string;
   channel: string; direction: string; subject: string; summary?: string;
   logged_by?: string; created_at: string;
@@ -30,7 +32,7 @@ interface Interaction {
 
 interface Props { token: string; apiBase: string; eventId: number; readOnly?: boolean; }
 
-const BLANK = { channel: 'call', direction: 'outbound', subject: '', summary: '', logged_by: '', contact_name_hint: '' };
+const BLANK = { channel: 'call', direction: 'outbound', subject: '', summary: '', contact_name_hint: '' };
 
 export default function AdminInteractions({ token, apiBase, eventId, readOnly }: Props) {
   const [items, setItems] = useState<Interaction[]>([]);
@@ -48,6 +50,7 @@ export default function AdminInteractions({ token, apiBase, eventId, readOnly }:
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      // Show all interactions: those with event_id match OR those linked to contacts from this event
       const res = await fetch(`${apiBase}/api/crm/interactions?event_id=${eventId}&limit=${LIMIT}&offset=${offset}`, { headers });
       const d = await res.json();
       if (d.success) { setItems(d.data || []); setTotal(d.total || 0); }
@@ -58,11 +61,12 @@ export default function AdminInteractions({ token, apiBase, eventId, readOnly }:
 
   const save = async () => {
     if (!form.subject.trim()) return alert('يرجى كتابة موضوع التواصل');
+    const currentUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('admin_user') || '{}') : {};
     setSaving(true);
     try {
       const res = await fetch(`${apiBase}/api/crm/interactions`, {
         method: 'POST', headers,
-        body: JSON.stringify({ ...form, event_id: eventId }),
+        body: JSON.stringify({ ...form, event_id: eventId, logged_by: currentUser.name || currentUser.email || 'admin' }),
       });
       const d = await res.json();
       if (d.success) { setShowForm(false); setForm({ ...BLANK }); load(); }
@@ -129,11 +133,6 @@ export default function AdminInteractions({ token, apiBase, eventId, readOnly }:
               <input style={S.inp} value={form.contact_name_hint} onChange={e => setForm(f => ({ ...f, contact_name_hint: e.target.value }))}
                 placeholder="اسم العميل للمرجعية..." />
             </div>
-            <div>
-              <label style={S.label}>سُجِّل بواسطة</label>
-              <input style={S.inp} value={form.logged_by} onChange={e => setForm(f => ({ ...f, logged_by: e.target.value }))}
-                placeholder="اسمك..." />
-            </div>
           </div>
           <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
             <button style={S.btn('#8b5cf6')} onClick={save} disabled={saving}>
@@ -172,11 +171,20 @@ export default function AdminInteractions({ token, apiBase, eventId, readOnly }:
                     {CHANNEL_LABELS[item.channel] || item.channel}
                   </span>
                 </div>
-                {item.summary && <p style={{ color: '#94a3b8', fontSize: '0.8rem', margin: '0 0 4px', lineHeight: 1.6 }}>{item.summary}</p>}
+                {item.summary && <p style={{ color: '#94a3b8', fontSize: '0.8rem', margin: '0 0 6px', lineHeight: 1.6 }}>{item.summary}</p>}
+                {/* Person info */}
+                {(item.contact_name || item.contact_email || item.contact_phone) && (
+                  <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '0.4rem', padding: '6px 10px', marginBottom: 4, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                    {item.contact_name && <span style={{ color: '#e2e8f0', fontSize: '0.78rem', fontWeight: 600 }}>👤 {item.contact_name}</span>}
+                    {item.contact_email && <span style={{ color: '#64748b', fontSize: '0.72rem' }}>✉️ {item.contact_email}</span>}
+                    {item.contact_phone && <span style={{ color: '#64748b', fontSize: '0.72rem' }}>📱 {item.contact_phone}</span>}
+                    {item.contact_org && <span style={{ color: '#64748b', fontSize: '0.72rem' }}>🏢 {item.contact_org}</span>}
+                  </div>
+                )}
                 <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-                  {item.contact_name && <span style={{ color: '#64748b', fontSize: '0.72rem' }}>👤 {item.contact_name}</span>}
                   {item.logged_by && <span style={{ color: '#64748b', fontSize: '0.72rem' }}>✍️ {item.logged_by}</span>}
                   <span style={{ color: '#475569', fontSize: '0.72rem' }}>🕐 {fmt(item.created_at)}</span>
+                  {item.event_name_ar && <span style={{ color: '#475569', fontSize: '0.72rem' }}>📍 {item.event_name_ar}</span>}
                 </div>
               </div>
               {/* Delete */}

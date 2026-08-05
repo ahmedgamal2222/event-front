@@ -5,11 +5,11 @@ export interface SuccessMessageProps {
   registrationType: 'startup' | 'member' | 'general' | string;
   fullName: string;
   companyName?: string;
+  city?: string;
   ticketCode?: string;
   eventId?: number;
   eventName?: string;
   onClose: () => void;
-  // Custom instructions from admin
   customInstructions?: TicketInstructions;
 }
 
@@ -61,6 +61,7 @@ export default function RegistrationSuccessMessage({
   registrationType,
   fullName,
   companyName,
+  city,
   ticketCode,
   eventName = 'الحدث',
   onClose,
@@ -84,12 +85,12 @@ export default function RegistrationSuccessMessage({
       </div>
 
       {/* Title */}
-      <h3 style={{ color: 'white', fontSize: '1.4rem', fontWeight: 700, margin: '0 0 0.5rem' }}>
+      <h3 style={{ color: 'var(--heading)', fontSize: '1.4rem', fontWeight: 700, margin: '0 0 0.5rem' }}>
         ✅ {isStartup ? c.startup_success_title : c.general_success_title}
       </h3>
-      <p style={{ color: '#94a3b8', margin: '0 0 0.35rem' }}>
-        شكراً لك يا <strong style={{ color: 'white' }}>{fullName}</strong>
-        {companyName ? ` من ${companyName}` : ''}
+      <p style={{ color: 'var(--text-muted)', margin: '0 0 0.35rem' }}>
+        شكراً لك يا <strong style={{ color: 'var(--heading)' }}>{fullName}</strong>
+        {companyName ? ` من ${companyName}` : city ? ` من ${city}` : ''}
       </p>
       {ticketCode && (
         <p style={{ color: '#64748b', fontSize: '0.82rem', margin: '0 0 1.5rem' }}>
@@ -114,8 +115,8 @@ export default function RegistrationSuccessMessage({
             }}>
               <span style={{ fontSize: '1.25rem', flexShrink: 0, marginTop: 2 }}>{step.icon}</span>
               <div>
-                <div style={{ color: 'white', fontWeight: 600, fontSize: '0.9rem' }}>{step.title}</div>
-                <div style={{ color: '#94a3b8', fontSize: '0.82rem', marginTop: 2 }}>{step.desc}</div>
+                <div style={{ color: 'var(--heading)', fontWeight: 600, fontSize: '0.9rem' }}>{step.title}</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: 2 }}>{step.desc}</div>
               </div>
             </div>
           ))}
@@ -132,7 +133,7 @@ export default function RegistrationSuccessMessage({
             marginBottom: '0.75rem',
           }}>
             <div style={{ color: '#10b981', fontWeight: 600, marginBottom: '0.4rem' }}>📧 {c.general_confirm_title}</div>
-            <div style={{ color: '#cbd5e1', fontSize: '0.88rem' }}>
+            <div style={{ color: '#cbd5e1', fontSize: '0.88rem', color: 'var(--text)' }}>
               {c.general_confirm_desc!.replace('{eventName}', eventName)}
             </div>
           </div>

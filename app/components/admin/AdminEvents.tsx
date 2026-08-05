@@ -344,8 +344,9 @@ export default function AdminEvents({ token }: { token: string }) {
                   {/* Toggles */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flexShrink: 0 }}>
                     {[
-                      { field: 'is_visible', onLabel: '👁 ظاهر', offLabel: '🚫 مخفي', onColor: '#6C63FF' },
-                      { field: 'archive_enabled', onLabel: '🗂 أرشيف', offLabel: '📦 خارج', onColor: '#10b981' },
+                      { field: 'is_visible', onLabel: '👁 ظاهر للزوار', offLabel: '🚫 مخفي عن الزوار', onColor: '#10b981' },
+                      { field: 'hidden_from_home', onLabel: '🏠 مخفي من الرئيسية', offLabel: '🏠 يظهر في الرئيسية', onColor: '#f59e0b', invert: true },
+                      { field: 'archive_enabled', onLabel: '🗂 في الأرشيف', offLabel: '📦 خارج الأرشيف', onColor: '#6C63FF' },
                     ].map(t => (
                       <div key={t.field} style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
                         <div onClick={() => saveVisibility(ev, { [t.field]: ev[t.field] ? 0 : 1 })}

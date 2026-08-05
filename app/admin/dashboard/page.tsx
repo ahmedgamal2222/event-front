@@ -20,6 +20,7 @@ import AdminSupport from '../../../app/components/admin/AdminSupport';
 import AdminPixels from '../../../app/components/admin/AdminPixels';
 import AdminEmailSettings from '../../../app/components/admin/AdminEmailSettings';
 import AdminEmailTemplates from '../../../app/components/admin/AdminEmailTemplates';
+import AdminThemeBuilder from '../../../app/components/admin/AdminThemeBuilder';
 import AdminTerms from '../../../app/components/admin/AdminTerms';
 import AdminPages from '../../../app/components/admin/AdminPages';
 import AdminPayments from '../../../app/components/admin/AdminPayments';
@@ -69,6 +70,7 @@ const TABS = [
   { key: 'event',            label: '⚙️ معلومات الحدث',     group: 'الحدث' },
   { key: 'video',            label: '🎬 الفيديو التعريفي',   group: 'الحدث' },
   { key: 'siteconfig',       label: '🎨 محتوى الصفحة',      group: 'الحدث' },
+  { key: 'theme',            label: '🖌️ الثيم والألوان',     group: 'الحدث' },
   { key: 'formconfig',       label: '📝 فورم التسجيل',      group: 'الحدث' },
   { key: 'countries',        label: '🌍 قائمة الدول',        group: 'الحدث' },
   // إدارة المحتوى
@@ -603,6 +605,7 @@ function AdminDashboardInner() {
           {activeTab === 'faqs'          && <FaqsTab key={eventId} eventId={eventId} token={token} save={save} saving={saving} showToast={showToast} />}
           {activeTab === 'formconfig'    && <FormConfigTab key={eventId} eventId={eventId} eventSlug={eventSlug} token={token} save={save} saving={saving} />}
           {activeTab === 'siteconfig'    && <SiteConfigTab key={eventId} eventId={eventId} eventSlug={eventSlug} token={token} save={save} saving={saving} />}
+          {activeTab === 'theme'         && <AdminThemeBuilder key={eventId} eventId={eventId} eventSlug={eventSlug} token={token} save={save} saving={saving} />}
           {activeTab === 'tickets'       && <AdminTickets key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'support'       && <AdminSupport key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'pixels'        && <AdminPixels key={eventId} eventId={eventId} token={token} />}
@@ -1708,7 +1711,17 @@ function FormConfigTab({ eventId, eventSlug, token, save, saving }: any) {
     if (!token) return; const slug = eventSlug || 's3-summit-2026';
     fetchEvent(slug).then((r: any) => {
       if (r.data?.form_config) {
-        try { setCfg({ ...DEFAULT_CFG, ...JSON.parse(r.data.form_config) }); } catch {}
+        try {
+          const loaded = JSON.parse(r.data.form_config);
+          // Seed type_labels with ALL defaults on first load (if empty/missing)
+          if (!loaded.type_labels || Object.keys(loaded.type_labels).length === 0) {
+            loaded.type_labels = { ...TYPE_LABEL_DEFAULTS };
+          }
+          setCfg({ ...DEFAULT_CFG, ...loaded });
+        } catch {}
+      } else {
+        // No config yet — start with full defaults including all type labels
+        setCfg({ ...DEFAULT_CFG, type_labels: { ...TYPE_LABEL_DEFAULTS } });
       }
       setLoaded(true);
     }).catch(() => setLoaded(true));
@@ -1774,21 +1787,30 @@ function FormConfigTab({ eventId, eventSlug, token, save, saving }: any) {
         <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 12 }}>أنواع التسجيل المتاحة</h3>
         {/* الأنواع المدمجة (ثابتة + مخصصة) */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
-          {[...new Set([...ALL_REG_TYPES, ...Object.keys(cfg.type_labels || {})])].map(t => {
+          {Object.keys(cfg.type_labels || TYPE_LABEL_DEFAULTS).map(t => {
             const enabled = (cfg.enabled_types || []).includes(t);
-            const isCustom = !ALL_REG_TYPES.includes(t);
             return (
               <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <button onClick={() => toggleType(t)}
                   style={{ padding: '0.4rem 1rem', borderRadius: 6, border: `1px solid ${enabled ? '#6C63FF' : 'rgba(255,255,255,0.15)'}`, background: enabled ? 'rgba(108,99,255,0.25)' : 'transparent', color: enabled ? 'white' : '#94a3b8', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
                   {cfg.type_labels?.[t] || TYPE_LABEL_DEFAULTS[t] || t}
                 </button>
-                {isCustom && (
-                  <button onClick={() => {
-                    const newLabels = { ...cfg.type_labels }; delete newLabels[t];
-                    setCfg(f => ({ ...f, type_labels: newLabels, enabled_types: (f.enabled_types||[]).filter(x=>x!==t) }));
-                  }} style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', borderRadius: 4, width: 20, height: 20, cursor: 'pointer', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} title="حذف هذا النوع">✕</button>
-                )}
+                <button onClick={async () => {
+                  const newLabels = { ...(cfg.type_labels || {}) }; delete newLabels[t];
+                  setCfg(f => ({ ...f, type_labels: newLabels, enabled_types: (f.enabled_types||[]).filter(x=>x!==t) }));
+                  // Offer to also bulk-reassign existing registrations
+                  if (confirm(`تم حذف نوع "${t}" من القائمة.\n\nهل تريد أيضاً تحويل جميع التسجيلات الحالية من نوع "${t}" إلى "حضور عام"?\n(اضغط موافق للتحويل، إلغاء للإبقاء كما هي)`)) {
+                    const api = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
+                    const tok = typeof window !== 'undefined' ? localStorage.getItem('admin_token') || '' : '';
+                    const res = await fetch(`${api}/api/events/${eventId}/registrations/bulk-retype`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
+                      body: JSON.stringify({ from_type: t, to_type: 'general' }),
+                    });
+                    const d = await res.json();
+                    if (d.success) alert(`✅ تم تحديث ${d.updated} تسجيل`);
+                  }
+                }} style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', borderRadius: 4, width: 20, height: 20, cursor: 'pointer', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flexShrink: 0 }} title="حذف هذا النوع">✕</button>
               </div>
             );
           })}
@@ -1810,7 +1832,7 @@ function FormConfigTab({ eventId, eventSlug, token, save, saving }: any) {
         </div>
         <h4 style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: 8 }}>تخصيص تسميات الأنواع</h4>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          {[...new Set([...ALL_REG_TYPES, ...Object.keys(cfg.type_labels || {})])].map(t => (
+          {Object.keys(cfg.type_labels || TYPE_LABEL_DEFAULTS).map(t => (
             <Field key={t} label={TYPE_LABEL_DEFAULTS[t] || t}>
               <input value={cfg.type_labels?.[t] || ''} onChange={e => setLabel(t, e.target.value)} style={S.inp} />
             </Field>
@@ -1905,9 +1927,9 @@ function FormConfigTab({ eventId, eventSlug, token, save, saving }: any) {
                 <input type="checkbox" checked={ef.required} onChange={e => setField(i, 'required', e.target.checked)} /> إلزامي
               </label>
               <span style={{ color: '#94a3b8', fontSize: '0.78rem' }}>يظهر في:</span>
-              {ALL_REG_TYPES.map(t => (
+              {Object.keys(cfg.type_labels || TYPE_LABEL_DEFAULTS).map(t => (
                 <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 4, color: ef.for_types.includes(t) ? 'white' : '#94a3b8', fontSize: '0.78rem', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={ef.for_types.includes(t)} onChange={() => toggleFieldType(i, t)} /> {TYPE_LABEL_DEFAULTS[t]}
+                  <input type="checkbox" checked={ef.for_types.includes(t)} onChange={() => toggleFieldType(i, t)} /> {cfg.type_labels?.[t] || TYPE_LABEL_DEFAULTS[t] || t}
                 </label>
               ))}
             </div>

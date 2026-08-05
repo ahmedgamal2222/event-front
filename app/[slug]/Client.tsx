@@ -176,16 +176,61 @@ function StatCounter({ value, label }: { value: number; label: string }) {
 
 // ─── Ticket Selector for payment ─────────────────────────────────────────────
 // Country Select component — loads from API
-function CountrySelect({ eventId, value, onChange, required }: { eventId: number; value: string; onChange: (v: string) => void; required?: boolean }) {
-  const [countries, setCountries] = useState<{ id: number; name_ar: string }[]>([]);
+// components/CountrySelect.tsx (أو داخل نفس الملف)
+function CountrySelect({ eventId, value, onChange, cityValue, onCityChange, required }: { 
+  eventId: number; 
+  value: string; 
+  onChange: (v: string) => void; 
+  cityValue?: string; 
+  onCityChange?: (v: string) => void; 
+  required?: boolean;
+}) {
+  const [countries, setCountries] = useState<{ id: number; name_ar: string; cities?: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    fetchCountries(eventId).then(r => setCountries(r.data || [])).catch(() => {});
+    fetchCountries(eventId)
+      .then(r => {
+        setCountries(r.data || []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, [eventId]);
+
+  const selected = countries.find(co => co.name_ar === value);
+  let cities: string[] = [];
+  if (selected?.cities) {
+    try {
+      const parsed = JSON.parse(selected.cities);
+      if (Array.isArray(parsed)) cities = parsed;
+    } catch (e) {
+      console.warn('Failed to parse cities for', selected.name_ar, e);
+    }
+  }
+
+  if (loading) return <div className="text-sm text-[var(--text-muted)]">جار تحميل الدول...</div>;
+
   return (
-    <select className="input-field" required={required} value={value} onChange={e => onChange(e.target.value)}>
-      <option value="">اختر الدولة</option>
-      {countries.map(c => <option key={c.id} value={c.name_ar}>{c.name_ar}</option>)}
-    </select>
+    <div className="space-y-3">
+      <select className="input-field" required={required} value={value} onChange={e => { 
+        onChange(e.target.value); 
+        if (onCityChange) onCityChange(''); 
+      }}>
+        <option value="">اختر الدولة</option>
+        {countries.map(co => <option key={co.id} value={co.name_ar}>{co.name_ar}</option>)}
+      </select>
+
+      {value && onCityChange && (
+        cities.length > 0 ? (
+          <select className="input-field" value={cityValue || ''} onChange={e => onCityChange(e.target.value)}>
+            <option value="">اختر المدينة</option>
+            {cities.map(city => <option key={city} value={city}>{city}</option>)}
+          </select>
+        ) : (
+          <input className="input-field" placeholder="أدخل اسم المدينة (غير مسجلة في القائمة)" value={cityValue || ''} onChange={e => onCityChange(e.target.value)} />
+        )
+      )}
+    </div>
   );
 }
 
@@ -225,7 +270,7 @@ function RegistrationForm({ event, onClose, cfg, initialTab, ticketInstructions 
   const [error, setError] = useState('');
   const [paymentSettings, setPaymentSettings] = useState<any>(null);
   const [form, setForm] = useState({
-    full_name: '', email: '', phone: '', city: '', country: '', motivation: '',
+    full_name: '', email: '', phone: '', city: '', country: '', country_city: '', motivation: '',
     company_name: '', sector: '', stage: '', team_size: '', website: '', description: '',
     work_field: '', participation_reason: '',
     agreed: false,
@@ -248,8 +293,8 @@ function RegistrationForm({ event, onClose, cfg, initialTab, ticketInstructions 
         reg_type: tab,
         full_name: form.full_name, email: form.email,
         ...(cfg.show_phone ? { phone: form.phone } : {}),
-        ...(cfg.show_city ? { city: form.city } : {}),
-        ...(form.city === 'خارج سوريا' && form.country ? { country: form.country } : {}),
+        ...(cfg.show_city ? { city: form.city === 'خارج سوريا' ? (form.country_city || null) : form.city } : {}),
+        ...(form.city === 'خارج سوريا' ? { country: form.country || '' } : {}),
         ...(cfg.show_motivation ? { motivation: form.motivation } : {}),
         // extra_fields for this tab
         ...Object.fromEntries(
@@ -327,7 +372,7 @@ function RegistrationForm({ event, onClose, cfg, initialTab, ticketInstructions 
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Tab switcher – only show if more than 1 enabled type */}
       {enabledTypes.length > 1 && (
-        <div className="flex flex-wrap gap-2 p-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.05)' }}>
+        <div className="flex flex-wrap gap-2 p-1 rounded-lg form-tab-switcher" style={{ background: 'rgba(255,255,255,0.05)' }}>
           {enabledTypes.map(t => (
             <button key={t} type="button" onClick={() => setTab(t)}
               className={`flex-1 py-2 px-3 rounded-md text-sm font-semibold transition-all ${tab === t ? 'text-white' : 'text-[var(--text-muted)]'}`}
@@ -365,9 +410,16 @@ function RegistrationForm({ event, onClose, cfg, initialTab, ticketInstructions 
         )}
         {/* Country selector when city = خارج سوريا */}
         {cfg.show_city && form.city === 'خارج سوريا' && (
-          <div>
-            <label className="block text-sm text-[var(--text-muted)] mb-1">الدولة *</label>
-            <CountrySelect eventId={event.id} value={form.country || ''} onChange={v => set('country', v)} required />
+          <div className="md:col-span-2">
+            <label className="block text-sm text-[var(--text-muted)] mb-1">الدولة والمدينة *</label>
+            <CountrySelect
+              eventId={event.id}
+              value={form.country || ''}
+              onChange={v => set('country', v)}
+              cityValue={form.country_city || ''}
+              onCityChange={v => set('country_city', v)}
+              required
+            />
           </div>
         )}
         {cfg.show_motivation && (
@@ -675,6 +727,33 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
   const description = event?.description_ar || 'ثلاثة أيام من الإلهام، التواصل، والابتكار — لبناء مستقبل ريادة الأعمال في سوريا';
   const primaryColor = event?.primary_color || '#6C63FF';
 
+  // Build CSS variable overrides from theme_colors stored in site_config
+  const themeColors = (siteCfg as any).theme_colors || {};
+  const themeVarsStyle = Object.keys(themeColors).length > 0 ? {
+    '--primary':      themeColors.primary      || primaryColor,
+    '--primary-dark': themeColors.primary_dark || primaryColor,
+    '--accent':       themeColors.accent       || '#f59e0b',
+    '--bg-dark':      themeColors.bg_dark      || '#0d0b1a',
+    '--bg-card':      themeColors.bg_card      || '#13102a',
+    '--text':         themeColors.text         || '#e2e8f0',
+    '--text-muted':   themeColors.text_muted   || '#94a3b8',
+    '--heading':      themeColors.heading      || '#ffffff',
+    // Dark mode navbar (applied globally; light mode nav overrides via CSS vars in light block)
+    '--navbar-bg':     themeColors.navbar_bg_dark  || 'rgba(19,16,42,0.75)',
+    '--navbar-blur':   themeColors.navbar_blur === 'off' ? 'none' : 'blur(12px)',
+    '--navbar-border': themeColors.navbar_border   || 'rgba(108,99,255,0.2)',
+  } as React.CSSProperties : undefined;
+
+  // Light-mode navbar vars — injected into :root so CSS data-theme="light" block picks them up
+  const navbarBgLight = themeColors.navbar_bg_light || 'rgba(255,255,255,0.98)';
+
+  // Inject light-mode navbar color as inline style on body if customized
+  const navbarLightBg = themeColors.navbar_bg_light;
+  if (typeof document !== 'undefined' && navbarLightBg) {
+    // Set as CSS custom property on :root for light mode override
+    document.documentElement.style.setProperty('--navbar-bg-light-custom', navbarLightBg);
+  }
+
   const formatDateAr = (d: string) => {
     const date = new Date(d);
     const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
@@ -710,7 +789,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
   );
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg-dark)' }}>
+    <div className="min-h-screen" style={{ background: 'var(--bg-dark)', ...(themeVarsStyle || {}) }}>
       {/* Pixel Tracking */}
       <PixelInjector eventId={event?.id || 1} />
       {/* ── Navbar ───────────────────────────────────────────────────────────── */}
@@ -1114,7 +1193,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
             <h2 className="section-title">{cfg.form_title || 'انضم إلى القمة'}</h2>
             <p className="text-[var(--text-muted)] mt-2">{cfg.form_subtitle || 'سجّل الآن وكن جزءاً من أكبر تجمع لريادة الأعمال'}</p>
           </div>
-          <div className="card" style={{ background: 'rgba(13,11,26,0.9)' }}>
+          <div className="card" style={{ background: 'var(--bg-card)' }}>
             {event ? <RegistrationForm event={event} onClose={() => {}} cfg={cfg} initialTab={regInitialTab} /> : (
               <p className="text-center text-[var(--text-muted)] py-8">لم يتم تحميل بيانات الفعالية.</p>
             )}
@@ -1296,7 +1375,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
           <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl p-6"
                style={{ background: 'var(--bg-card)', border: '1px solid rgba(108,99,255,0.3)' }}>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-white">التسجيل في القمة</h3>
+              <h3 className="text-xl font-bold section-title" style={{ color: 'var(--heading)' }}>التسجيل في القمة</h3>
               <button onClick={() => setShowRegModal(false)} className="text-[var(--text-muted)] hover:text-white text-2xl leading-none">×</button>
             </div>
             {event && <RegistrationForm event={event} onClose={() => setShowRegModal(false)} cfg={cfg} initialTab={regInitialTab} ticketInstructions={(siteCfg as any)?.ticket_instructions} />}

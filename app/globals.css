@@ -15,7 +15,12 @@
     --panel: rgba(255, 255, 255, 0.05);
     --panel-border: rgba(255, 255, 255, 0.1);
     --footer-bg: rgba(0, 0, 0, 0.4);
+    --navbar-bg: rgba(19, 16, 42, 0.75);
+    --navbar-blur: blur(12px);
+    --navbar-border: rgba(108, 99, 255, 0.2);
     --option-bg: #1a1730;
+    --navbar-bg: rgba(19, 16, 42, 0.75);
+    --navbar-blur: 12px;
   }
 
   /* ── Light Mode ─────────────────────────────────────────────── */
@@ -31,16 +36,21 @@
     --panel-border: rgba(108, 99, 255, 0.16);
     --footer-bg: #eceefb;
     --option-bg: #ffffff;
+    --navbar-bg: rgba(255, 255, 255, 0.98);
+    --navbar-blur: none;
+    --navbar-border: rgba(108, 99, 255, 0.18);
+    --navbar-bg: rgba(255, 255, 255, 0.98);
+    --navbar-blur: 0px;
   }
   html[data-theme="light"] body {
     background-color: var(--bg-dark);
     color: var(--text);
   }
-  /* Glass / navbar — white in light mode only */
+  /* Glass / navbar — uses CSS vars, controlled by ThemeBuilder and data-theme */
   html[data-theme="light"] .glass {
-    background: rgba(255, 255, 255, 0.98);
-    backdrop-filter: none;
-    border-color: rgba(108, 99, 255, 0.18);
+    background: var(--navbar-bg);
+    backdrop-filter: var(--navbar-blur);
+    border-color: var(--navbar-border);
     box-shadow: 0 2px 16px rgba(108, 99, 255, 0.10);
   }
   /* Cards & panels */
@@ -91,9 +101,9 @@
 
 @layer utilities {
   .glass {
-    background: rgba(19, 16, 42, 0.75);
-    backdrop-filter: blur(12px);
-    border: 1px solid var(--border);
+    background: var(--navbar-bg);
+    backdrop-filter: var(--navbar-blur);
+    border: 1px solid var(--navbar-border);
   }
   .gradient-text {
     background: linear-gradient(135deg, var(--primary), var(--accent));
@@ -209,18 +219,80 @@ html[data-theme="light"] nav a {
 html[data-theme="light"] nav a:hover {
   color: var(--primary);
 }
-/* Glass / navbar: white background in light mode — must be UNLAYERED to beat @layer utilities */
-html[data-theme="light"] .glass {
-  background: rgba(255, 255, 255, 0.98) !important;
-  backdrop-filter: none !important;
-  border-color: rgba(108, 99, 255, 0.18) !important;
-  box-shadow: 0 2px 16px rgba(108, 99, 255, 0.10) !important;
+/* Glass / navbar: fully controlled by --navbar-bg CSS variable */
+
+/* ── Light mode: cards, inputs, selects ─────────────────────────── */
+html[data-theme="light"] .card,
+html[data-theme="light"] [class*="card"] {
+  background: #ffffff;
+  border-color: rgba(108, 99, 255, 0.14);
+  box-shadow: 0 2px 12px rgba(108, 99, 255, 0.06);
 }
-/* Navbar text in light mode should be dark, not white */
-html[data-theme="light"] nav .text-white,
-html[data-theme="light"] nav a.text-white,
-html[data-theme="light"] .glass .font-black {
-  color: #1e1b3a !important;
+
+/* Form fields — clear white background with visible border */
+html[data-theme="light"] .input-field,
+html[data-theme="light"] input.input-field,
+html[data-theme="light"] textarea.input-field,
+html[data-theme="light"] select.input-field {
+  background: #ffffff;
+  border: 1.5px solid rgba(108, 99, 255, 0.3);
+  color: #1e1b3a;
+  box-shadow: 0 1px 3px rgba(108, 99, 255, 0.06);
+}
+html[data-theme="light"] .input-field::placeholder {
+  color: #9ca3af;
+}
+html[data-theme="light"] .input-field:focus {
+  background: #ffffff;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.14);
+}
+
+/* Form labels */
+html[data-theme="light"] label.block,
+html[data-theme="light"] form label {
+  color: #374151;
+}
+
+/* Tab switcher inside form */
+html[data-theme="light"] .form-tab-switcher {
+  background: rgba(108, 99, 255, 0.07) !important;
+  border: 1px solid rgba(108, 99, 255, 0.18);
+}
+html[data-theme="light"] .form-tab-switcher button:not([style*="background"]) {
+  color: #4b5563;
+}
+
+/* Form modal container */
+html[data-theme="light"] form .space-y-6,
+html[data-theme="light"] .form-section {
+  color: #1e1b3a;
+}
+
+/* Checkboxes & agreements */
+html[data-theme="light"] form label,
+html[data-theme="light"] .terms-label {
+  color: #374151;
+}
+
+/* Select options in light mode */
+html[data-theme="light"] select option,
+html[data-theme="light"] select.input-field option {
+  background: #ffffff;
+  color: #1e1b3a;
+}
+
+/* Startup form section headers */
+html[data-theme="light"] form h4,
+html[data-theme="light"] form h3,
+html[data-theme="light"] form .section-title {
+  color: #1e1b3a;
+}
+
+/* section-title and headings on light */
+html[data-theme="light"] .section-title,
+html[data-theme="light"] h2.section-title {
+  color: var(--heading);
 }
 /* Keep text white on colored / gradient / dark surfaces */
 html[data-theme="light"] .btn-primary,
@@ -232,4 +304,43 @@ html[data-theme="light"] .keep-white * {
 /* Keep gradient text colorful (never flip to solid dark) */
 html[data-theme="light"] .gradient-text {
   color: transparent;
+}
+
+/* ── Light mode: registration form deep fixes ────────────────────── */
+/* Input fields: pure white + clear border */
+html[data-theme="light"] .input-field {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(108, 99, 255, 0.28) !important;
+  color: #1e1b3a !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+html[data-theme="light"] .input-field::placeholder {
+  color: #9ca3af !important;
+}
+html[data-theme="light"] .input-field:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.14) !important;
+}
+/* Tab switcher: visible subtle background */
+html[data-theme="light"] .form-tab-switcher {
+  background: rgba(108, 99, 255, 0.08) !important;
+  border: 1px solid rgba(108, 99, 255, 0.18);
+}
+/* Form labels stronger contrast */
+html[data-theme="light"] form label,
+html[data-theme="light"] form .block.text-sm {
+  color: #374151;
+}
+/* Form section subheadings */
+html[data-theme="light"] form h4 {
+  color: #1e1b3a;
+}
+/* Terms / agreement text */
+html[data-theme="light"] form span.text-sm,
+html[data-theme="light"] form .text-sm {
+  color: #4b5563;
+}
+/* Error and state messages stay readable */
+html[data-theme="light"] .text-red-400 {
+  color: #dc2626;
 }

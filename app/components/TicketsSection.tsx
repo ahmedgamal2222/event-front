@@ -117,13 +117,15 @@ export default function TicketsSection({ eventId }: { eventId: number }) {
       <div className="max-w-6xl mx-auto">
         {/* Section Header */}
         <div className="text-center mb-16">
-          <div className="inline-block mb-3 px-4 py-1.5 rounded-full text-sm font-semibold" style={{ background: 'rgba(108,99,255,0.15)', border: '1px solid rgba(108,99,255,0.4)', color: '#6C63FF' }}>
-            {config.section_badge}
-          </div>
-          <h2 className="text-4xl md:text-5xl font-black text-white mb-4" style={{ letterSpacing: '-0.02em' }}>
+          {config.section_badge && (
+            <div className="inline-block mb-3 px-4 py-1.5 rounded-full text-sm font-semibold" style={{ background: 'rgba(108,99,255,0.15)', border: '1px solid rgba(108,99,255,0.4)', color: '#6C63FF' }}>
+              {config.section_badge}
+            </div>
+          )}
+          <h2 className="text-4xl md:text-5xl font-black mb-4 section-title" style={{ letterSpacing: '-0.02em', color: 'var(--heading)' }}>
             {config.section_title}
           </h2>
-          <p className="text-lg text-[var(--text-muted)] max-w-2xl mx-auto">
+          <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--text-muted)' }}>
             {config.section_subtitle}
           </p>
         </div>
@@ -135,9 +137,8 @@ export default function TicketsSection({ eventId }: { eventId: number }) {
               key={ticket.id}
               className="group card relative overflow-hidden transition-all duration-300 hover:border-[var(--primary)]"
               style={{
-                background: 'rgba(19, 16, 42, 0.8)',
-                border: '1px solid rgba(108,99,255,0.15)',
-                backdropFilter: 'blur(10px)',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border)',
               }}
             >
               {/* Glow Effect */}
@@ -153,8 +154,8 @@ export default function TicketsSection({ eventId }: { eventId: number }) {
                 {/* Top Section - Icon & Title */}
                 <div className="mb-6">
                   <div className="text-4xl mb-3">{getDurationIcon(ticket.duration_type)}</div>
-                  <h3 className="text-2xl font-bold text-white mb-2">{ticket.name_ar}</h3>
-                  <p className="text-sm text-[var(--text-muted)]">{getDurationText(ticket.duration_type, ticket.custom_days)}</p>
+                  <h3 className="text-2xl font-bold mb-2" style={{ color: 'var(--heading)' }}>{ticket.name_ar}</h3>
+                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{getDurationText(ticket.duration_type, ticket.custom_days)}</p>
                 </div>
 
                 {/* Description */}
@@ -194,9 +195,9 @@ export default function TicketsSection({ eventId }: { eventId: number }) {
                         </div>
                         {/* Text */}
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.85rem', lineHeight: 1.3 }}>{feat.title}</div>
+                          <div style={{ color: 'var(--text)', fontWeight: 600, fontSize: '0.85rem', lineHeight: 1.3 }}>{feat.title}</div>
                           {feat.desc && (
-                            <div style={{ color: '#64748b', fontSize: '0.76rem', marginTop: '0.2rem', lineHeight: 1.4 }}>{feat.desc}</div>
+                            <div style={{ color: 'var(--text-muted)', fontSize: '0.76rem', marginTop: '0.2rem', lineHeight: 1.4 }}>{feat.desc}</div>
                           )}
                         </div>
                       </div>
@@ -213,7 +214,7 @@ export default function TicketsSection({ eventId }: { eventId: number }) {
                   }}
                 >
                   <div className="text-xs text-[var(--text-muted)] mb-1">السعر</div>
-                  <div className="text-3xl font-black text-white">
+                  <div className="text-3xl font-black" style={{ color: 'var(--heading)' }}>
                     {ticket.formattedPrice}
                   </div>
                   <div className="text-xs text-[var(--text-muted)] mt-1 opacity-70">
@@ -228,7 +229,7 @@ export default function TicketsSection({ eventId }: { eventId: number }) {
         </div>
 
         {/* Info Footer */}
-        <div className="mt-16 p-6 rounded-lg" style={{ background: 'rgba(108,99,255,0.05)', border: '1px solid rgba(108,99,255,0.15)' }}>
+        <div className="mt-16 p-6 rounded-lg" style={{ background: 'var(--panel)', border: '1px solid var(--panel-border)' }}>
           <div className="text-center">
             <p className="text-sm text-[var(--text-muted)]">
               {config.info_text}

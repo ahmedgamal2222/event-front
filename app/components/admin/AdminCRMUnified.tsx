@@ -47,6 +47,7 @@ interface Props {
   apiBase: string;
   eventId?: number;
   readOnly?: boolean;
+  onInteractionSaved?: () => void;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -85,7 +86,7 @@ const PRIORITY_LABELS: Record<string, string> = {
   urgent: 'عاجل', high: 'مرتفع', normal: 'عادي', low: 'منخفض',
 };
 
-export default function AdminCRMUnified({ token, apiBase, eventId, readOnly }: Props) {
+export default function AdminCRMUnified({ token, apiBase, eventId, readOnly, onInteractionSaved }: Props) {
 
   const roAlert = () => {
     if (readOnly) alert('أنت في وضع المشاهدة فقط. تواصل مع المسؤول الرئيسي لتفعيل صلاحياتك.');
@@ -116,7 +117,7 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly }: P
   const [assigneeSearch, setAssigneeSearch] = useState('');
 
   const [showInteraction, setShowInteraction] = useState(false);
-  const [interaction, setInteraction] = useState({ channel: 'call', direction: 'outbound', subject: '', summary: '', logged_by: '' });
+  const [interaction, setInteraction] = useState({ channel: 'call', direction: 'outbound', subject: '', summary: '' });
 
   const [adminsList, setAdminsList] = useState<AdminUser[]>([]);
   const [countries, setCountries] = useState<Country[]>([]);
@@ -347,9 +348,9 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly }: P
   const loadContacts = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page: String(page), limit: '30' });
+      const params = new URLSearchParams({ page: String(page), limit: '50' });
       if (search) params.set('search', search);
-      if (eventId) params.set('event_id', String(eventId)); // فلترة per-event
+      if (eventId) params.set('event_id', String(eventId)); // per-event contacts
       const res = await fetch(`${apiBase}/api/crm/contacts?${params}`, { headers });
       const d = await res.json();
       if (d.success) { setContacts(d.data); setTotal(d.total); }
@@ -428,14 +429,20 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly }: P
   };
 
   const logInteraction = async () => {
-    if (!selected || !interaction.logged_by) return alert('أدخل اسمك أولاً');
+    if (!selected || !interaction.subject) return alert('يرجى كتابة موضوع التواصل');
+    const currentUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('admin_user') || '{}') : {};
+    const loggedBy = currentUser.name || currentUser.email || 'admin';
     const res = await fetch(`${apiBase}/api/crm/interactions`, {
       method: 'POST', headers,
-      body: JSON.stringify({ ...interaction, contact_id: selected.id }),
+      body: JSON.stringify({ ...interaction, contact_id: selected.id, logged_by: loggedBy, event_id: eventId || null }),
     });
     const d = await res.json();
-    if (d.success) { setShowInteraction(false); openContact(selected.id); }
-    else alert(d.error);
+    if (d.success) {
+      setShowInteraction(false);
+      setInteraction({ channel: 'call', direction: 'outbound', subject: '', summary: '' });
+      if (onInteractionSaved) onInteractionSaved();
+      else openContact(selected.id);
+    } else alert(d.error);
   };
 
   const filteredAdmins = adminsList.filter(a =>

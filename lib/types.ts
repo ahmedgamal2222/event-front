@@ -19,6 +19,20 @@ export interface TicketInstructions {
   general_success_title?: string;
 }
 
+export interface ThemeColors {
+  primary?: string;
+  primary_dark?: string;
+  accent?: string;
+  bg_dark?: string;
+  bg_card?: string;
+  text?: string;
+  text_muted?: string;
+  heading?: string;
+  navbar_bg_dark?: string;  // خلفية الناف بار في الوضع الليلي
+  navbar_bg_light?: string; // خلفية الناف بار في الوضع النهاري
+  navbar_blur?: string;     // 'on' | 'off'
+}
+
 export interface SiteConfig {
   hero_abbr: string;
   hero_btn_primary: string;
@@ -28,6 +42,7 @@ export interface SiteConfig {
   about_title: string;
   about_cards: Array<{ emoji: string; icon?: string; title: string; desc: string }>;
   logo_url?: string;
+  theme_colors?: ThemeColors;
   logo_position?: 'navbar' | 'footer' | 'both';
   archive_link_enabled?: boolean;
   archive_link_label?:   string;

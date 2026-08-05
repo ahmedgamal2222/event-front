@@ -43,6 +43,12 @@ export default function AdminCRMMain({ token, apiBase, eventId, isSuperAdmin, my
   });
 
   const [view, setView] = useState<View>(allowedViews[0]?.key || 'registrations');
+  const [interactionsKey, setInteractionsKey] = useState(0);
+
+  const goToInteractions = () => {
+    setInteractionsKey(k => k + 1); // force remount to reload data
+    setView('interactions');
+  };
 
   useEffect(() => {
     if (allowedViews.length > 0 && !allowedViews.find(v => v.key === view)) {
@@ -90,9 +96,9 @@ export default function AdminCRMMain({ token, apiBase, eventId, isSuperAdmin, my
         ))}
         <span style={{ marginRight: 'auto', color: '#4b5563', fontSize: '0.75rem' }}>{current.desc}</span>
       </div>
-      {view === 'registrations' && <AdminEventRegistrations key={`regs-${eventId}`} token={token} eventId={eventId} readOnly={readOnly} />}
-      {view === 'contacts' && <AdminCRMUnified key={`contacts-${eventId}`} token={token} apiBase={apiBase} eventId={eventId} readOnly={readOnly} />}
-      {view === 'interactions' && <AdminInteractions key={`inter-${eventId}`} token={token} apiBase={apiBase} eventId={eventId} readOnly={readOnly} />}
+      {view === 'registrations' && <AdminEventRegistrations key={`regs-${eventId}`} token={token} eventId={eventId} readOnly={readOnly} onInteractionSaved={goToInteractions} />}
+      {view === 'contacts' && <AdminCRMUnified key={`contacts-${eventId}`} token={token} apiBase={apiBase} eventId={eventId} readOnly={readOnly} onInteractionSaved={goToInteractions} />}
+      {view === 'interactions' && <AdminInteractions key={`inter-${eventId}-${interactionsKey}`} token={token} apiBase={apiBase} eventId={eventId} readOnly={readOnly} />}
       {view === 'tasks' && <AdminCRMTasks key={`tasks-${eventId}`} token={token} apiBase={apiBase} eventId={eventId} mode="all" readOnly={readOnly} />}
       {view === 'escalated' && <AdminCRMTasks key={`esc-${eventId}`} token={token} apiBase={apiBase} eventId={eventId} mode="escalated" readOnly={readOnly} />}
     </div>
