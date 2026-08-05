@@ -797,7 +797,18 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             {(siteCfg.logo_position === 'navbar' || siteCfg.logo_position === 'both') && siteCfg.logo_url && (
-              <img src={siteCfg.logo_url} alt="logo" className="h-10 object-contain" />
+              <img 
+                src={siteCfg.logo_url} 
+                alt="logo" 
+                className="h-10 object-contain" 
+                style={{
+                  background: theme === 'dark' ? 'rgba(255, 255, 255, 0.95)' : 'transparent',
+                  padding: theme === 'dark' ? '8px 12px' : '0',
+                  borderRadius: theme === 'dark' ? '10px' : '0',
+                  boxShadow: theme === 'dark' ? '0 4px 12px rgba(108, 99, 255, 0.2)' : 'none',
+                  transition: 'all 0.3s ease'
+                }}
+              />
             )}
             <a href="#" className="font-black text-xl text-white" style={{ letterSpacing: '-0.02em' }}>
               <span style={{ color: primaryColor }}>{event?.name?.split(' ')[0] || 'S3'}</span> {event?.name?.split(' ').slice(1).join(' ') || 'Summit'}
@@ -1263,7 +1274,18 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
         </div>
         {(siteCfg.logo_position === 'footer' || siteCfg.logo_position === 'both') && siteCfg.logo_url && (
           <div className="max-w-6xl mx-auto mt-8 pt-6 pb-6 text-center" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-            <img src={siteCfg.logo_url} alt="logo" className="h-12 object-contain mx-auto mb-4" />
+            <img 
+              src={siteCfg.logo_url} 
+              alt="logo" 
+              className="h-12 object-contain mx-auto mb-4" 
+              style={{
+                background: theme === 'dark' ? 'rgba(255, 255, 255, 0.95)' : 'transparent',
+                padding: theme === 'dark' ? '12px 16px' : '0',
+                borderRadius: theme === 'dark' ? '12px' : '0',
+                boxShadow: theme === 'dark' ? '0 4px 16px rgba(108, 99, 255, 0.25)' : 'none',
+                transition: 'all 0.3s ease'
+              }}
+            />
           </div>
         )}
         <div className="max-w-6xl mx-auto pt-6 text-center text-sm text-[var(--text-muted)]" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
