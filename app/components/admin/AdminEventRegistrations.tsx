@@ -768,15 +768,10 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                   return (
                     <tr
                       key={reg.id}
-                      onClick={() => { setSelected(reg); setShowTaskForm(false); setShowInteraction(false); }}
                       style={{
                         borderTop: '1px solid rgba(255,255,255,0.04)',
-                        cursor: 'pointer',
-                        background: isSelected ? 'rgba(108,99,255,0.1)' : 'transparent',
-                        transition: 'background 0.1s',
+                        background: 'transparent',
                       }}
-                      onMouseEnter={e => { if (!isSelected) (e.currentTarget.style.background = 'rgba(255,255,255,0.025)'); }}
-                      onMouseLeave={e => { if (!isSelected) (e.currentTarget.style.background = 'transparent'); }}
                     >
                       {/* الاسم */}
                       <td style={{ padding: '0.55rem 0.85rem' }}>
