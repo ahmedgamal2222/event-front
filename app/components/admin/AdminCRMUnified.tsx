@@ -704,7 +704,6 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly, onI
                     })}
                   </div>
                 )}
-                {selected.notes && <div style={{ marginTop: 10, background: 'rgba(255,255,255,0.04)', borderRadius: '0.5rem', padding: '8px 12px', color: '#cbd5e1', fontSize: '0.82rem' }}>📝 {selected.notes}</div>}
               </>
             )}
 

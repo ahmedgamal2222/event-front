@@ -44,10 +44,6 @@ export default function AdminManagement({ token, apiBase }: Props) {
   const me = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('admin_user') || '{}') : {};
   const headers = { Authorization: `Bearer ${token}` };
 
-  // Find current user from admins list to get accurate role
-  const currentAdmin = admins.find(a => a.id === me.id) || me;
-  const isSuperAdmin = currentAdmin.role === 'super_admin';
-
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -178,7 +174,7 @@ export default function AdminManagement({ token, apiBase }: Props) {
               </div>
 
               {/* Actions (super admin only, not self) */}
-              {isSuperAdmin && !isSelf && (
+              {me.role === 'super_admin' && !isSelf && (
                 <div style={{ display: 'flex', gap: 6, flexShrink: 0, flexWrap: 'wrap' }}>
                   {admin.approval_status === 'pending' && (
                     <>
