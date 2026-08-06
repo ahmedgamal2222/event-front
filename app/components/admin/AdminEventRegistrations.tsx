@@ -442,18 +442,11 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
   const [assigneeSearch, setAssigneeSearch] = useState('');
   const [extraAssignees, setExtraAssignees] = useState<number[]>([]);
 
-  // Multi-type editing
-  const [showTypeEdit, setShowTypeEdit] = useState(false);
-  const [pendingTypes, setPendingTypes] = useState<string[]>([]);
+  // Type config (read-only now - for display purposes only)
   const [formConfigTypes, setFormConfigTypes] = useState<string[]>([]);
   const [formConfigLabels, setFormConfigLabels] = useState<Record<string, string>>({});
 
-  // Add new type feature
-  const [showAddType, setShowAddType] = useState(false);
-  const [newTypeKey, setNewTypeKey] = useState('');
-  const [newTypeLabel, setNewTypeLabel] = useState('');
-  const [newTypeIcon, setNewTypeIcon] = useState('👤');
-  const [savingNewType, setSavingNewType] = useState(false);
+  // [Removed] Type editing states - moved to contacts tab
 
   // Interaction logging
   const [showInteraction, setShowInteraction] = useState(false);
@@ -649,77 +642,8 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
     } finally { setSavingTask(false); }
   };
 
-  // Save additional types (reg_types field)
-  const saveTypes = async () => {
-    if (!selected) return;
-    const typesStr = pendingTypes.join(',');
-    await fetch(`${API_BASE}/api/events/${eventId}/registrations/${selected.id}`, {
-      method: 'PUT', headers, body: JSON.stringify({ reg_types: typesStr }),
-    });
-    setRegs(prev => prev.map(r => r.id === selected.id ? { ...r, reg_types: typesStr } : r));
-    setSelected(s => s ? { ...s, reg_types: typesStr } : null);
-    setShowTypeEdit(false);
-  };
-
-  // Add new registration type
-  const addNewType = async () => {
-    if (!newTypeKey || !newTypeLabel) {
-      alert('يرجى ملء اسم المفتاح والتسمية');
-      return;
-    }
-    
-    // Validate key format (no spaces, lowercase)
-    const cleanKey = newTypeKey.toLowerCase().replace(/\s+/g, '_');
-    if (formConfigTypes.includes(cleanKey) || REG_TYPE_CONFIG[cleanKey]) {
-      alert('هذا النوع موجود مسبقاً');
-      return;
-    }
-
-    setSavingNewType(true);
-    try {
-      // Update form_config in event
-      const newTypes = [...formConfigTypes, cleanKey];
-      const newLabels = { ...formConfigLabels, [cleanKey]: newTypeLabel };
-      
-      // Add to local REG_TYPE_CONFIG
-      (REG_TYPE_CONFIG as any)[cleanKey] = {
-        label: newTypeLabel,
-        color: '#6b7280',
-        icon: newTypeIcon || '👤'
-      };
-
-      const res = await fetch(`${API_BASE}/api/events/${eventId}`, { headers });
-      const eventData = await res.json();
-      
-      let formConfig: any = {};
-      if (eventData.data?.form_config) {
-        try {
-          formConfig = JSON.parse(eventData.data.form_config);
-        } catch {}
-      }
-
-      formConfig.enabled_types = newTypes;
-      formConfig.type_labels = newLabels;
-
-      await fetch(`${API_BASE}/api/events/${eventId}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({ form_config: JSON.stringify(formConfig) })
-      });
-
-      setFormConfigTypes(newTypes);
-      setFormConfigLabels(newLabels);
-      setShowAddType(false);
-      setNewTypeKey('');
-      setNewTypeLabel('');
-      setNewTypeIcon('👤');
-      alert('✅ تم إضافة النوع بنجاح');
-    } catch (err) {
-      alert('حدث خطأ في الإضافة');
-    } finally {
-      setSavingNewType(false);
-    }
-  };
+  // [Removed] saveTypes and addNewType functions - registrations now read-only
+  // All type management moved to contacts tab
 
   // Save interaction log
   const saveInteraction = async () => {
@@ -918,36 +842,7 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                               })}
                             </div>
                           )}
-                          {/* Quick add type button */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (roAlert()) return;
-                              setSelected(reg);
-                              const cur = reg.reg_types ? reg.reg_types.split(',').filter(Boolean) : [];
-                              setPendingTypes(cur);
-                              setShowTypeEdit(true);
-                            }}
-                            disabled={readOnly}
-                            style={{
-                              background: 'rgba(16,185,129,0.12)',
-                              border: '1px solid rgba(16,185,129,0.3)',
-                              color: '#34d399',
-                              borderRadius: 4,
-                              padding: '2px 6px',
-                              fontSize: '0.65rem',
-                              fontWeight: 600,
-                              cursor: readOnly ? 'not-allowed' : 'pointer',
-                              marginTop: 2,
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 2,
-                              ...(readOnly ? roStyle : {})
-                            }}
-                            title={readOnly ? 'وضع المشاهدة فقط' : 'إضافة نوع إضافي'}
-                          >
-                            ➕ نوع
-                          </button>
+                          {/* [Removed] Quick add type button - registrations now read-only */}
                         </div>
                       </td>
                       {/* المدينة */}
@@ -1178,180 +1073,6 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
             </div>
           </div>
 
-          {/* Task form removed - use contacts tab */}
-          {/* Multi-type edit removed - use contacts tab */}
-          {/* Interaction form removed - use contacts tab */}
-            <div style={{ ...S.card, borderColor: 'rgba(16,185,129,0.35)', background: 'rgba(16,185,129,0.05)' }}>
-              <div style={{ color: '#34d399', fontWeight: 700, fontSize: '0.88rem', marginBottom: 12 }}>
-                🏷️ الأنواع الإضافية — {getName(selected)}
-              </div>
-              <div style={{ color: '#64748b', fontSize: '0.75rem', marginBottom: 10 }}>
-                النوع الأساسي: <strong style={{ color: '#a5f3fc' }}>{getType(selected)}</strong><br/>
-                أضف أنواعاً إضافية (مثل: راعٍ ومستثمر في نفس الوقت)
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-                {(formConfigTypes.length > 0 ? formConfigTypes : Object.keys(REG_TYPE_CONFIG)).map(k => {
-                  const v = REG_TYPE_CONFIG[k] || { label: formConfigLabels[k] || k, color: '#6b7280', icon: '\uD83D\uDC64' };
-                  const lbl = formConfigLabels[k] || v.label;
-                  const isPrimary = (selected.reg_type || selected.type) === k;
-                  const isChosen = pendingTypes.includes(k);
-                  return (
-                    <button key={k}
-                      onClick={() => {
-                        if (isPrimary) return;
-                        // Toggle: add if not present, remove if already added
-                        setPendingTypes(prev => prev.includes(k) ? prev.filter(x=>x!==k) : [...prev, k]);
-                      }}
-                      style={{
-                        padding: '0.4rem 0.9rem', borderRadius: 6, fontSize: '0.8rem', fontWeight: 600,
-                        cursor: isPrimary ? 'default' : 'pointer',
-                        border: `1px solid ${isPrimary ? v.color + '80' : isChosen ? v.color + '80' : 'rgba(255,255,255,0.12)'}`,
-                        background: isPrimary ? v.color + '30' : isChosen ? v.color + '20' : 'transparent',
-                        color: isPrimary ? v.color : isChosen ? v.color : '#64748b',
-                        opacity: isPrimary ? 0.7 : 1,
-                        display: 'flex', alignItems: 'center', gap: 5,
-                      }}>
-                      {v.icon} {lbl}
-                      {isPrimary && <span style={{ fontSize: '0.65rem', opacity: 0.7 }}>(أساسي)</span>}
-                      {isChosen && !isPrimary && <span style={{ fontSize: '0.7rem' }}>✓</span>}
-                    </button>
-                  );
-                })}
-                {/* Add new type button */}
-                <button
-                  onClick={() => setShowAddType(true)}
-                  style={{
-                    padding: '0.4rem 0.9rem', borderRadius: 6, fontSize: '0.8rem', fontWeight: 600,
-                    cursor: 'pointer',
-                    border: '1px dashed rgba(108,99,255,0.5)',
-                    background: 'rgba(108,99,255,0.1)',
-                    color: '#a5b4fc',
-                    display: 'flex', alignItems: 'center', gap: 5,
-                  }}
-                  title="إضافة نوع جديد"
-                >
-                  ➕ نوع جديد
-                </button>
-              </div>
-              <button onClick={saveTypes} style={{ ...S.btn('#10b981') }}>💾 حفظ الأنواع</button>
-            </div>
-          )}
-
-          {/* Add New Type Modal */}
-          {showAddType && (
-            <div style={{
-              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', 
-              display: 'flex', alignItems: 'center', justifyContent: 'center', 
-              zIndex: 999, padding: '1rem'
-            }}>
-              <div style={{ 
-                ...S.card, 
-                maxWidth: 480, 
-                width: '100%',
-                borderColor: 'rgba(108,99,255,0.4)'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <h3 style={{ color: 'white', fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>➕ إضافة نوع تسجيل جديد</h3>
-                  <button 
-                    onClick={() => setShowAddType(false)} 
-                    style={{ ...S.btn('#374151'), padding: '0.3rem 0.6rem' }}
-                  >✕</button>
-                </div>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <div>
-                    <label style={S.label}>🔑 مفتاح النوع (بالإنجليزي)</label>
-                    <input 
-                      value={newTypeKey}
-                      onChange={e => setNewTypeKey(e.target.value)}
-                      placeholder="مثال: investor_angel"
-                      style={{ ...S.inp, textTransform: 'lowercase' }}
-                      dir="ltr"
-                    />
-                    <div style={{ color: '#64748b', fontSize: '0.7rem', marginTop: 4 }}>استخدم حروف إنجليزية صغيرة وشرطة سفلية (_)</div>
-                  </div>
-                  
-                  <div>
-                    <label style={S.label}>🏷️ التسمية (بالعربي)</label>
-                    <input 
-                      value={newTypeLabel}
-                      onChange={e => setNewTypeLabel(e.target.value)}
-                      placeholder="مثال: مستثمر ملائكي"
-                      style={S.inp}
-                      dir="rtl"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label style={S.label}>😀 أيقونة</label>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <input 
-                        value={newTypeIcon}
-                        onChange={e => setNewTypeIcon(e.target.value)}
-                        placeholder="👤"
-                        style={{ ...S.inp, width: 80, textAlign: 'center', fontSize: '1.2rem' }}
-                        maxLength={2}
-                      />
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, flex: 1 }}>
-                        {['👤','🚀','💼','🎙️','🏅','📹','⭐','🤝','💰','🔬','🎨','📚','⚙️','🌐','🏢'].map(icon => (
-                          <button
-                            key={icon}
-                            onClick={() => setNewTypeIcon(icon)}
-                            style={{
-                              background: newTypeIcon === icon ? 'rgba(108,99,255,0.3)' : 'rgba(255,255,255,0.05)',
-                              border: `1px solid ${newTypeIcon === icon ? '#6C63FF' : 'rgba(255,255,255,0.1)'}`,
-                              borderRadius: 6,
-                              padding: '0.4rem',
-                              cursor: 'pointer',
-                              fontSize: '1.1rem',
-                              lineHeight: 1
-                            }}
-                          >{icon}</button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div style={{ 
-                    background: 'rgba(108,99,255,0.1)', 
-                    borderRadius: 8, 
-                    padding: '0.75rem 1rem',
-                    border: '1px solid rgba(108,99,255,0.2)'
-                  }}>
-                    <div style={{ color: '#a5b4fc', fontSize: '0.75rem', fontWeight: 600, marginBottom: 6 }}>معاينة:</div>
-                    <span style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      background: 'rgba(108,99,255,0.2)',
-                      color: '#a5b4fc',
-                      padding: '0.5rem 0.9rem',
-                      borderRadius: 8,
-                      fontSize: '0.85rem',
-                      fontWeight: 600
-                    }}>
-                      <span style={{ fontSize: '1.1rem' }}>{newTypeIcon || '👤'}</span>
-                      {newTypeLabel || 'اسم النوع'}
-                    </span>
-                  </div>
-                  
-                  <button 
-                    onClick={addNewType}
-                    disabled={savingNewType || !newTypeKey || !newTypeLabel}
-                    style={{
-                      ...S.btn('#10b981'),
-                      opacity: (!newTypeKey || !newTypeLabel) ? 0.5 : 1,
-                      cursor: (!newTypeKey || !newTypeLabel) ? 'not-allowed' : 'pointer'
-                    }}
-                  >
-                    {savingNewType ? '⏳ جاري الإضافة...' : '✅ إضافة النوع'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Interaction form (item 8) */}
           {/* Task form, interaction form, multi-type removed - use contacts tab instead */}
 
           {/* Contact Log Modal */}
