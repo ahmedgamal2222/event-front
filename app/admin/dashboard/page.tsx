@@ -295,22 +295,34 @@ function AdminDashboardInner() {
       localStorage.removeItem('admin_user');
       router.replace('/admin');
     };
-    // Load user info and determine role
+    // Load user info and determine role, then load permissions
     fetch(`${API_BASE}/api/auth/me`, { headers: { Authorization: `Bearer ${t}` } })
       .then(r => {
         if (r.status === 401 || r.status === 403) { handleExpired(); return null; }
         return r.json();
       })
-      .then(d => {
+      .then(async d => {
         if (!d) return;
         if (d.success && d.data) {
-          // Determine if super admin based on role
           const role = d.data.role || 'admin';
           setIsSuperAdmin(role === 'super_admin');
           setCurrentRole(role);
-          // Store user info
           if (typeof window !== 'undefined') {
             localStorage.setItem('admin_user', JSON.stringify({ ...d.data, role }));
+          }
+          // Load permissions for non-super-admin
+          if (role !== 'super_admin') {
+            try {
+              const permRes = await fetch(`${API_BASE}/api/auth/me/permissions`, { headers: { Authorization: `Bearer ${t}` } });
+              const permData = await permRes.json();
+              if (permData.success && !permData.isSuperAdmin && permData.permissions) {
+                const parsed = permData.permissions.map((p: any) => ({
+                  event_id: p.event_id,
+                  sections: (() => { try { return JSON.parse(p.sections); } catch { return Array.isArray(p.sections) ? p.sections : []; } })(),
+                }));
+                setMyPermissions(parsed);
+              }
+            } catch {}
           }
         }
       }).catch(() => setIsSuperAdmin(true)); // fallback: treat as super admin on error
