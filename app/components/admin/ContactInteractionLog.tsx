@@ -44,10 +44,9 @@ interface Props {
   contactName?: string;
   token: string;
   apiBase: string;
-  onClose: () => void;
 }
 
-export default function ContactInteractionLog({ contactId, contactName, token, apiBase, onClose }: Props) {
+export default function ContactInteractionLog({ contactId, contactName, token, apiBase }: Props) {
   const [interactions, setInteractions] = useState<Interaction[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,15 +54,26 @@ export default function ContactInteractionLog({ contactId, contactName, token, a
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
   useEffect(() => {
-    loadData();
+    if (contactId) {
+      loadData();
+    }
   }, [contactId]);
 
   const loadData = async () => {
+    if (!contactId || contactId === 0) {
+      console.warn('❌ ContactInteractionLog: Invalid contactId', contactId);
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
     try {
+      console.log('🔍 Loading interactions for contact_id:', contactId);
       // جلب كل التواصلات لجهة الاتصال
       const res = await fetch(`${apiBase}/api/crm/interactions?contact_id=${contactId}`, { headers });
       const data = await res.json();
+      
+      console.log('✅ Interactions loaded:', data.success, 'Count:', data.data?.length || 0);
       
       if (data.success) {
         const items = data.data || [];
@@ -87,7 +97,7 @@ export default function ContactInteractionLog({ contactId, contactName, token, a
         });
       }
     } catch (err) {
-      console.error('Failed to load interactions:', err);
+      console.error('❌ Failed to load interactions:', err);
     } finally {
       setLoading(false);
     }
@@ -98,54 +108,42 @@ export default function ContactInteractionLog({ contactId, contactName, token, a
     hour: '2-digit', minute: '2-digit' 
   });
 
-  return (
-    <div style={{ 
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
-      background: 'rgba(0,0,0,0.7)', zIndex: 999, 
-      display: 'flex', alignItems: 'center', justifyContent: 'center', 
-      padding: 20 
-    }} onClick={onClose}>
-      <div style={{ 
-        background: '#1a1537', borderRadius: '1rem', 
-        maxWidth: 900, width: '100%', maxHeight: '90vh', 
-        overflow: 'auto', border: '1px solid rgba(108,99,255,0.3)',
-        boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
-      }} onClick={e => e.stopPropagation()}>
-        
-        {/* Header */}
-        <div style={{ 
-          padding: '1.5rem 2rem', 
-          borderBottom: '1px solid rgba(108,99,255,0.2)',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-        }}>
-          <div>
-            <h2 style={{ margin: 0, color: 'white', fontSize: '1.3rem', fontWeight: 700 }}>
-              💬 سجل التواصل الكامل
-            </h2>
-            {contactName && (
-              <p style={{ margin: '4px 0 0', color: '#94a3b8', fontSize: '0.85rem' }}>
-                لـ: <strong style={{ color: '#a5b4fc' }}>{contactName}</strong>
-              </p>
-            )}
-          </div>
-          <button onClick={onClose} style={{ 
-            background: 'rgba(255,255,255,0.1)', 
-            border: 'none', borderRadius: '0.5rem', 
-            color: 'white', padding: '0.5rem 1rem', 
-            cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 
-          }}>
-            ✕ إغلاق
-          </button>
-        </div>
+  if (!contactId || contactId === 0) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center' }}>
+        <div style={{ fontSize: '2rem', marginBottom: 8 }}>⚠️</div>
+        <p style={{ color: '#ef4444', fontWeight: 600, margin: 0 }}>
+          خطأ: معرّف جهة الاتصال غير صحيح
+        </p>
+        <p style={{ color: '#64748b', fontSize: '0.8rem', marginTop: 4 }}>
+          contactId: {String(contactId)}
+        </p>
+      </div>
+    );
+  }
 
-        {/* Content */}
-        <div style={{ padding: '1.5rem 2rem' }}>
-          {loading ? (
-            <p style={{ color: '#64748b', textAlign: 'center', padding: '2rem' }}>جاري التحميل...</p>
-          ) : (
-            <>
-              {/* Statistics */}
-              {stats && (
+  return (
+    <div>
+      {/* Header */}
+      <div style={{ 
+        padding: '0.5rem 0', 
+        marginBottom: '1rem'
+      }}>
+        {contactName && (
+          <p style={{ margin: '4px 0 0', color: '#94a3b8', fontSize: '0.85rem' }}>
+            لـ: <strong style={{ color: '#a5b4fc' }}>{contactName}</strong>
+          </p>
+        )}
+      </div>
+
+      {/* Content */}
+      <div>
+        {loading ? (
+          <p style={{ color: '#64748b', textAlign: 'center', padding: '2rem' }}>جاري التحميل...</p>
+        ) : (
+          <>
+            {/* Statistics */}
+            {stats && stats.total > 0 && (
                 <div style={{ 
                   display: 'grid', 
                   gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', 
@@ -300,15 +298,6 @@ export default function ContactInteractionLog({ contactId, contactName, token, a
                             {item.event_name_ar && <span>📍 {item.event_name_ar}</span>}
                           </div>
                         </div>
-
-                        {/* Timeline indicator */}
-                        {idx < interactions.length - 1 && (
-                          <div style={{ 
-                            position: 'absolute', right: 49, top: 50, 
-                            width: 2, height: 10, 
-                            background: 'rgba(108,99,255,0.2)' 
-                          }} />
-                        )}
                       </div>
                     ))}
                   </div>
@@ -316,7 +305,6 @@ export default function ContactInteractionLog({ contactId, contactName, token, a
               </div>
             </>
           )}
-        </div>
       </div>
     </div>
   );

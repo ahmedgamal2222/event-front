@@ -1056,7 +1056,11 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                 </div>
                 <button
                   onClick={() => {
-                    setSelectedContactForLog({ id: selected.contact_id!, name: getName(selected) });
+                    if (!selected.contact_id) {
+                      alert('⚠️ هذا التسجيل لا يحتوي على معرّف جهة اتصال (contact_id).\nيجب تحويل التسجيل إلى جهة اتصال أولاً.');
+                      return;
+                    }
+                    setSelectedContactForLog({ id: selected.contact_id, name: getName(selected) });
                     setShowContactLog(true);
                   }}
                   style={{
@@ -1173,8 +1177,12 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
               {(converted.has(selected.id) || selected.contact_id) && (
                 <button
                   onClick={() => {
+                    if (!selected.contact_id) {
+                      alert('⚠️ هذا التسجيل لا يحتوي على معرّف جهة اتصال (contact_id).\nيجب تحويل التسجيل إلى جهة اتصال أولاً.');
+                      return;
+                    }
                     setSelectedContactForLog({
-                      id: selected.contact_id!,
+                      id: selected.contact_id,
                       name: getName(selected)
                     });
                     setShowContactLog(true);
