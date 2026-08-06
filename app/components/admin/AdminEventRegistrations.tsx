@@ -3,16 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
 
-const COUNTRIES = ['Syria','Lebanon','Jordan','Iraq','Saudi Arabia','UAE','Kuwait','Qatar','Bahrain','Oman','Egypt','Libya','Tunisia','Algeria','Morocco','Sudan','Yemen','Palestine','Turkey','Germany','France','UK','USA','Canada','Australia','Sweden','Netherlands','Belgium','Switzerland'];
-const COUNTRY_CITIES: Record<string, string[]> = {
-  Syria: ['دمشق','حلب','حمص','اللاذقية','حماة','دير الزور','الرقة','إدلب','درعا','السويداء','طرطوس','القامشلي'],
-  Lebanon: ['بيروت','طرابلس','صيدا','صور','زحلة'],
-  Jordan: ['عمّان','إربد','الزرقاء','العقبة'],
-  Iraq: ['بغداد','البصرة','الموصل','أربيل'],
-  'Saudi Arabia': ['الرياض','جدة','مكة المكرمة','المدينة المنورة','الدمام'],
-  UAE: ['دبي','أبوظبي','الشارقة','عجمان'],
-  Egypt: ['القاهرة','الإسكندرية','الجيزة'],
-};
+const SYRIA_CITIES = ['دمشق','حلب','حمص','اللاذقية','حماة','دير الزور','الرقة','إدلب','درعا','السويداء','طرطوس','القامشلي','خارج سوريا'];
 
 const S = {
   inp: { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '0.5rem', padding: '0.55rem 0.85rem', color: 'white', outline: 'none', width: '100%', fontSize: '0.9rem', colorScheme: 'dark' } as React.CSSProperties,
@@ -797,7 +788,9 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                         </div>
                       </td>
                       {/* البريد */}
-                      <td style={{ padding: '0.55rem 0.85rem', color: '#64748b', fontSize: '0.75rem', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{reg.email || '—'}</td>
+                      <td style={{ padding: '0.55rem 0.85rem', color: '#64748b', fontSize: '0.75rem', width: 170 }}>
+                        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>{reg.email || '—'}</div>
+                      </td>
                       {/* قناة التواصل */}
                       <td style={{ padding: '0.4rem 0.7rem' }}>
                         {reg.communication_channel ? (
@@ -936,11 +929,16 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
               }
               setSavingManualReg(true);
               try {
+                const isOutsideSyria = manualRegForm.city === 'خارج سوريا';
+                const { ...rest } = manualRegForm as any;
                 const payload = {
                   event_id: eventId,
-                  ...manualRegForm,
+                  ...rest,
+                  city: isOutsideSyria ? (rest.country_city || null) : manualRegForm.city,
+                  country: isOutsideSyria ? manualRegForm.country : 'Syria',
                   source: 'admin_manual'
                 };
+                delete payload.country_city;
                 const res = await fetch(`${API_BASE}/api/events/${eventId}/registrations`, {
                   method: 'POST',
                   headers,
@@ -973,7 +971,7 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                 </div>
                 <div>
                   <label style={S.label}>رقم الهاتف</label>
-                  <input style={S.inp} value={manualRegForm.phone} onChange={e => setManualRegForm(f => ({ ...f, phone: e.target.value }))} />
+                  <input style={S.inp} value={manualRegForm.phone} onChange={e => setManualRegForm(f => ({ ...f, phone: e.target.value }))} placeholder="+963..." />
                 </div>
                 <div>
                   <label style={S.label}>نوع التسجيل *</label>
@@ -984,24 +982,30 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                   </select>
                 </div>
                 {/* [Removed] Status field - will be set in contacts tab */}
-                <div>
-                  <label style={S.label}>الدولة</label>
-                  <select style={S.inp} value={manualRegForm.country} onChange={e => setManualRegForm(f => ({ ...f, country: e.target.value, city: '' }))}>
-                    <option value="">— اختر الدولة —</option>
-                    {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                {/* City — Syria-first pattern */}
+                <div style={{ gridColumn: '1/-1' }}>
+                  <label style={S.label}>المدينة</label>
+                  <select style={S.inp} value={manualRegForm.city} onChange={e => setManualRegForm(f => ({ ...f, city: e.target.value, country: e.target.value === 'خارج سوريا' ? '' : 'Syria' }))}>
+                    <option value="">— اختر المدينة —</option>
+                    {SYRIA_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
-                <div>
-                  <label style={S.label}>المدينة</label>
-                  {(COUNTRY_CITIES[manualRegForm.country] || []).length > 0 ? (
-                    <select style={S.inp} value={manualRegForm.city} onChange={e => setManualRegForm(f => ({ ...f, city: e.target.value }))}>
-                      <option value="">— اختر المدينة —</option>
-                      {(COUNTRY_CITIES[manualRegForm.country] || []).map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                  ) : (
-                    <input style={S.inp} value={manualRegForm.city} onChange={e => setManualRegForm(f => ({ ...f, city: e.target.value }))} placeholder="المدينة" />
-                  )}
-                </div>
+                {/* Outside Syria: country + city */}
+                {manualRegForm.city === 'خارج سوريا' && (
+                  <>
+                    <div>
+                      <label style={S.label}>الدولة *</label>
+                      <select style={S.inp} value={manualRegForm.country} onChange={e => setManualRegForm(f => ({ ...f, country: e.target.value }))}>
+                        <option value="">— اختر الدولة —</option>
+                        {['Lebanon','Jordan','Iraq','Saudi Arabia','UAE','Kuwait','Qatar','Bahrain','Oman','Egypt','Libya','Tunisia','Algeria','Morocco','Sudan','Yemen','Palestine','Turkey','Germany','France','UK','USA','Canada','Australia','Sweden','Netherlands','Belgium','Switzerland'].map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={S.label}>المدينة (اختياري)</label>
+                      <input style={S.inp} value={manualRegForm.city === 'خارج سوريا' ? '' : ''} onChange={e => setManualRegForm(f => ({ ...f, country_city: e.target.value } as any))} placeholder="أدخل اسم المدينة" />
+                    </div>
+                  </>
+                )}
                 <div>
                   <label style={S.label}>قناة التواصل (أدمن فقط)</label>
                   <select style={S.inp} value={manualRegForm.communication_channel} onChange={e => setManualRegForm(f => ({ ...f, communication_channel: e.target.value }))}>
