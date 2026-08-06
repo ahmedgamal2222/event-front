@@ -175,7 +175,7 @@ export default function AdminInteractions({ token, apiBase, eventId, readOnly }:
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
         <div>
-          <h2 style={{ color: 'white', fontWeight: 700, fontSize: '1.2rem', margin: 0 }}>💬 سجل التواصل الاحترافي</h2>
+          <h2 style={{ color: 'white', fontWeight: 700, fontSize: '1.2rem', margin: 0 }}>💬 سجل التواصل</h2>
           <p style={{ color: '#64748b', fontSize: '0.8rem', margin: '4px 0 0' }}>
             {viewMode === 'grouped' 
               ? `${groupedPeople.length} شخص • ${total} تواصل` 
