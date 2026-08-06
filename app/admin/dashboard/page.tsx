@@ -295,25 +295,23 @@ function AdminDashboardInner() {
       localStorage.removeItem('admin_user');
       router.replace('/admin');
     };
-    // Load permissions
-    fetch(`${API_BASE}/api/auth/me/permissions`, { headers: { Authorization: `Bearer ${t}` } })
+    // Load user info and determine role
+    fetch(`${API_BASE}/api/auth/me`, { headers: { Authorization: `Bearer ${t}` } })
       .then(r => {
         if (r.status === 401 || r.status === 403) { handleExpired(); return null; }
         return r.json();
       })
       .then(d => {
         if (!d) return;
-        if (d.success) {
-          setIsSuperAdmin(d.isSuperAdmin);
-          if (d.permissions) {
-            setMyPermissions(d.permissions?.map((p: any) => ({
-              event_id: p.event_id,
-              sections: (() => { try { return JSON.parse(p.sections); } catch { return p.sections === 'all' ? [] : []; } })(),
-            })) || []);
+        if (d.success && d.data) {
+          // Determine if super admin based on role
+          const role = d.data.role || 'admin';
+          setIsSuperAdmin(role === 'super_admin');
+          setCurrentRole(role);
+          // Store user info
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('admin_user', JSON.stringify({ ...d.data, role }));
           }
-          // جلب دور المستخدم الحالي
-          const savedUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('admin_user') || '{}') : {};
-          if (savedUser.role) setCurrentRole(savedUser.role);
         }
       }).catch(() => setIsSuperAdmin(true)); // fallback: treat as super admin on error
     // Load all events — try admin endpoint first, fall back to public
@@ -344,8 +342,8 @@ function AdminDashboardInner() {
           return;
         }
       } catch {}
-      // Last resort
-      if (!searchParams.get('event')) switchEvent(1);
+      // If no events found, show message
+      console.warn('No events found - create one first');
     };
     loadEvents();
   }, []);
