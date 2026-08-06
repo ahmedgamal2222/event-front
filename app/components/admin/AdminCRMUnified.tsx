@@ -774,6 +774,192 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly, onI
                               </div>
                             </div>
                           )}
+
+                          {/* Edit Controls - Type, Status, Additional Types */}
+                          <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                              {/* Change Primary Type */}
+                              <div>
+                                <label style={{ display: 'block', fontSize: '0.7rem', color: '#64748b', marginBottom: 4 }}>تغيير النوع الأساسي</label>
+                                <select
+                                  value={reg.reg_type}
+                                  onChange={async (e) => {
+                                    const newType = e.target.value;
+                                    try {
+                                      const res = await fetch(`${apiBase}/api/events/${reg.event_id}/registrations/${reg.id}`, {
+                                        method: 'PUT',
+                                        headers,
+                                        body: JSON.stringify({ reg_type: newType })
+                                      });
+                                      if (res.ok) {
+                                        // Update local state
+                                        setRegistrations(prev => prev.map(r => r.id === reg.id ? { ...r, reg_type: newType } : r));
+                                        alert('✅ تم تغيير النوع');
+                                      }
+                                    } catch (err) {
+                                      alert('خطأ في التحديث');
+                                    }
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    background: 'rgba(255,255,255,0.06)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: '0.4rem',
+                                    color: '#e2e8f0',
+                                    padding: '0.4rem 0.6rem',
+                                    fontSize: '0.75rem',
+                                    cursor: 'pointer',
+                                    outline: 'none',
+                                  }}
+                                >
+                                  {Object.entries(REG_TYPE_LABELS).map(([k, v]) => (
+                                    <option key={k} value={k}>{v.icon} {v.label}</option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              {/* Change Status */}
+                              <div>
+                                <label style={{ display: 'block', fontSize: '0.7rem', color: '#64748b', marginBottom: 4 }}>تغيير الحالة</label>
+                                <select
+                                  value={reg.status}
+                                  onChange={async (e) => {
+                                    const newStatus = e.target.value;
+                                    try {
+                                      const res = await fetch(`${apiBase}/api/events/${reg.event_id}/registrations/${reg.id}`, {
+                                        method: 'PUT',
+                                        headers,
+                                        body: JSON.stringify({ status: newStatus })
+                                      });
+                                      if (res.ok) {
+                                        setRegistrations(prev => prev.map(r => r.id === reg.id ? { ...r, status: newStatus } : r));
+                                        alert('✅ تم تغيير الحالة');
+                                      }
+                                    } catch (err) {
+                                      alert('خطأ في التحديث');
+                                    }
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    background: 'rgba(255,255,255,0.06)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: '0.4rem',
+                                    color: '#e2e8f0',
+                                    padding: '0.4rem 0.6rem',
+                                    fontSize: '0.75rem',
+                                    cursor: 'pointer',
+                                    outline: 'none',
+                                  }}
+                                >
+                                  {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                                    <option key={k} value={k}>{v}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+
+                            {/* Manage Additional Types */}
+                            <div>
+                              <label style={{ display: 'block', fontSize: '0.7rem', color: '#64748b', marginBottom: 6 }}>الأنواع الإضافية</label>
+                              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                                {/* Current additional types with remove button */}
+                                {additionalTypes.map((t) => {
+                                  const addTypeInfo = REG_TYPE_LABELS[t] || { label: t, color: '#6b7280', icon: '👤' };
+                                  return (
+                                    <span key={t} style={{
+                                      fontSize: '0.72rem', fontWeight: 600,
+                                      background: 'rgba(16,185,129,0.15)',
+                                      color: '#34d399',
+                                      padding: '4px 8px', borderRadius: '999px',
+                                      border: '1px solid rgba(16,185,129,0.3)',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 6,
+                                    }}>
+                                      {addTypeInfo.icon} {addTypeInfo.label}
+                                      <button
+                                        onClick={async () => {
+                                          const newTypes = additionalTypes.filter(x => x !== t).join(',');
+                                          try {
+                                            const res = await fetch(`${apiBase}/api/events/${reg.event_id}/registrations/${reg.id}`, {
+                                              method: 'PUT',
+                                              headers,
+                                              body: JSON.stringify({ reg_types: newTypes })
+                                            });
+                                            if (res.ok) {
+                                              setRegistrations(prev => prev.map(r => r.id === reg.id ? { ...r, reg_types: newTypes } : r));
+                                              alert('✅ تم حذف النوع الإضافي');
+                                            }
+                                          } catch (err) {
+                                            alert('خطأ في التحديث');
+                                          }
+                                        }}
+                                        style={{
+                                          background: 'none',
+                                          border: 'none',
+                                          color: '#34d399',
+                                          cursor: 'pointer',
+                                          padding: 0,
+                                          fontSize: '0.7rem',
+                                          lineHeight: 1,
+                                          opacity: 0.7,
+                                        }}
+                                        title="حذف هذا النوع"
+                                      >✕</button>
+                                    </span>
+                                  );
+                                })}
+                                {/* Add new additional type dropdown */}
+                                <select
+                                  onChange={async (e) => {
+                                    const newType = e.target.value;
+                                    if (!newType) return;
+                                    if (additionalTypes.includes(newType)) {
+                                      alert('هذا النوع موجود مسبقاً');
+                                      e.target.value = '';
+                                      return;
+                                    }
+                                    if (newType === reg.reg_type) {
+                                      alert('هذا هو النوع الأساسي. اختر نوعاً مختلفاً');
+                                      e.target.value = '';
+                                      return;
+                                    }
+                                    const newTypes = [...additionalTypes, newType].join(',');
+                                    try {
+                                      const res = await fetch(`${apiBase}/api/events/${reg.event_id}/registrations/${reg.id}`, {
+                                        method: 'PUT',
+                                        headers,
+                                        body: JSON.stringify({ reg_types: newTypes })
+                                      });
+                                      if (res.ok) {
+                                        setRegistrations(prev => prev.map(r => r.id === reg.id ? { ...r, reg_types: newTypes } : r));
+                                        alert('✅ تم إضافة النوع');
+                                        e.target.value = '';
+                                      }
+                                    } catch (err) {
+                                      alert('خطأ في التحديث');
+                                      e.target.value = '';
+                                    }
+                                  }}
+                                  style={{
+                                    background: 'rgba(108,99,255,0.1)',
+                                    border: '1px dashed rgba(108,99,255,0.4)',
+                                    borderRadius: '0.4rem',
+                                    color: '#a5b4fc',
+                                    padding: '4px 8px',
+                                    fontSize: '0.72rem',
+                                    cursor: 'pointer',
+                                    outline: 'none',
+                                  }}
+                                >
+                                  <option value="">+ إضافة نوع</option>
+                                  {Object.entries(REG_TYPE_LABELS).filter(([k]) => k !== reg.reg_type && !additionalTypes.includes(k)).map(([k, v]) => (
+                                    <option key={k} value={k}>{v.icon} {v.label}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       );
                     })}

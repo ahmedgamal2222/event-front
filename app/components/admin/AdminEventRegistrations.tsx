@@ -467,7 +467,7 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
     city: '',
     country: '',
     reg_type: 'general',
-    status: 'approved',
+    status: 'pending',
     communication_channel: '',
     motivation: '',
     company_name: '',
@@ -749,7 +749,6 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                     { h: 'النوع',       w: '120px' },
                     { h: 'المدينة',     w: '80px' },
                     { h: 'الحالة',      w: '90px' },
-                    { h: 'تغيير الحالة', w: '110px' },
                     { h: '',             w: '50px' },
                   ].map(({ h, w }) => (
                     <th key={h} style={{ textAlign: 'right', padding: '0.55rem 0.85rem', color: '#64748b', fontWeight: 600, fontSize: '0.68rem', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', width: w || undefined }}>{h}</th>
@@ -793,36 +792,25 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                       </td>
                       {/* البريد */}
                       <td style={{ padding: '0.55rem 0.85rem', color: '#64748b', fontSize: '0.75rem', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{reg.email || '—'}</td>
-                      {/* النوع — compact chips + dropdown */}
-                      <td style={{ padding: '0.4rem 0.7rem', minWidth: 110 }} onClick={e => e.stopPropagation()}>
+                      {/* النوع — display only */}
+                      <td style={{ padding: '0.4rem 0.7rem', minWidth: 110 }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          {/* Primary type — dropdown filtered to exclude already-added extra types */}
-                          <select
-                            value={reg.reg_type || reg.type || 'general'}
-                            onChange={e => { if (roAlert()) return; changeType(reg.id, e.target.value); }}
-                            disabled={readOnly}
-                            style={{
-                              background: `${ti.color}15`, border: `1px solid ${ti.color}50`,
-                              borderRadius: '0.4rem', color: ti.color, fontSize: '0.72rem',
-                              padding: '0.25rem 0.5rem', outline: 'none', fontWeight: 700,
-                              cursor: readOnly ? 'not-allowed' : 'pointer', maxWidth: 140,
-                              ...(readOnly ? roStyle : {}),
-                            }}
-                            title={readOnly ? 'وضع المشاهدة فقط' : 'تغيير النوع الأساسي'}
-                          >
-                            {(formConfigTypes.length > 0 ? formConfigTypes : Object.keys(REG_TYPE_CONFIG))
-                              .map(t => {
-                                const info = REG_TYPE_CONFIG[t] || { label: formConfigLabels[t] || t, color: '#6b7280', icon: '👤' };
-                                const inAdditional = (reg.reg_types || '').split(',').filter(Boolean).includes(t);
-                                const isCurrent = (reg.reg_type || reg.type || 'general') === t;
-                                return (
-                                  <option key={t} value={t}>
-                                    {info.icon} {formConfigLabels[t] || info.label}{inAdditional && !isCurrent ? ' ←إضافي' : ''}
-                                  </option>
-                                );
-                              })
-                            }
-                          </select>
+                          {/* Primary type — read-only display */}
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            background: `${ti.color}15`,
+                            border: `1px solid ${ti.color}50`,
+                            borderRadius: '0.4rem',
+                            color: ti.color,
+                            fontSize: '0.72rem',
+                            padding: '0.25rem 0.5rem',
+                            fontWeight: 700,
+                            maxWidth: 140,
+                          }}>
+                            {ti.icon} {lbl}
+                          </span>
                           {/* Additional types — compact colored chips */}
                           {reg.reg_types && reg.reg_types.split(',').filter(Boolean).length > 0 && (
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
@@ -847,7 +835,7 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                       </td>
                       {/* المدينة */}
                       <td style={{ padding: '0.55rem 0.85rem', color: '#64748b', fontSize: '0.75rem' }}>{cityDisplay(reg)}</td>
-                      {/* الحالة - dot بسيط */}
+                      {/* الحالة - dot + label */}
                       <td style={{ padding: '0.55rem 0.85rem' }}>
                         <span style={{
                           display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -857,18 +845,6 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                           <span style={{ width: 6, height: 6, borderRadius: '50%', background: sc.color, flexShrink: 0, display: 'inline-block' }} />
                           {sc.label.replace(/^[^\u0600-\u06FF ]+/, '').trim()}
                         </span>
-                      </td>
-                      {/* تغيير الحالة */}
-                      <td style={{ padding: '0.4rem 0.7rem' }} onClick={e => e.stopPropagation()}>
-                        <select
-                          value={reg.status}
-                          onChange={e => { if (roAlert()) return; changeStatus(reg.id, e.target.value); }}
-                          disabled={readOnly}
-                          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.35rem', color: '#94a3b8', fontSize: '0.7rem', padding: '0.2rem 0.35rem', outline: 'none', cursor: readOnly ? 'not-allowed' : 'pointer', colorScheme: 'dark', ...(readOnly ? roStyle : {}) }}
-                          title={readOnly ? 'وضع المشاهدة فقط' : ''}
-                        >
-                          {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label.replace(/^[^\u0600-\u06FF ]+/, '').trim()}</option>)}
-                        </select>
                       </td>
                       {/* جهة اتصال */}
                       <td style={{ padding: '0.4rem 0.7rem' }} onClick={e => e.stopPropagation()}>
@@ -1132,7 +1108,7 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                 ➕ إضافة تسجيل يدوياً
               </h3>
               <button 
-                onClick={() => { setShowManualRegForm(false); setManualRegForm({ full_name: '', email: '', phone: '', city: '', country: '', reg_type: 'general', status: 'approved', communication_channel: '', motivation: '', company_name: '', sector: '', stage: '', team_size: '', website: '', description: '' }); }} 
+                onClick={() => { setShowManualRegForm(false); setManualRegForm({ full_name: '', email: '', phone: '', city: '', country: '', reg_type: 'general', status: 'pending', communication_channel: '', motivation: '', company_name: '', sector: '', stage: '', team_size: '', website: '', description: '' }); }} 
                 style={{ ...S.btn('#374151'), padding: '0.3rem 0.6rem' }}
               >✕</button>
             </div>
@@ -1159,7 +1135,7 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                 if (data.success) {
                   alert('✅ تم إضافة التسجيل بنجاح!');
                   setShowManualRegForm(false);
-                  setManualRegForm({ full_name: '', email: '', phone: '', city: '', country: '', reg_type: 'general', status: 'approved', communication_channel: '', motivation: '', company_name: '', sector: '', stage: '', team_size: '', website: '', description: '' });
+                  setManualRegForm({ full_name: '', email: '', phone: '', city: '', country: '', reg_type: 'general', status: 'pending', communication_channel: '', motivation: '', company_name: '', sector: '', stage: '', team_size: '', website: '', description: '' });
                   load();
                 } else {
                   alert(data.error || 'فشل الحفظ');
@@ -1192,14 +1168,7 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label style={S.label}>الحالة *</label>
-                  <select style={S.inp} value={manualRegForm.status} onChange={e => setManualRegForm(f => ({ ...f, status: e.target.value }))}>
-                    {Object.entries(STATUS_CONFIG).map(([k, v]) => (
-                      <option key={k} value={k}>{v.label}</option>
-                    ))}
-                  </select>
-                </div>
+                {/* [Removed] Status field - will be set in contacts tab */}
                 <div>
                   <label style={S.label}>المدينة</label>
                   <input style={S.inp} value={manualRegForm.city} onChange={e => setManualRegForm(f => ({ ...f, city: e.target.value }))} />
