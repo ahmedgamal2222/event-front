@@ -317,54 +317,211 @@ export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all', r
           </div>
         ) : selected ? (
           <div style={S.card}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-              <h3 style={{ color: 'white', margin: 0, fontSize: '0.95rem' }}>{selected.title}</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, alignItems: 'flex-start' }}>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ color: 'white', margin: '0 0 8px', fontSize: '1.05rem', fontWeight: 700 }}>{selected.title}</h3>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <span style={{ 
+                    fontSize: '0.75rem', 
+                    background: STATUS[selected.status as keyof typeof STATUS] ? 
+                      (selected.status === 'done' ? 'rgba(16,185,129,0.15)' : 
+                       selected.status === 'escalated' ? 'rgba(239,68,68,0.15)' : 
+                       selected.status === 'in_progress' ? 'rgba(59,130,246,0.15)' : 
+                       'rgba(107,114,128,0.15)') 
+                      : 'rgba(107,114,128,0.15)', 
+                    color: selected.status === 'done' ? '#34d399' : 
+                           selected.status === 'escalated' ? '#fca5a5' : 
+                           selected.status === 'in_progress' ? '#60a5fa' : '#94a3b8',
+                    border: '1px solid ' + (selected.status === 'done' ? 'rgba(16,185,129,0.3)' : 
+                           selected.status === 'escalated' ? 'rgba(239,68,68,0.3)' : 
+                           selected.status === 'in_progress' ? 'rgba(59,130,246,0.3)' : 
+                           'rgba(107,114,128,0.2)'),
+                    padding: '3px 10px', 
+                    borderRadius: 999, 
+                    fontWeight: 600 
+                  }}>
+                    {STATUS[selected.status as keyof typeof STATUS] || selected.status}
+                  </span>
+                  <span style={{ 
+                    fontSize: '0.75rem', 
+                    background: PRIORITY[selected.priority as keyof typeof PRIORITY]?.color + '20' || 'rgba(107,114,128,0.15)', 
+                    color: PRIORITY[selected.priority as keyof typeof PRIORITY]?.color || '#94a3b8',
+                    border: '1px solid ' + (PRIORITY[selected.priority as keyof typeof PRIORITY]?.color + '30' || 'rgba(107,114,128,0.2)'),
+                    padding: '3px 10px', 
+                    borderRadius: 999, 
+                    fontWeight: 600 
+                  }}>
+                    {PRIORITY[selected.priority as keyof typeof PRIORITY]?.label || selected.priority}
+                  </span>
+                  <span style={{ 
+                    fontSize: '0.7rem', 
+                    background: 'rgba(59,130,246,0.1)', 
+                    color: '#60a5fa',
+                    padding: '3px 8px', 
+                    borderRadius: 999,
+                  }}>
+                    {selected.task_type === 'follow_up' ? '📞 متابعة' :
+                     selected.task_type === 'call' ? '☎️ مكالمة' :
+                     selected.task_type === 'verify_payment' ? '💳 تحقق دفعة' :
+                     selected.task_type === 'review_application' ? '📋 مراجعة' :
+                     selected.task_type === 'send_proposal' ? '📨 عرض' :
+                     selected.task_type === 'collect_payment' ? '💰 تحصيل' :
+                     selected.task_type || 'أخرى'}
+                  </span>
+                </div>
+              </div>
               <div style={{ display: 'flex', gap: 6 }}>
-                {mode !== 'escalated' && <button style={S.btn('#374151')} onClick={() => { setForm({ ...selected }); setExtraAssignees([]); setShowForm(true); }}>✏️</button>}
+                {mode !== 'escalated' && !readOnly && <button style={S.btn('#374151')} onClick={() => { setForm({ ...selected }); setExtraAssignees([]); setShowForm(true); }}>✏️</button>}
                 <button style={S.btn('#374151')} onClick={() => setSelected(null)}>✕</button>
               </div>
             </div>
 
-            <div style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
-              {selected.contact_name && <div style={{ color: '#cbd5e1', fontSize: '0.85rem' }}>👤 {selected.contact_name} {selected.contact_phone ? `· ${selected.contact_phone}` : ''}</div>}
-              {selected.org_name && <div style={{ color: '#cbd5e1', fontSize: '0.85rem' }}>🏢 {selected.org_name}</div>}
-              {selected.due_date && <div style={{ color: '#94a3b8', fontSize: '0.82rem' }}>📅 {selected.due_date}</div>}
-
-              {/* Assignees */}
-              {selected.assignees && selected.assignees.length > 0 && (
-                <div>
-                  <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginBottom: 6 }}>المسؤولون:</div>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {selected.assignees.map((a, i) => (
-                      <span key={i} style={{
-                        fontSize: '0.78rem',
-                        background: a.is_creator ? 'rgba(108,99,255,0.2)' : 'rgba(255,255,255,0.07)',
-                        color: a.is_creator ? '#818cf8' : '#94a3b8',
-                        border: a.is_creator ? '1px solid rgba(108,99,255,0.4)' : '1px solid rgba(255,255,255,0.1)',
-                        padding: '3px 10px', borderRadius: 4,
-                      }}>
-                        {a.is_creator ? '👑 ' : '👤 '}{a.admin_name || a.admin_email}
-                      </span>
-                    ))}
+            {/* Task Details Grid */}
+            <div style={{ 
+              background: 'rgba(255,255,255,0.03)', 
+              border: '1px solid rgba(255,255,255,0.08)', 
+              borderRadius: '0.75rem', 
+              padding: '1rem', 
+              marginBottom: 16 
+            }}>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                gap: '12px' 
+              }}>
+                {/* Due Date */}
+                {selected.due_date && (
+                  <div>
+                    <div style={{ color: '#64748b', fontSize: '0.7rem', marginBottom: 4, textTransform: 'uppercase', fontWeight: 600 }}>الموعد النهائي</div>
+                    <div style={{ 
+                      color: new Date(selected.due_date) < new Date() && selected.status !== 'done' ? '#ef4444' : '#e2e8f0', 
+                      fontSize: '0.85rem', 
+                      fontWeight: 600 
+                    }}>
+                      📅 {new Date(selected.due_date).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}
+                      {new Date(selected.due_date) < new Date() && selected.status !== 'done' && (
+                        <span style={{ color: '#ef4444', fontSize: '0.75rem', marginRight: 6 }}>⏰ متأخر</span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {!selected.assignees?.length && selected.assigned_to && (
-                <div style={{ color: '#94a3b8', fontSize: '0.82rem' }}>📌 {selected.assigned_to}</div>
-              )}
+                {/* Created At */}
+                {selected.created_at && (
+                  <div>
+                    <div style={{ color: '#64748b', fontSize: '0.7rem', marginBottom: 4, textTransform: 'uppercase', fontWeight: 600 }}>تاريخ الإنشاء</div>
+                    <div style={{ color: '#94a3b8', fontSize: '0.82rem' }}>
+                      🕐 {new Date(selected.created_at).toLocaleString('ar-SA', { 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Contact Info */}
+                {selected.contact_name && (
+                  <div>
+                    <div style={{ color: '#64748b', fontSize: '0.7rem', marginBottom: 4, textTransform: 'uppercase', fontWeight: 600 }}>جهة الاتصال</div>
+                    <div style={{ color: '#e2e8f0', fontSize: '0.85rem', fontWeight: 600 }}>
+                      👤 {selected.contact_name}
+                      {selected.contact_phone && (
+                        <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: 2 }}>📱 {selected.contact_phone}</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Organization */}
+                {selected.org_name && (
+                  <div>
+                    <div style={{ color: '#64748b', fontSize: '0.7rem', marginBottom: 4, textTransform: 'uppercase', fontWeight: 600 }}>المنظمة</div>
+                    <div style={{ color: '#e2e8f0', fontSize: '0.85rem' }}>🏢 {selected.org_name}</div>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {selected.escalation_note && (
-              <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '0.5rem', padding: '0.75rem', marginBottom: 16 }}>
-                <div style={{ color: '#fca5a5', fontSize: '0.8rem', fontWeight: 600 }}>🔺 سبب التصعيد:</div>
-                <p style={{ color: '#fca5a5', fontSize: '0.85rem', margin: '4px 0 0' }}>{selected.escalation_note}</p>
+            {/* Assignees Section */}
+            {selected.assignees && selected.assignees.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginBottom: 8, textTransform: 'uppercase', fontWeight: 600 }}>👥 المسؤولون عن المهمة</div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {selected.assignees.map((a, i) => (
+                    <div key={i} style={{
+                      fontSize: '0.82rem',
+                      background: a.is_creator ? 'linear-gradient(135deg, rgba(108,99,255,0.2), rgba(139,92,246,0.15))' : 'rgba(255,255,255,0.05)',
+                      color: a.is_creator ? '#a5b4fc' : '#cbd5e1',
+                      border: a.is_creator ? '1px solid rgba(108,99,255,0.4)' : '1px solid rgba(255,255,255,0.1)',
+                      padding: '8px 12px', 
+                      borderRadius: 8,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}>
+                      <span style={{ fontSize: '1.1rem' }}>{a.is_creator ? '👑' : '👤'}</span>
+                      <div>
+                        <div style={{ fontWeight: 600 }}>{a.admin_name || a.admin_email.split('@')[0]}</div>
+                        {a.is_creator && (
+                          <div style={{ fontSize: '0.7rem', opacity: 0.8 }}>المسؤول الرئيسي</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
+            {!selected.assignees?.length && selected.assigned_to && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginBottom: 6, textTransform: 'uppercase', fontWeight: 600 }}>المسؤول</div>
+                <div style={{ 
+                  background: 'rgba(108,99,255,0.1)', 
+                  border: '1px solid rgba(108,99,255,0.3)', 
+                  borderRadius: 8, 
+                  padding: '8px 12px',
+                  color: '#a5b4fc',
+                  fontSize: '0.85rem',
+                  display: 'inline-block'
+                }}>
+                  📌 {selected.assigned_to}
+                </div>
+              </div>
+            )}
+
+            {/* Escalation Note */}
+            {selected.escalation_note && (
+              <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '0.75rem', padding: '0.75rem 1rem', marginBottom: 16 }}>
+                <div style={{ color: '#fca5a5', fontSize: '0.8rem', fontWeight: 700, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  🔺 سبب التصعيد
+                </div>
+                <p style={{ color: '#fca5a5', fontSize: '0.85rem', margin: 0, lineHeight: 1.5 }}>{selected.escalation_note}</p>
+              </div>
+            )}
+
+            {/* Management Decision */}
             {selected.management_decision && (
-              <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '0.5rem', padding: '0.75rem', marginBottom: 16 }}>
-                <div style={{ color: '#34d399', fontSize: '0.8rem', fontWeight: 600 }}>قرار الإدارة: {selected.management_decision}</div>
+              <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '0.75rem', padding: '0.75rem 1rem', marginBottom: 16 }}>
+                <div style={{ color: '#34d399', fontSize: '0.8rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  ✅ قرار الإدارة: 
+                  <span style={{ fontWeight: 600 }}>
+                    {selected.management_decision === 'approved' ? 'موافق' :
+                     selected.management_decision === 'rejected' ? 'مرفوض' :
+                     selected.management_decision === 'needs_info' ? 'يحتاج معلومات' :
+                     selected.management_decision}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Outcome */}
+            {selected.outcome && (
+              <div style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '0.75rem', padding: '0.75rem 1rem', marginBottom: 16 }}>
+                <div style={{ color: '#60a5fa', fontSize: '0.8rem', fontWeight: 700, marginBottom: 4 }}>📝 نتيجة الإغلاق</div>
+                <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: 0, lineHeight: 1.5 }}>{selected.outcome}</p>
               </div>
             )}
 
