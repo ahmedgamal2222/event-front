@@ -70,7 +70,7 @@ export default function ContactInteractionLog({ contactId, contactName, token, a
     try {
       console.log('🔍 Loading interactions for contact_id:', contactId);
       // جلب كل التواصلات لجهة الاتصال
-      const res = await fetch(`${apiBase}/api/crm/interactions?contact_id=${contactId}`, { headers });
+      const res = await fetch(`${apiBase}/api/crm/contacts/${contactId}/interactions`, { headers });
       const data = await res.json();
       
       console.log('✅ Interactions loaded:', data.success, 'Count:', data.data?.length || 0);
