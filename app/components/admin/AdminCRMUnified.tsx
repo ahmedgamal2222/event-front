@@ -51,6 +51,14 @@ interface Props {
   onInteractionSaved?: () => void;
 }
 
+const CHANNEL_AR: Record<string, string> = {
+  whatsapp: '💬 واتساب', phone: '📞 هاتف', email: '📧 بريد إلكتروني',
+  telegram: '✈️ تيليغرام', instagram: '📸 إنستغرام', facebook: '👥 فيسبوك',
+  linkedin: '💼 لينكدإن', social_media: '📱 تواصل اجتماعي',
+  website: '🌐 موقع', referral: '👥 إحالة', event: '🎪 حدث',
+  in_person: '🤝 شخصي', other: 'أخرى',
+};
+
 const STATUS_COLORS: Record<string, string> = {
   pending: '#f59e0b', approved: '#10b981', rejected: '#ef4444',
   open: '#3b82f6', done: '#10b981', cancelled: '#6b7280',
@@ -671,7 +679,7 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly, onI
                   </div>
                 )}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                  {[['📧', selected.email], ['📱', selected.phone], ['💬', selected.whatsapp], ['📍', selected.city], ['🏢', selected.org_name], ['👤', selected.role_in_org], ['🔔', selected.communication_channel ? `قناة: ${selected.communication_channel}` : null]].filter(([, v]) => v).map(([icon, val], i) => (
+                  {[['📧', selected.email], ['📱', selected.phone], ['💬', selected.whatsapp], ['📍', selected.city], ['🏢', selected.org_name], ['👤', selected.role_in_org], ['🔔', selected.communication_channel ? (CHANNEL_AR[selected.communication_channel] || selected.communication_channel) : null]].filter(([, v]) => v).map(([icon, val], i) => (
                     <div key={i} style={{ color: '#cbd5e1', fontSize: '0.83rem' }}><span style={{ opacity: 0.6 }}>{icon} </span>{val}</div>
                   ))}
                 </div>

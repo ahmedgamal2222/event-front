@@ -5,6 +5,22 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.
 
 const SYRIA_CITIES = ['دمشق','حلب','حمص','اللاذقية','حماة','دير الزور','الرقة','إدلب','درعا','السويداء','طرطوس','القامشلي','خارج سوريا'];
 
+const CHANNEL_AR: Record<string, string> = {
+  whatsapp: '💬 واتساب',
+  phone: '📞 هاتف',
+  email: '📧 بريد إلكتروني',
+  telegram: '✈️ تيليغرام',
+  instagram: '📸 إنستغرام',
+  facebook: '👥 فيسبوك',
+  linkedin: '💼 لينكدإن',
+  social_media: '📱 تواصل اجتماعي',
+  website: '🌐 موقع إلكتروني',
+  referral: '👥 إحالة',
+  event: '🎪 حدث',
+  in_person: '🤝 شخصي',
+  other: 'أخرى',
+};
+
 const S = {
   inp: { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '0.5rem', padding: '0.55rem 0.85rem', color: 'white', outline: 'none', width: '100%', fontSize: '0.9rem', colorScheme: 'dark' } as React.CSSProperties,
   btn: (color = '#6C63FF') => ({ background: color, color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.45rem 1rem', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 } as React.CSSProperties),
@@ -479,6 +495,7 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
     description: ''
   });
   const [savingManualReg, setSavingManualReg] = useState(false);
+  const [countries, setCountries] = useState<{ id: number; name_ar: string; cities?: string }[]>([]);
 
   const currentUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('admin_user') || '{}') : {};
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
@@ -489,6 +506,14 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
       if (d.success) setAdminsList(d.data || []);
     }).catch(() => {});
   }, [token]);
+
+  // Load countries for manual reg form
+  useEffect(() => {
+    if (!eventId) return;
+    fetch(`${API_BASE}/api/events/${eventId}/countries`).then(r => r.json()).then(d => {
+      if (d.data) setCountries(d.data);
+    }).catch(() => {});
+  }, [eventId]);
 
   // Load form_config types for the type dropdown
   useEffect(() => {
@@ -745,13 +770,12 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(0,0,0,0.18)' }}>
                   {[
-                    { h: 'الاسم',          w: '' },
-                    { h: 'البريد',         w: '140px' },
-                    { h: 'قناة التواصل', w: '90px' },
-                    { h: 'النوع',          w: '120px' },
-                    { h: 'المدينة',       w: '80px' },
-                    { h: 'الحالة',         w: '90px' },
-                    { h: '',              w: '50px' },
+                    { h: 'الاسم / البريد', w: '' },
+                    { h: 'قناة التواصل',    w: '110px' },
+                    { h: 'النوع',             w: '120px' },
+                    { h: 'المدينة',           w: '80px' },
+                    { h: 'الحالة',            w: '90px' },
+                    { h: '',                  w: '50px' },
                   ].map(({ h, w }) => (
                     <th key={h} style={{ textAlign: 'right', padding: '0.55rem 0.85rem', color: '#64748b', fontWeight: 600, fontSize: '0.68rem', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', width: w || undefined }}>{h}</th>
                   ))}
@@ -759,9 +783,9 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>جاري التحميل...</td></tr>
+                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>جاري التحميل...</td></tr>
                 ) : regs.length === 0 ? (
-                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>لا توجد تسجيلات</td></tr>
+                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>لا توجد تسجيلات</td></tr>
                 ) : regs.map(reg => {
                   const sc = STATUS_CONFIG[reg.status] || { label: reg.status, color: '#6b7280' };
                   const ti = getTypeInfo(reg);
@@ -775,33 +799,24 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                         background: 'transparent',
                       }}
                     >
-                      {/* الاسم */}
-                      <td style={{ padding: '0.55rem 0.85rem' }}>
+                      {/* الاسم + البريد في خانة واحدة */}
+                      <td style={{ padding: '0.55rem 0.85rem', minWidth: 200 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                           <div style={{ width: 26, height: 26, borderRadius: '50%', background: `${ti.color}30`, border: `1px solid ${ti.color}50`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', flexShrink: 0, color: ti.color }}>
                             {ti.icon}
                           </div>
                           <div style={{ minWidth: 0 }}>
                             <div style={{ color: 'white', fontWeight: 500, fontSize: '0.82rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getName(reg)}</div>
+                            <div style={{ color: '#4b5563', fontSize: '0.72rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{reg.email || reg.phone || '—'}</div>
                             {isConverted && <div style={{ fontSize: '0.62rem', color: '#10b981' }}>✓ جهة اتصال</div>}
                           </div>
                         </div>
-                      </td>
-                      {/* البريد */}
-                      <td style={{ padding: '0.55rem 0.85rem', color: '#64748b', fontSize: '0.75rem', width: 170 }}>
-                        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>{reg.email || '—'}</div>
                       </td>
                       {/* قناة التواصل */}
                       <td style={{ padding: '0.4rem 0.7rem' }}>
                         {reg.communication_channel ? (
                           <span style={{ fontSize: '0.7rem', background: 'rgba(108,99,255,0.12)', color: '#a5b4fc', padding: '2px 7px', borderRadius: 4, whiteSpace: 'nowrap', display: 'inline-block' }}>
-                            {reg.communication_channel === 'whatsapp' ? '💬 واتساب' :
-                             reg.communication_channel === 'phone' ? '📞 هاتف' :
-                             reg.communication_channel === 'email' ? '📧 بريد' :
-                             reg.communication_channel === 'telegram' ? '✈️ تيليغرام' :
-                             reg.communication_channel === 'instagram' ? '📸 إنستغرام' :
-                             reg.communication_channel === 'in_person' ? '🤝 شخصي' :
-                             reg.communication_channel}
+                            {CHANNEL_AR[reg.communication_channel] || reg.communication_channel}
                           </span>
                         ) : <span style={{ color: '#374151', fontSize: '0.7rem' }}>—</span>}
                       </td>
@@ -990,19 +1005,31 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                     {SYRIA_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
-                {/* Outside Syria: country + city */}
+                {/* Outside Syria: country from API + city dropdown */}
                 {manualRegForm.city === 'خارج سوريا' && (
                   <>
                     <div>
                       <label style={S.label}>الدولة *</label>
                       <select style={S.inp} value={manualRegForm.country} onChange={e => setManualRegForm(f => ({ ...f, country: e.target.value }))}>
                         <option value="">— اختر الدولة —</option>
-                        {['Lebanon','Jordan','Iraq','Saudi Arabia','UAE','Kuwait','Qatar','Bahrain','Oman','Egypt','Libya','Tunisia','Algeria','Morocco','Sudan','Yemen','Palestine','Turkey','Germany','France','UK','USA','Canada','Australia','Sweden','Netherlands','Belgium','Switzerland'].map(c => <option key={c} value={c}>{c}</option>)}
+                        {countries.map(co => <option key={co.id} value={co.name_ar}>{co.name_ar}</option>)}
                       </select>
                     </div>
                     <div>
-                      <label style={S.label}>المدينة (اختياري)</label>
-                      <input style={S.inp} value={manualRegForm.city === 'خارج سوريا' ? '' : ''} onChange={e => setManualRegForm(f => ({ ...f, country_city: e.target.value } as any))} placeholder="أدخل اسم المدينة" />
+                      <label style={S.label}>المدينة</label>
+                      {(() => {
+                        const sel = countries.find(co => co.name_ar === manualRegForm.country);
+                        let cits: string[] = [];
+                        if (sel?.cities) { try { cits = JSON.parse(sel.cities); } catch {} }
+                        return cits.length > 0 ? (
+                          <select style={S.inp} value={(manualRegForm as any).country_city || ''} onChange={e => setManualRegForm(f => ({ ...f, country_city: e.target.value } as any))}>
+                            <option value="">— اختر المدينة —</option>
+                            {cits.map(c => <option key={c} value={c}>{c}</option>)}
+                          </select>
+                        ) : (
+                          <input style={S.inp} value={(manualRegForm as any).country_city || ''} onChange={e => setManualRegForm(f => ({ ...f, country_city: e.target.value } as any))} placeholder="اسم المدينة" />
+                        );
+                      })()}
                     </div>
                   </>
                 )}
