@@ -886,6 +886,52 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly, onI
                               </div>
                             </div>
 
+                            {/* Communication Channel */}
+                            <div>
+                              <label style={{ display: 'block', fontSize: '0.7rem', color: '#64748b', marginBottom: 4 }}>💬 قناة التواصل</label>
+                              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                <select
+                                  value={(reg as any).communication_channel || ''}
+                                  onChange={async (e) => {
+                                    const ch = e.target.value;
+                                    try {
+                                      const res = await fetch(`${apiBase}/api/events/${reg.event_id}/registrations/${reg.id}`, {
+                                        method: 'PUT', headers,
+                                        body: JSON.stringify({ communication_channel: ch })
+                                      });
+                                      if (res.ok) setRegistrations(prev => prev.map(r => r.id === reg.id ? { ...r, communication_channel: ch } : r));
+                                    } catch { alert('خطأ'); }
+                                  }}
+                                  style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.4rem', color: '#e2e8f0', padding: '0.4rem 0.6rem', fontSize: '0.75rem', cursor: 'pointer', outline: 'none' }}
+                                >
+                                  <option value="">— غير محدد —</option>
+                                  <option value="whatsapp">💬 واتساب</option>
+                                  <option value="phone">📞 هاتف</option>
+                                  <option value="email">📧 بريد</option>
+                                  <option value="telegram">✈️ تيليغرام</option>
+                                  <option value="instagram">📸 إنستغرام</option>
+                                  <option value="facebook">👥 فيسبوك</option>
+                                  <option value="linkedin">💼 لينكدإن</option>
+                                  <option value="in_person">🤝 شخصي</option>
+                                </select>
+                                {(reg as any).communication_channel && (
+                                  <button
+                                    onClick={async () => {
+                                      try {
+                                        const res = await fetch(`${apiBase}/api/events/${reg.event_id}/registrations/${reg.id}`, {
+                                          method: 'PUT', headers,
+                                          body: JSON.stringify({ communication_channel: '' })
+                                        });
+                                        if (res.ok) setRegistrations(prev => prev.map(r => r.id === reg.id ? { ...r, communication_channel: '' } : r));
+                                      } catch { alert('خطأ'); }
+                                    }}
+                                    style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5', borderRadius: '0.35rem', padding: '0.35rem 0.5rem', cursor: 'pointer', fontSize: '0.7rem' }}
+                                    title="حذف قناة التواصل"
+                                  >✕</button>
+                                )}
+                              </div>
+                            </div>
+
                             {/* Manage Additional Types */}
                             <div>
                               <label style={{ display: 'block', fontSize: '0.7rem', color: '#64748b', marginBottom: 6 }}>الأنواع الإضافية</label>

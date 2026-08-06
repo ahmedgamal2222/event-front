@@ -40,7 +40,7 @@ interface Reg {
   id: number; name?: string; full_name?: string; email?: string; phone?: string;
   city?: string; country?: string; reg_type?: string; type?: string; reg_types?: string; status: string;
   created_at: string; contact_id?: number;
-  participation_reason?: string; work_field?: string;
+  participation_reason?: string; work_field?: string; communication_channel?: string;
 }
 
 // Returns location string: for non-Syria users shows "Country / City", for Syria shows city only
@@ -749,7 +749,7 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                 <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(0,0,0,0.18)' }}>
                   {[
                     { h: 'الاسم',       w: '' },
-                    { h: 'البريد',      w: '' },
+                    { h: 'البريد / قناة التواصل',  w: '160px' },
                     { h: 'النوع',       w: '120px' },
                     { h: 'المدينة',     w: '80px' },
                     { h: 'الحالة',      w: '90px' },
@@ -789,8 +789,16 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                           </div>
                         </div>
                       </td>
-                      {/* البريد */}
-                      <td style={{ padding: '0.55rem 0.85rem', color: '#64748b', fontSize: '0.75rem', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{reg.email || '—'}</td>
+                      {/* البريد + قناة التواصل */}
+                      <td style={{ padding: '0.55rem 0.85rem', fontSize: '0.75rem' }}>
+                        <div style={{ color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>{reg.email || '—'}</div>
+                        {reg.communication_channel && (
+                          <div style={{ marginTop: 2, display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: '0.65rem', background: 'rgba(108,99,255,0.12)', color: '#a5b4fc', padding: '1px 6px', borderRadius: 4 }}>
+                            {reg.communication_channel === 'whatsapp' ? '💬' : reg.communication_channel === 'phone' ? '📞' : reg.communication_channel === 'email' ? '📧' : reg.communication_channel === 'telegram' ? '✈️' : reg.communication_channel === 'instagram' ? '📸' : reg.communication_channel === 'in_person' ? '🤝' : '💬'}
+                            {reg.communication_channel}
+                          </div>
+                        )}
+                      </td>
                       {/* النوع — display only */}
                       <td style={{ padding: '0.4rem 0.7rem', minWidth: 110 }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
