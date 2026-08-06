@@ -1085,9 +1085,24 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
               </div>
             )}
 
+            {/* Read-only notice */}
+            <div style={{ 
+              background: 'rgba(59,130,246,0.08)', 
+              border: '1px solid rgba(59,130,246,0.25)', 
+              borderRadius: '0.5rem', 
+              padding: '0.6rem 1rem', 
+              marginTop: 12,
+              marginBottom: 12 
+            }}>
+              <div style={{ color: '#60a5fa', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: '1.1rem' }}>ℹ️</span>
+                <span>تاب التسجيلات للعرض فقط. لتعديل الحالة أو إضافة مهام أو تواصل، انتقل إلى <strong>تاب جهات الاتصال</strong></span>
+              </div>
+            </div>
+
             {/* Actions */}
             <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-              {/* Convert to contact button */}
+              {/* Convert to contact button - ONLY ACTION AVAILABLE */}
               {!converted.has(selected.id) && !selected.contact_id ? (
                 <button
                   onClick={() => { if (roAlert()) return; convertToContact(selected); }}
@@ -1119,102 +1134,13 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                 </div>
               )}
 
-              <button
-                onClick={() => setShowTaskForm(!showTaskForm)}
-                style={{
-                  background: showTaskForm ? 'rgba(245,158,11,0.2)' : 'rgba(245,158,11,0.1)',
-                  border: '1px solid rgba(245,158,11,0.4)',
-                  color: '#fcd34d',
-                  borderRadius: '0.5rem',
-                  padding: '0.5rem 1rem',
-                  cursor: 'pointer',
-                  fontSize: '0.82rem',
-                  fontWeight: 600,
-                }}
-              >
-                {showTaskForm ? '✕ إلغاء' : '✅ + مهمة'}
-              </button>
-
-              {/* Multi-type button */}
-              <button
-                onClick={() => {
-                  const cur = selected.reg_types ? selected.reg_types.split(',').filter(Boolean) : [];
-                  setPendingTypes(cur);
-                  setShowTypeEdit(!showTypeEdit);
-                }}
-                style={{
-                  background: showTypeEdit ? 'rgba(16,185,129,0.2)' : 'rgba(16,185,129,0.1)',
-                  border: '1px solid rgba(16,185,129,0.4)',
-                  color: '#34d399',
-                  borderRadius: '0.5rem',
-                  padding: '0.5rem 1rem',
-                  cursor: 'pointer',
-                  fontSize: '0.82rem',
-                  fontWeight: 600,
-                }}
-              >
-                {showTypeEdit ? '✕ إلغاء' : '🏷️ أنواع إضافية'}
-              </button>
-
-              {/* Interaction log button */}
-              <button
-                onClick={() => setShowInteraction(!showInteraction)}
-                style={{
-                  background: showInteraction ? 'rgba(139,92,246,0.2)' : 'rgba(139,92,246,0.1)',
-                  border: '1px solid rgba(139,92,246,0.4)',
-                  color: '#a78bfa',
-                  borderRadius: '0.5rem',
-                  padding: '0.5rem 1rem',
-                  cursor: 'pointer',
-                  fontSize: '0.82rem',
-                  fontWeight: 600,
-                }}
-              >
-                {showInteraction ? '✕ إلغاء' : '💬 تواصل'}
-              </button>
-
-              {/* Contact interaction log button */}
-              {(converted.has(selected.id) || selected.contact_id) && (
-                <button
-                  onClick={() => {
-                    if (!selected.contact_id) {
-                      alert('⚠️ هذا التسجيل لا يحتوي على معرّف جهة اتصال (contact_id).\nيجب تحويل التسجيل إلى جهة اتصال أولاً.');
-                      return;
-                    }
-                    setSelectedContactForLog({
-                      id: selected.contact_id,
-                      name: getName(selected)
-                    });
-                    setShowContactLog(true);
-                  }}
-                  style={{
-                    background: 'rgba(139,92,246,0.1)',
-                    border: '1px solid rgba(139,92,246,0.4)',
-                    color: '#a78bfa',
-                    borderRadius: '0.5rem',
-                    padding: '0.5rem 1rem',
-                    cursor: 'pointer',
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
-                  }}
-                >
-                  📊 سجل التواصل
-                </button>
-              )}
-
-              {/* Status change */}
-              <select
-                value={selected.status}
-                onChange={e => changeStatus(selected.id, e.target.value)}
-                style={{ ...S.inp, flex: 1, minWidth: 120, fontSize: '0.8rem' }}
-              >
-                {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-              </select>
+              {/* All other actions removed - moved to contacts tab */}
             </div>
           </div>
 
-          {/* Multi-type edit panel */}
-          {showTypeEdit && (
+          {/* Task form removed - use contacts tab */}
+          {/* Multi-type edit removed - use contacts tab */}
+          {/* Interaction form removed - use contacts tab */}
             <div style={{ ...S.card, borderColor: 'rgba(16,185,129,0.35)', background: 'rgba(16,185,129,0.05)' }}>
               <div style={{ color: '#34d399', fontWeight: 700, fontSize: '0.88rem', marginBottom: 12 }}>
                 🏷️ الأنواع الإضافية — {getName(selected)}
@@ -1386,148 +1312,7 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
           )}
 
           {/* Interaction form (item 8) */}
-          {showInteraction && (
-            <div style={{ ...S.card, borderColor: 'rgba(139,92,246,0.35)', background: 'rgba(139,92,246,0.05)' }}>
-              <div style={{ color: '#a78bfa', fontWeight: 700, fontSize: '0.88rem', marginBottom: 12 }}>
-                💬 تسجيل تواصل — {getName(selected)}
-              </div>
-              <div style={{ display: 'grid', gap: 10 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                  <div>
-                    <label style={S.label}>قناة التواصل</label>
-                    <select style={S.inp} value={interactionForm.channel} onChange={e => setInteractionForm(f => ({ ...f, channel: e.target.value }))}>
-                      <option value="call">📞 مكالمة هاتفية</option>
-                      <option value="whatsapp">💬 واتساب</option>
-                      <option value="email">📧 بريد إلكتروني</option>
-                      <option value="meeting">🤝 اجتماع</option>
-                      <option value="sms">📱 رسالة نصية</option>
-                      <option value="other">أخرى</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={S.label}>الاتجاه</label>
-                    <select style={S.inp} value={interactionForm.direction} onChange={e => setInteractionForm(f => ({ ...f, direction: e.target.value }))}>
-                      <option value="outbound">صادر (من عندنا)</option>
-                      <option value="inbound">وارد (من العميل)</option>
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label style={S.label}>موضوع التواصل *</label>
-                  <input style={S.inp} value={interactionForm.subject}
-                    onChange={e => setInteractionForm(f => ({ ...f, subject: e.target.value }))}
-                    placeholder="مثل: متابعة طلب المشاركة، تأكيد الدفع..." />
-                </div>
-                <div>
-                  <label style={S.label}>ملاحظات / ملخص المحادثة</label>
-                  <textarea style={{ ...S.inp, minHeight: 70, resize: 'vertical' as const }}
-                    value={interactionForm.summary}
-                    onChange={e => setInteractionForm(f => ({ ...f, summary: e.target.value }))}
-                    placeholder="ما الذي تم مناقشته؟ ما هو القرار أو الخطوة التالية؟" />
-                </div>
-                <div style={{ color: '#475569', fontSize: '0.72rem' }}>
-                  💡 سيتم حفظ هذا التواصل في صفحة جهة الاتصال CRM وأرشفته هناك.
-                </div>
-                <button onClick={saveInteraction} disabled={savingInteraction || !interactionForm.subject}
-                  style={{ ...S.btn('#8b5cf6') }}>
-                  {savingInteraction ? '⏳ جاري الحفظ...' : '💾 حفظ التواصل'}
-                </button>
-              </div>
-            </div>
-          )}
-          {showTaskForm && (
-            <div style={{ ...S.card, borderColor: 'rgba(108,99,255,0.35)', background: 'rgba(108,99,255,0.06)' }}>
-              <div style={{ color: '#818cf8', fontWeight: 700, fontSize: '0.88rem', marginBottom: 12 }}>
-                ✅ مهمة جديدة — {getName(selected)}
-              </div>
-
-              {currentUser.name && (
-                <div style={{ background: 'rgba(108,99,255,0.12)', borderRadius: '0.4rem', padding: '0.35rem 0.7rem', marginBottom: 10, fontSize: '0.75rem', color: '#818cf8' }}>
-                  👑 المسؤول الرئيسي: <strong>{currentUser.name}</strong>
-                </div>
-              )}
-
-              <div style={{ display: 'grid', gap: 8 }}>
-                <div>
-                  <label style={S.label}>عنوان المهمة *</label>
-                  <input style={S.inp} value={taskForm.title || ''} onChange={e => setTaskForm((f: any) => ({ ...f, title: e.target.value }))} placeholder="وصف واضح للمهمة..." />
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                  <div>
-                    <label style={S.label}>النوع</label>
-                    <select style={S.inp} value={taskForm.task_type} onChange={e => setTaskForm((f: any) => ({ ...f, task_type: e.target.value }))}>
-                      <option value="follow_up">متابعة</option>
-                      <option value="call">مكالمة</option>
-                      <option value="verify_payment">تحقق دفعة</option>
-                      <option value="review_application">مراجعة طلب</option>
-                      <option value="other">أخرى</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={S.label}>الأولوية</label>
-                    <select style={S.inp} value={taskForm.priority} onChange={e => setTaskForm((f: any) => ({ ...f, priority: e.target.value }))}>
-                      <option value="urgent">🔴 عاجل</option>
-                      <option value="high">🟠 مرتفع</option>
-                      <option value="normal">🟡 عادي</option>
-                      <option value="low">⚪ منخفض</option>
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label style={S.label}>إضافة مسؤولين (يستلمون إشعار بريدي)</label>
-                  <input
-                    style={S.inp}
-                    placeholder="🔍 ابحث عن مسؤول..."
-                    value={assigneeSearch}
-                    onChange={e => setAssigneeSearch(e.target.value)}
-                  />
-                  {assigneeSearch && filteredAdmins.length > 0 && (
-                    <div style={{ background: '#0d0b1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.5rem', maxHeight: 130, overflowY: 'auto', marginTop: 4 }}>
-                      {filteredAdmins.filter(a => a.email !== currentUser.email).map(admin => (
-                        <div key={admin.id}
-                          onClick={() => { if (!extraAssignees.includes(admin.id)) setExtraAssignees(p => [...p, admin.id]); setAssigneeSearch(''); }}
-                          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.45rem 0.75rem', cursor: 'pointer' }}
-                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(108,99,255,0.15)')}
-                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                          {admin.google_picture ? (
-                            <img src={admin.google_picture} style={{ width: 24, height: 24, borderRadius: '50%' }} alt="" />
-                          ) : (
-                            <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#6C63FF40', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8', fontSize: '0.75rem' }}>{admin.name[0]}</div>
-                          )}
-                          <div>
-                            <div style={{ color: 'white', fontSize: '0.8rem' }}>{admin.name}</div>
-                            <div style={{ color: '#64748b', fontSize: '0.7rem' }}>{admin.email}</div>
-                          </div>
-                          {extraAssignees.includes(admin.id) && <span style={{ marginRight: 'auto', color: '#10b981', fontSize: '0.8rem' }}>✓</span>}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {extraAssignees.length > 0 && (
-                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 6 }}>
-                      {extraAssignees.map(id => {
-                        const a = adminsList.find(ad => ad.id === id);
-                        return (
-                          <span key={id} style={{ background: 'rgba(108,99,255,0.2)', color: '#818cf8', fontSize: '0.72rem', padding: '2px 8px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                            📧 {a?.name}
-                            <button onClick={() => setExtraAssignees(p => p.filter(x => x !== id))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0, fontSize: '0.8rem' }}>×</button>
-                          </span>
-                        );
-                      })}
-                      <div style={{ color: '#64748b', fontSize: '0.68rem', alignSelf: 'center' }}>سيتلقى إشعاراً بريدياً</div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                <button style={S.btn()} onClick={saveTask} disabled={savingTask || !taskForm.title}>
-                  {savingTask ? '⏳ جاري الإنشاء...' : '✅ إنشاء المهمة'}
-                </button>
-                <button style={S.btn('#374151')} onClick={() => setShowTaskForm(false)}>إلغاء</button>
-              </div>
-            </div>
-          )}
+          {/* Task form, interaction form, multi-type removed - use contacts tab instead */}
 
           {/* Contact Log Modal */}
           {showContactLog && selectedContactForLog && (

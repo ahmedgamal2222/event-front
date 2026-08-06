@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import ContactInteractionLog from './ContactInteractionLog';
 
 const S = {
   inp: { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '0.5rem', padding: '0.55rem 0.85rem', color: 'white', outline: 'none', width: '100%', fontSize: '0.9rem', colorScheme: 'dark' } as React.CSSProperties,
@@ -104,7 +105,7 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly, onI
   const [tasks, setTasks] = useState<Task[]>([]);
   const [timeline, setTimeline] = useState<Timeline[]>([]);
   const [aiSummary, setAiSummary] = useState<any>(null);
-  const [detailTab, setDetailTab] = useState<'info' | 'registrations' | 'tasks' | 'timeline'>('info');
+  const [detailTab, setDetailTab] = useState<'info' | 'registrations' | 'interactions' | 'tasks' | 'timeline'>('info');
 
   const [showContactForm, setShowContactForm] = useState(false);
   const [contactForm, setContactForm] = useState<Partial<ContactDetail>>({});
@@ -541,6 +542,20 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly, onI
               <input style={S.inp} value={contactForm.phone || ''} onChange={e => setContactForm(f => ({ ...f, phone: e.target.value }))} />
             </div>
             <div>
+              <label style={S.label}>قناة التواصل</label>
+              <select style={S.inp} value={contactForm.communication_channel || ''} onChange={e => setContactForm(f => ({ ...f, communication_channel: e.target.value }))}>
+                <option value="">-- اختر القناة --</option>
+                <option value="phone">📞 هاتف</option>
+                <option value="email">📧 بريد إلكتروني</option>
+                <option value="whatsapp">💬 واتساب</option>
+                <option value="social_media">📱 وسائل التواصل</option>
+                <option value="website">🌐 موقع إلكتروني</option>
+                <option value="referral">👥 إحالة</option>
+                <option value="event">🎪 حدث</option>
+                <option value="other">أخرى</option>
+              </select>
+            </div>
+            <div>
               <label style={S.label}>واتساب</label>
               <input style={S.inp} value={contactForm.whatsapp || ''} onChange={e => setContactForm(f => ({ ...f, whatsapp: e.target.value }))} />
             </div>
@@ -629,6 +644,7 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly, onI
             {[
               { key: 'info', label: '👤 معلومات' },
               { key: 'registrations', label: `📋 التسجيلات (${registrations.length})` },
+              { key: 'interactions', label: '💬 سجل التواصل' },
               { key: 'tasks', label: `✅ المهام (${tasks.length})` },
               { key: 'timeline', label: '🕐 الخط الزمني' },
             ].map(tab => (
@@ -655,7 +671,7 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly, onI
                   </div>
                 )}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                  {[['📧', selected.email], ['📱', selected.phone], ['💬', selected.whatsapp], ['📍', selected.city], ['🏢', selected.org_name], ['👤', selected.role_in_org]].filter(([, v]) => v).map(([icon, val], i) => (
+                  {[['📧', selected.email], ['📱', selected.phone], ['💬', selected.whatsapp], ['📍', selected.city], ['🏢', selected.org_name], ['👤', selected.role_in_org], ['🔔', selected.communication_channel ? `قناة: ${selected.communication_channel}` : null]].filter(([, v]) => v).map(([icon, val], i) => (
                     <div key={i} style={{ color: '#cbd5e1', fontSize: '0.83rem' }}><span style={{ opacity: 0.6 }}>{icon} </span>{val}</div>
                   ))}
                 </div>
@@ -763,6 +779,18 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly, onI
                     })}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* ── Interactions Tab ── */}
+            {detailTab === 'interactions' && (
+              <div>
+                <ContactInteractionLog
+                  contactId={selected.id}
+                  contactName={selected.full_name}
+                  token={token}
+                  apiBase={apiBase}
+                />
               </div>
             )}
 
