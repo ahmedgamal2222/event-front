@@ -768,7 +768,7 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                   return (
                     <tr
                       key={reg.id}
-                      onClick={() => { setSelected(reg); setShowTaskForm(false); setShowTypeEdit(false); setShowInteraction(false); }}
+                      onClick={() => { setSelected(reg); setShowTaskForm(false); setShowInteraction(false); }}
                       style={{
                         borderTop: '1px solid rgba(255,255,255,0.04)',
                         cursor: 'pointer',
@@ -809,7 +809,7 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                             fontWeight: 700,
                             maxWidth: 140,
                           }}>
-                            {ti.icon} {lbl}
+                            {ti.icon} {ti.label}
                           </span>
                           {/* Additional types — compact colored chips */}
                           {reg.reg_types && reg.reg_types.split(',').filter(Boolean).length > 0 && (
@@ -896,7 +896,7 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                   <div style={{ color: '#64748b', fontSize: '0.78rem' }}>{selected.email || selected.phone}</div>
                 </div>
               </div>
-              <button style={{ ...S.btn('#374151'), padding: '0.3rem 0.6rem' }} onClick={() => { setSelected(null); setShowTaskForm(false); setShowTypeEdit(false); setShowInteraction(false); }}>✕</button>
+              <button style={{ ...S.btn('#374151'), padding: '0.3rem 0.6rem' }} onClick={() => { setSelected(null); setShowTaskForm(false); setShowInteraction(false); }}>✕</button>
             </div>
 
             {/* Info grid */}
