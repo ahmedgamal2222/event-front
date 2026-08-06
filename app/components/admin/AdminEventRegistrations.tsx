@@ -770,12 +770,13 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(0,0,0,0.18)' }}>
                   {[
-                    { h: 'الاسم / البريد', w: '' },
-                    { h: 'قناة التواصل',    w: '110px' },
-                    { h: 'النوع',             w: '120px' },
-                    { h: 'المدينة',           w: '80px' },
-                    { h: 'الحالة',            w: '90px' },
-                    { h: '',                  w: '50px' },
+                    { h: 'الاسم',         w: '160px' },
+                    { h: 'البريد',        w: '160px' },
+                    { h: 'قناة التواصل',  w: '110px' },
+                    { h: 'النوع',         w: '120px' },
+                    { h: 'المدينة',       w: '80px' },
+                    { h: 'الحالة',        w: '90px' },
+                    { h: '',              w: '50px' },
                   ].map(({ h, w }) => (
                     <th key={h} style={{ textAlign: 'right', padding: '0.55rem 0.85rem', color: '#64748b', fontWeight: 600, fontSize: '0.68rem', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', width: w || undefined }}>{h}</th>
                   ))}
@@ -799,18 +800,19 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                         background: 'transparent',
                       }}
                     >
-                      {/* الاسم + البريد في خانة واحدة */}
-                      <td style={{ padding: '0.55rem 0.85rem', minWidth: 200 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                          <div style={{ width: 26, height: 26, borderRadius: '50%', background: `${ti.color}30`, border: `1px solid ${ti.color}50`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', flexShrink: 0, color: ti.color }}>
-                            {ti.icon}
-                          </div>
+                      {/* الاسم */}
+                      <td style={{ padding: '0.5rem 0.6rem 0.5rem 0.85rem', width: 160 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <div style={{ width: 24, height: 24, borderRadius: '50%', background: `${ti.color}30`, border: `1px solid ${ti.color}50`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', flexShrink: 0, color: ti.color }}>{ti.icon}</div>
                           <div style={{ minWidth: 0 }}>
-                            <div style={{ color: 'white', fontWeight: 500, fontSize: '0.82rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getName(reg)}</div>
-                            <div style={{ color: '#4b5563', fontSize: '0.72rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{reg.email || reg.phone || '—'}</div>
-                            {isConverted && <div style={{ fontSize: '0.62rem', color: '#10b981' }}>✓ جهة اتصال</div>}
+                            <div style={{ color: 'white', fontWeight: 500, fontSize: '0.82rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>{getName(reg)}</div>
+                            {isConverted && <div style={{ fontSize: '0.6rem', color: '#10b981' }}>✓ جهة اتصال</div>}
                           </div>
                         </div>
+                      </td>
+                      {/* البريد */}
+                      <td style={{ padding: '0.5rem 0.6rem', width: 160, color: '#64748b', fontSize: '0.74rem', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {reg.email || '—'}
                       </td>
                       {/* قناة التواصل */}
                       <td style={{ padding: '0.4rem 0.7rem' }}>
@@ -1005,7 +1007,7 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                     {SYRIA_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
-                {/* Outside Syria: country from API + city dropdown */}
+                {/* Outside Syria: country from API + city dropdown — city hidden until country selected */}
                 {manualRegForm.city === 'خارج سوريا' && (
                   <>
                     <div>
@@ -1015,22 +1017,24 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                         {countries.map(co => <option key={co.id} value={co.name_ar}>{co.name_ar}</option>)}
                       </select>
                     </div>
-                    <div>
-                      <label style={S.label}>المدينة</label>
-                      {(() => {
-                        const sel = countries.find(co => co.name_ar === manualRegForm.country);
-                        let cits: string[] = [];
-                        if (sel?.cities) { try { cits = JSON.parse(sel.cities); } catch {} }
-                        return cits.length > 0 ? (
-                          <select style={S.inp} value={(manualRegForm as any).country_city || ''} onChange={e => setManualRegForm(f => ({ ...f, country_city: e.target.value } as any))}>
-                            <option value="">— اختر المدينة —</option>
-                            {cits.map(c => <option key={c} value={c}>{c}</option>)}
-                          </select>
-                        ) : (
-                          <input style={S.inp} value={(manualRegForm as any).country_city || ''} onChange={e => setManualRegForm(f => ({ ...f, country_city: e.target.value } as any))} placeholder="اسم المدينة" />
-                        );
-                      })()}
-                    </div>
+                    {manualRegForm.country && (
+                      <div>
+                        <label style={S.label}>المدينة</label>
+                        {(() => {
+                          const sel = countries.find(co => co.name_ar === manualRegForm.country);
+                          let cits: string[] = [];
+                          if (sel?.cities) { try { cits = JSON.parse(sel.cities); } catch {} }
+                          return cits.length > 0 ? (
+                            <select style={S.inp} value={(manualRegForm as any).country_city || ''} onChange={e => setManualRegForm(f => ({ ...f, country_city: e.target.value } as any))}>
+                              <option value="">— اختر المدينة —</option>
+                              {cits.map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                          ) : (
+                            <input style={S.inp} value={(manualRegForm as any).country_city || ''} onChange={e => setManualRegForm(f => ({ ...f, country_city: e.target.value } as any))} placeholder="اسم المدينة" />
+                          );
+                        })()}
+                      </div>
+                    )}
                   </>
                 )}
                 <div>
