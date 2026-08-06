@@ -272,7 +272,7 @@ function RegistrationForm({ event, onClose, cfg, initialTab, ticketInstructions 
   const [form, setForm] = useState({
     full_name: '', email: '', phone: '', city: '', country: '', country_city: '', motivation: '',
     company_name: '', sector: '', stage: '', team_size: '', website: '', description: '',
-    work_field: '', participation_reason: '',
+    work_field: '', participation_reason: '', communication_channel: '',
     agreed: false,
   } as Record<string, any>);
 
@@ -296,6 +296,7 @@ function RegistrationForm({ event, onClose, cfg, initialTab, ticketInstructions 
         ...(cfg.show_city ? { city: form.city === 'خارج سوريا' ? (form.country_city || null) : form.city } : {}),
         ...(form.city === 'خارج سوريا' ? { country: form.country || '' } : {}),
         ...(cfg.show_motivation ? { motivation: form.motivation } : {}),
+        ...(form.communication_channel ? { communication_channel: form.communication_channel } : {}),
         // extra_fields for this tab
         ...Object.fromEntries(
           (cfg.extra_fields || []).filter(f => f.for_types.includes(tab)).map(f => [f.key, form[f.key] || null])
@@ -397,6 +398,23 @@ function RegistrationForm({ event, onClose, cfg, initialTab, ticketInstructions 
           <div>
             <label className="block text-sm text-[var(--text-muted)] mb-1">رقم الهاتف {cfg.require_phone ? '*' : ''}</label>
             <input className="input-field" required={cfg.require_phone} value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+963..." />
+          </div>
+        )}
+        {/* Communication Channel (Admin Only) */}
+        {typeof window !== 'undefined' && localStorage.getItem('admin_token') && (
+          <div>
+            <label className="block text-sm text-[var(--text-muted)] mb-1">قناة التواصل (أدمن فقط)</label>
+            <select className="input-field" value={form.communication_channel} onChange={e => set('communication_channel', e.target.value)}>
+              <option value="">-- اختر القناة --</option>
+              <option value="phone">📞 هاتف</option>
+              <option value="email">📧 بريد إلكتروني</option>
+              <option value="whatsapp">💬 واتساب</option>
+              <option value="social_media">📱 وسائل التواصل</option>
+              <option value="website">🌐 موقع إلكتروني</option>
+              <option value="referral">👥 إحالة</option>
+              <option value="event">🎪 حدث</option>
+              <option value="other">أخرى</option>
+            </select>
           </div>
         )}
         {cfg.show_city && (

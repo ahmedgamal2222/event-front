@@ -465,6 +465,27 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
   const [selectedContactForLog, setSelectedContactForLog] = useState<{ id: number; name: string } | null>(null);
   const [interactionStats, setInteractionStats] = useState<{ total: number; last: string | null }>({ total: 0, last: null });
 
+  // Manual registration form
+  const [showManualRegForm, setShowManualRegForm] = useState(false);
+  const [manualRegForm, setManualRegForm] = useState<any>({
+    full_name: '',
+    email: '',
+    phone: '',
+    city: '',
+    country: '',
+    reg_type: 'general',
+    status: 'approved',
+    communication_channel: '',
+    motivation: '',
+    company_name: '',
+    sector: '',
+    stage: '',
+    team_size: '',
+    website: '',
+    description: ''
+  });
+  const [savingManualReg, setSavingManualReg] = useState(false);
+
   const currentUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('admin_user') || '{}') : {};
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
@@ -752,6 +773,25 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
     <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr 360px' : '1fr', gap: 16, alignItems: 'start' }}>
       {/* ── List ── */}
       <div>
+        {/* Header with Add Button */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+          <h3 style={{ color: 'white', fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>📋 التسجيلات</h3>
+          {!readOnly && (
+            <button
+              onClick={() => setShowManualRegForm(true)}
+              style={{
+                ...S.btn('#10b981'),
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '0.55rem 1.1rem'
+              }}
+            >
+              ➕ إضافة تسجيل يدوياً
+            </button>
+          )}
+        </div>
+
         {/* Filters */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
           <input
@@ -1348,6 +1388,166 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Manual Registration Form Modal */}
+      {showManualRegForm && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', 
+          display: 'flex', alignItems: 'center', justifyContent: 'center', 
+          zIndex: 999, padding: '1rem', overflow: 'auto'
+        }}>
+          <div style={{ 
+            ...S.card, 
+            maxWidth: 650, 
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            borderColor: 'rgba(16,185,129,0.4)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, position: 'sticky', top: 0, background: '#13102a', paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <h3 style={{ color: 'white', fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>
+                ➕ إضافة تسجيل يدوياً
+              </h3>
+              <button 
+                onClick={() => { setShowManualRegForm(false); setManualRegForm({ full_name: '', email: '', phone: '', city: '', country: '', reg_type: 'general', status: 'approved', communication_channel: '', motivation: '', company_name: '', sector: '', stage: '', team_size: '', website: '', description: '' }); }} 
+                style={{ ...S.btn('#374151'), padding: '0.3rem 0.6rem' }}
+              >✕</button>
+            </div>
+
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              if (!manualRegForm.full_name || !manualRegForm.email) {
+                alert('الاسم والبريد الإلكتروني مطلوبان');
+                return;
+              }
+              setSavingManualReg(true);
+              try {
+                const payload = {
+                  event_id: eventId,
+                  ...manualRegForm,
+                  source: 'admin_manual'
+                };
+                const res = await fetch(`${API_BASE}/api/events/${eventId}/registrations`, {
+                  method: 'POST',
+                  headers,
+                  body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                  alert('✅ تم إضافة التسجيل بنجاح!');
+                  setShowManualRegForm(false);
+                  setManualRegForm({ full_name: '', email: '', phone: '', city: '', country: '', reg_type: 'general', status: 'approved', communication_channel: '', motivation: '', company_name: '', sector: '', stage: '', team_size: '', website: '', description: '' });
+                  load();
+                } else {
+                  alert(data.error || 'فشل الحفظ');
+                }
+              } catch (err: any) {
+                alert('خطأ: ' + err.message);
+              } finally {
+                setSavingManualReg(false);
+              }
+            }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {/* Personal Info */}
+                <div style={{ gridColumn: '1/-1' }}>
+                  <label style={S.label}>الاسم الكامل *</label>
+                  <input style={S.inp} required value={manualRegForm.full_name} onChange={e => setManualRegForm(f => ({ ...f, full_name: e.target.value }))} />
+                </div>
+                <div>
+                  <label style={S.label}>البريد الإلكتروني *</label>
+                  <input style={S.inp} type="email" required value={manualRegForm.email} onChange={e => setManualRegForm(f => ({ ...f, email: e.target.value }))} />
+                </div>
+                <div>
+                  <label style={S.label}>رقم الهاتف</label>
+                  <input style={S.inp} value={manualRegForm.phone} onChange={e => setManualRegForm(f => ({ ...f, phone: e.target.value }))} />
+                </div>
+                <div>
+                  <label style={S.label}>نوع التسجيل *</label>
+                  <select style={S.inp} value={manualRegForm.reg_type} onChange={e => setManualRegForm(f => ({ ...f, reg_type: e.target.value }))}>
+                    {Object.entries(REG_TYPE_CONFIG).map(([k, v]) => (
+                      <option key={k} value={k}>{v.icon} {v.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={S.label}>الحالة *</label>
+                  <select style={S.inp} value={manualRegForm.status} onChange={e => setManualRegForm(f => ({ ...f, status: e.target.value }))}>
+                    {Object.entries(STATUS_CONFIG).map(([k, v]) => (
+                      <option key={k} value={k}>{v.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={S.label}>المدينة</label>
+                  <input style={S.inp} value={manualRegForm.city} onChange={e => setManualRegForm(f => ({ ...f, city: e.target.value }))} />
+                </div>
+                <div>
+                  <label style={S.label}>الدولة</label>
+                  <input style={S.inp} value={manualRegForm.country} onChange={e => setManualRegForm(f => ({ ...f, country: e.target.value }))} placeholder="Syria" />
+                </div>
+                <div>
+                  <label style={S.label}>قناة التواصل (أدمن فقط)</label>
+                  <select style={S.inp} value={manualRegForm.communication_channel} onChange={e => setManualRegForm(f => ({ ...f, communication_channel: e.target.value }))}>
+                    <option value="">-- اختر القناة --</option>
+                    <option value="phone">📞 هاتف</option>
+                    <option value="email">📧 بريد إلكتروني</option>
+                    <option value="whatsapp">💬 واتساب</option>
+                    <option value="social_media">📱 وسائل التواصل</option>
+                    <option value="website">🌐 موقع إلكتروني</option>
+                    <option value="referral">👥 إحالة</option>
+                    <option value="event">🎪 حدث</option>
+                    <option value="other">أخرى</option>
+                  </select>
+                </div>
+
+                {/* Startup fields (conditional) */}
+                {manualRegForm.reg_type === 'startup' && (
+                  <>
+                    <div style={{ gridColumn: '1/-1' }}>
+                      <label style={S.label}>اسم الشركة</label>
+                      <input style={S.inp} value={manualRegForm.company_name} onChange={e => setManualRegForm(f => ({ ...f, company_name: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label style={S.label}>قطاع العمل</label>
+                      <input style={S.inp} value={manualRegForm.sector} onChange={e => setManualRegForm(f => ({ ...f, sector: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label style={S.label}>مرحلة الشركة</label>
+                      <input style={S.inp} value={manualRegForm.stage} onChange={e => setManualRegForm(f => ({ ...f, stage: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label style={S.label}>حجم الفريق</label>
+                      <input style={S.inp} value={manualRegForm.team_size} onChange={e => setManualRegForm(f => ({ ...f, team_size: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label style={S.label}>الموقع الإلكتروني</label>
+                      <input style={S.inp} value={manualRegForm.website} onChange={e => setManualRegForm(f => ({ ...f, website: e.target.value }))} />
+                    </div>
+                    <div style={{ gridColumn: '1/-1' }}>
+                      <label style={S.label}>نبذة عن الشركة</label>
+                      <textarea style={{ ...S.inp, minHeight: 70, resize: 'vertical' }} value={manualRegForm.description} onChange={e => setManualRegForm(f => ({ ...f, description: e.target.value }))} />
+                    </div>
+                  </>
+                )}
+
+                <div style={{ gridColumn: '1/-1' }}>
+                  <label style={S.label}>دوافع المشاركة</label>
+                  <textarea style={{ ...S.inp, minHeight: 60, resize: 'vertical' }} value={manualRegForm.motivation} onChange={e => setManualRegForm(f => ({ ...f, motivation: e.target.value }))} />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                <button type="submit" style={S.btn('#10b981')} disabled={savingManualReg}>
+                  {savingManualReg ? '⏳ جاري الحفظ...' : '✅ حفظ التسجيل'}
+                </button>
+                <button type="button" style={S.btn('#374151')} onClick={() => setShowManualRegForm(false)}>
+                  إلغاء
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
