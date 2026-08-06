@@ -675,6 +675,35 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly, onI
                     <div key={i} style={{ color: '#cbd5e1', fontSize: '0.83rem' }}><span style={{ opacity: 0.6 }}>{icon} </span>{val}</div>
                   ))}
                 </div>
+                {/* Display Registrations Types in Arabic */}
+                {registrations.length > 0 && (
+                  <div style={{ marginTop: 10, background: 'rgba(255,255,255,0.04)', borderRadius: '0.5rem', padding: '8px 12px' }}>
+                    <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginBottom: 6, fontWeight: 600 }}>📋 التسجيلات</div>
+                    {registrations.map((reg, idx) => {
+                      const typeInfo = REG_TYPE_LABELS[reg.reg_type || ''] || { label: reg.reg_type || 'عام', color: '#6b7280', icon: '👤' };
+                      const additionalTypes = reg.reg_types ? reg.reg_types.split(',').filter(Boolean) : [];
+                      return (
+                        <div key={idx} style={{ marginBottom: idx < registrations.length - 1 ? 6 : 0 }}>
+                          <div style={{ color: '#cbd5e1', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                            <span>{reg.event_name_ar || reg.event_name || '—'}:</span>
+                            <span style={{ color: typeInfo.color, fontWeight: 600 }}>{typeInfo.icon} {typeInfo.label}</span>
+                            {additionalTypes.length > 0 && (
+                              <span style={{ color: '#64748b', fontSize: '0.75rem' }}>+</span>
+                            )}
+                            {additionalTypes.map((t, i) => {
+                              const addTypeInfo = REG_TYPE_LABELS[t] || { label: t, color: '#6b7280', icon: '👤' };
+                              return (
+                                <span key={i} style={{ color: addTypeInfo.color, fontSize: '0.75rem' }}>
+                                  {addTypeInfo.icon} {addTypeInfo.label}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                 {selected.notes && <div style={{ marginTop: 10, background: 'rgba(255,255,255,0.04)', borderRadius: '0.5rem', padding: '8px 12px', color: '#cbd5e1', fontSize: '0.82rem' }}>📝 {selected.notes}</div>}
               </>
             )}
