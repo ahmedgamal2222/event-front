@@ -22,7 +22,7 @@ interface ContactDetail extends Contact {
 
 interface Registration {
   id: number; event_name?: string; event_name_ar?: string;
-  reg_type?: string; status?: string; created_at: string;
+  reg_type?: string; reg_types?: string; status?: string; created_at: string;
 }
 
 interface Task {
@@ -677,6 +677,7 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly, onI
                     {registrations.map(reg => {
                       const regTasks = tasks.filter((t: any) => t.registration_id === reg.id);
                       const typeInfo = REG_TYPE_LABELS[reg.reg_type || ''] || { label: reg.reg_type || 'عام', color: '#6b7280', icon: '👤' };
+                      const additionalTypes = reg.reg_types ? reg.reg_types.split(',').filter(Boolean) : [];
                       const statusColor = STATUS_COLORS[reg.status || ''] || '#6b7280';
                       const statusLabel = STATUS_LABELS[reg.status || ''] || reg.status;
                       return (
@@ -706,6 +707,21 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly, onI
                             }}>
                               {typeInfo.icon} {typeInfo.label}
                             </span>
+                            {/* Additional Types */}
+                            {additionalTypes.map((t, i) => {
+                              const addTypeInfo = REG_TYPE_LABELS[t] || { label: t, color: '#6b7280', icon: '👤' };
+                              return (
+                                <span key={i} style={{
+                                  fontSize: '0.7rem', fontWeight: 600,
+                                  background: 'rgba(16,185,129,0.15)',
+                                  color: '#34d399',
+                                  padding: '3px 8px', borderRadius: '999px',
+                                  border: '1px solid rgba(16,185,129,0.3)',
+                                }}>
+                                  {addTypeInfo.icon} +{addTypeInfo.label}
+                                </span>
+                              );
+                            })}
                             {/* Status */}
                             <span style={{
                               fontSize: '0.73rem',

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تأكيد التذكرة</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
+    <!-- Main Container -->
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f5f5f5; padding: 20px 0;">
+        <tr>
+            <td align="center">
+                <!-- Email Content -->
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    
+                    <!-- Header with Gradient -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px 20px; text-align: center;">
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                                <tr>
+                                    <td style="text-align: center;">
+                                        <h1 style="color: #ffffff; font-size: 28px; font-weight: 700; margin: 0 0 10px 0;">
+                                            🎉 تم تأكيد تذكرتك!
+                                        </h1>
+                                        <p style="color: #f0f0f0; font-size: 16px; margin: 0;">
+                                            مرحباً بك في {{EVENT_NAME}}
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Welcome Message -->
+                    <tr>
+                        <td style="padding: 30px 30px 20px 30px;">
+                            <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 15px 0;">
+                                عزيزي/عزيزتي <strong>{{USER_NAME}}</strong>،
+                            </p>
+                            <p style="color: #555555; font-size: 15px; line-height: 1.6; margin: 0 0 20px 0;">
+                                نشكرك على تسجيلك في {{EVENT_NAME}}. نحن متحمسون لاستقبالك ونتطلع لرؤيتك!
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Ticket Info Box -->
+                    <tr>
+                        <td style="padding: 0 30px 20px 30px;">
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%); border-radius: 10px; border: 2px solid #e0e4ff;">
+                                <tr>
+                                    <td style="padding: 25px;">
+                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                                            <tr>
+                                                <td style="padding-bottom: 15px;">
+                                                    <h2 style="color: #667eea; font-size: 18px; font-weight: 700; margin: 0 0 15px 0; border-bottom: 2px solid #e0e4ff; padding-bottom: 10px;">
+                                                        📋 معلومات التذكرة
+                                                    </h2>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    <table role="presentation" cellpadding="8" cellspacing="0" border="0" width="100%">
+                                                        <tr>
+                                                            <td style="color: #666666; font-size: 14px; font-weight: 600; width: 40%;">رقم التذكرة:</td>
+                                                            <td style="color: #333333; font-size: 14px; font-weight: 700;">{{TICKET_NUMBER}}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="color: #666666; font-size: 14px; font-weight: 600;">نوع التذكرة:</td>
+                                                            <td style="color: #333333; font-size: 14px;">{{TICKET_TYPE}}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="color: #666666; font-size: 14px; font-weight: 600;">تاريخ الفعالية:</td>
+                                                            <td style="color: #333333; font-size: 14px;">{{EVENT_DATE}}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="color: #666666; font-size: 14px; font-weight: 600;">الموقع:</td>
+                                                            <td style="color: #333333; font-size: 14px;">{{EVENT_LOCATION}}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="color: #666666; font-size: 14px; font-weight: 600;">الاسم:</td>
+                                                            <td style="color: #333333; font-size: 14px;">{{USER_NAME}}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="color: #666666; font-size: 14px; font-weight: 600;">البريد الإلكتروني:</td>
+                                                            <td style="color: #333333; font-size: 14px;">{{USER_EMAIL}}</td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- QR Code Section -->
+                    <tr>
+                        <td style="padding: 0 30px 20px 30px; text-align: center;">
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #ffffff; border-radius: 10px; border: 2px dashed #d0d0d0;">
+                                <tr>
+                                    <td style="padding: 25px; text-align: center;">
+                                        <p style="color: #666666; font-size: 14px; margin: 0 0 15px 0; font-weight: 600;">
+                                            📱 رمز QR للدخول السريع
+                                        </p>
+                                        <!-- QR Code Image Placeholder -->
+                                        <img src="{{QR_CODE_URL}}" alt="QR Code" style="max-width: 180px; height: auto; border: 3px solid #e0e4ff; border-radius: 8px; display: inline-block;" />
+                                        <p style="color: #999999; font-size: 12px; margin: 15px 0 0 0;">
+                                            يُرجى إظهار هذا الرمز عند الدخول
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Action Button -->
+                    <tr>
+                        <td style="padding: 0 30px 30px 30px; text-align: center;">
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                                <tr>
+                                    <td style="text-align: center;">
+                                        <a href="{{TICKET_URL}}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; font-size: 16px; font-weight: 700; text-decoration: none; padding: 15px 40px; border-radius: 8px; box-shadow: 0 4px 12px rgba(102,126,234,0.3);">
+                                            🎫 عرض التذكرة الكاملة
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Important Notes -->
+                    <tr>
+                        <td style="padding: 0 30px 30px 30px;">
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #fff8f0; border-radius: 8px; border-right: 4px solid #ff9800;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <h3 style="color: #ff9800; font-size: 15px; font-weight: 700; margin: 0 0 12px 0;">
+                                            ⚠️ ملاحظات هامة
+                                        </h3>
+                                        <ul style="color: #666666; font-size: 13px; line-height: 1.8; margin: 0; padding: 0 0 0 25px;">
+                                            <li style="margin-bottom: 8px;">يُرجى إحضار هذه التذكرة (مطبوعة أو على هاتفك)</li>
+                                            <li style="margin-bottom: 8px;">الوصول قبل {{EVENT_TIME}} بـ 30 دقيقة على الأقل</li>
+                                            <li style="margin-bottom: 8px;">إحضار بطاقة الهوية الشخصية للتحقق</li>
+                                            <li>هذه التذكرة صالحة لشخص واحد فقط</li>
+                                        </ul>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 20px 30px; background-color: #f8f9fa; border-top: 1px solid #e0e0e0;">
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                                <tr>
+                                    <td style="text-align: center;">
+                                        <p style="color: #999999; font-size: 13px; margin: 0 0 10px 0;">
+                                            هل لديك أسئلة؟ تواصل معنا:
+                                        </p>
+                                        <p style="margin: 0;">
+                                            <a href="mailto:{{SUPPORT_EMAIL}}" style="color: #667eea; text-decoration: none; font-size: 14px; font-weight: 600;">
+                                                {{SUPPORT_EMAIL}}
+                                            </a>
+                                        </p>
+                                        <p style="color: #cccccc; font-size: 11px; margin: 15px 0 0 0;">
+                                            © {{CURRENT_YEAR}} {{ORGANIZATION_NAME}}. جميع الحقوق محفوظة.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

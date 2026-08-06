@@ -29,7 +29,7 @@ interface TimelineEntry {
 
 interface Registration {
   id: number; event_name?: string; event_name_ar?: string;
-  reg_type?: string; status?: string; created_at: string;
+  reg_type?: string; reg_types?: string; status?: string; created_at: string;
   full_name?: string; email?: string;
 }
 
@@ -345,7 +345,10 @@ export default function AdminCRMContacts({ token, apiBase }: Props) {
                         {reg.event_name_ar || reg.event_name || `حدث #${reg.id}`}
                       </div>
                       <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
-                        {reg.reg_type && <span style={{ fontSize: '0.72rem', background: 'rgba(108,99,255,0.2)', color: '#818cf8', padding: '2px 8px', borderRadius: 4 }}>{reg.reg_type}</span>}
+                        {reg.reg_type && <span style={{ fontSize: '0.72rem', background: 'rgba(108,99,255,0.2)', color: '#818cf8', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>{reg.reg_type}</span>}
+                        {reg.reg_types && reg.reg_types.split(',').filter(Boolean).map((t, i) => (
+                          <span key={i} style={{ fontSize: '0.72rem', background: 'rgba(16,185,129,0.15)', color: '#34d399', padding: '2px 8px', borderRadius: 4, border: '1px solid rgba(16,185,129,0.3)' }}>+{t}</span>
+                        ))}
                         {reg.status && <span style={{ fontSize: '0.72rem', background: `${statusColors[reg.status] || '#374151'}20`, color: statusColors[reg.status] || '#94a3b8', padding: '2px 8px', borderRadius: 4 }}>{reg.status}</span>}
                         <span style={{ fontSize: '0.72rem', color: '#4b5563' }}>{new Date(reg.created_at).toLocaleDateString('ar-SA')}</span>
                       </div>

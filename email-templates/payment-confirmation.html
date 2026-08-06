@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تأكيد الدفع</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
+    <!-- Main Container -->
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f5f5f5; padding: 20px 0;">
+        <tr>
+            <td align="center">
+                <!-- Email Content -->
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    
+                    <!-- Header with Success Gradient -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 30px 20px; text-align: center;">
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                                <tr>
+                                    <td style="text-align: center;">
+                                        <div style="background-color: #ffffff; width: 70px; height: 70px; border-radius: 50%; margin: 0 auto 15px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                                            <span style="font-size: 40px; line-height: 1;">✓</span>
+                                        </div>
+                                        <h1 style="color: #ffffff; font-size: 28px; font-weight: 700; margin: 0 0 10px 0;">
+                                            تم الدفع بنجاح!
+                                        </h1>
+                                        <p style="color: #e8f5e9; font-size: 16px; margin: 0;">
+                                            شكراً لك، تم استلام دفعتك
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Welcome Message -->
+                    <tr>
+                        <td style="padding: 30px 30px 20px 30px;">
+                            <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 15px 0;">
+                                عزيزي/عزيزتي <strong>{{USER_NAME}}</strong>،
+                            </p>
+                            <p style="color: #555555; font-size: 15px; line-height: 1.6; margin: 0 0 20px 0;">
+                                نؤكد استلام دفعتك لـ {{EVENT_NAME}}. تم معالجة طلبك بنجاح ونحن نعمل على إعداد تذكرتك.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Payment Summary -->
+                    <tr>
+                        <td style="padding: 0 30px 20px 30px;">
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background: linear-gradient(135deg, #f0fff4 0%, #e8f5e9 100%); border-radius: 10px; border: 2px solid #c8e6c9;">
+                                <tr>
+                                    <td style="padding: 25px;">
+                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                                            <tr>
+                                                <td style="padding-bottom: 15px;">
+                                                    <h2 style="color: #11998e; font-size: 18px; font-weight: 700; margin: 0 0 15px 0; border-bottom: 2px solid #c8e6c9; padding-bottom: 10px;">
+                                                        💳 ملخص الدفع
+                                                    </h2>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    <table role="presentation" cellpadding="8" cellspacing="0" border="0" width="100%">
+                                                        <tr>
+                                                            <td style="color: #666666; font-size: 14px; font-weight: 600; width: 40%;">رقم المعاملة:</td>
+                                                            <td style="color: #333333; font-size: 14px; font-weight: 700;">{{TRANSACTION_ID}}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="color: #666666; font-size: 14px; font-weight: 600;">تاريخ الدفع:</td>
+                                                            <td style="color: #333333; font-size: 14px;">{{PAYMENT_DATE}}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="color: #666666; font-size: 14px; font-weight: 600;">طريقة الدفع:</td>
+                                                            <td style="color: #333333; font-size: 14px;">{{PAYMENT_METHOD}}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="color: #666666; font-size: 14px; font-weight: 600;">الفعالية:</td>
+                                                            <td style="color: #333333; font-size: 14px;">{{EVENT_NAME}}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="color: #666666; font-size: 14px; font-weight: 600;">نوع التذكرة:</td>
+                                                            <td style="color: #333333; font-size: 14px;">{{TICKET_TYPE}}</td>
+                                                        </tr>
+                                                        <tr style="border-top: 2px solid #c8e6c9;">
+                                                            <td style="color: #11998e; font-size: 16px; font-weight: 700; padding-top: 12px;">المبلغ الإجمالي:</td>
+                                                            <td style="color: #11998e; font-size: 18px; font-weight: 700; padding-top: 12px;">{{AMOUNT}} {{CURRENCY}}</td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Status Badge -->
+                    <tr>
+                        <td style="padding: 0 30px 20px 30px; text-align: center;">
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                                <tr>
+                                    <td style="text-align: center;">
+                                        <div style="display: inline-block; background-color: #e8f5e9; color: #2e7d32; font-size: 14px; font-weight: 700; padding: 12px 30px; border-radius: 25px; border: 2px solid #81c784;">
+                                            ✓ الحالة: تم التأكيد والدفع
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Receipt Download -->
+                    <tr>
+                        <td style="padding: 0 30px 20px 30px; text-align: center;">
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                                <tr>
+                                    <td style="text-align: center;">
+                                        <a href="{{RECEIPT_URL}}" style="display: inline-block; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: #ffffff; font-size: 16px; font-weight: 700; text-decoration: none; padding: 15px 40px; border-radius: 8px; box-shadow: 0 4px 12px rgba(17,153,142,0.3);">
+                                            📄 تحميل الإيصال
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- What's Next -->
+                    <tr>
+                        <td style="padding: 0 30px 30px 30px;">
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #fff9e6; border-radius: 8px; border-right: 4px solid #ffc107;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <h3 style="color: #f57c00; font-size: 15px; font-weight: 700; margin: 0 0 12px 0;">
+                                            📌 الخطوات التالية
+                                        </h3>
+                                        <ul style="color: #666666; font-size: 13px; line-height: 1.8; margin: 0; padding: 0 0 0 25px;">
+                                            <li style="margin-bottom: 8px;">ستصلك تذكرتك الإلكترونية خلال <strong>15 دقيقة</strong></li>
+                                            <li style="margin-bottom: 8px;">تحقق من صندوق البريد الوارد (أو مجلد الرسائل غير المرغوب فيها)</li>
+                                            <li style="margin-bottom: 8px;">احتفظ بنسخة من الإيصال للمرجعية</li>
+                                            <li>في حال عدم وصول التذكرة، تواصل معنا فوراً</li>
+                                        </ul>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Order Details Box -->
+                    <tr>
+                        <td style="padding: 0 30px 30px 30px;">
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f8f9fa; border-radius: 8px; border: 1px solid #e0e0e0;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <h3 style="color: #555555; font-size: 14px; font-weight: 700; margin: 0 0 12px 0;">
+                                            📦 تفاصيل الطلب
+                                        </h3>
+                                        <table role="presentation" cellpadding="6" cellspacing="0" border="0" width="100%">
+                                            <tr>
+                                                <td style="color: #666666; font-size: 13px;">الاسم:</td>
+                                                <td style="color: #333333; font-size: 13px;">{{USER_NAME}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color: #666666; font-size: 13px;">البريد الإلكتروني:</td>
+                                                <td style="color: #333333; font-size: 13px;">{{USER_EMAIL}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color: #666666; font-size: 13px;">رقم الهاتف:</td>
+                                                <td style="color: #333333; font-size: 13px;">{{USER_PHONE}}</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 20px 30px; background-color: #f8f9fa; border-top: 1px solid #e0e0e0;">
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                                <tr>
+                                    <td style="text-align: center;">
+                                        <p style="color: #999999; font-size: 13px; margin: 0 0 10px 0;">
+                                            هل لديك أسئلة حول الدفع؟ تواصل معنا:
+                                        </p>
+                                        <p style="margin: 0;">
+                                            <a href="mailto:{{SUPPORT_EMAIL}}" style="color: #11998e; text-decoration: none; font-size: 14px; font-weight: 600;">
+                                                {{SUPPORT_EMAIL}}
+                                            </a>
+                                        </p>
+                                        <p style="color: #cccccc; font-size: 11px; margin: 15px 0 0 0;">
+                                            © {{CURRENT_YEAR}} {{ORGANIZATION_NAME}}. جميع الحقوق محفوظة.
+                                        </p>
+                                        <p style="color: #dddddd; font-size: 10px; margin: 10px 0 0 0;">
+                                            هذا إيصال تلقائي. لا تقم بالرد على هذه الرسالة.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

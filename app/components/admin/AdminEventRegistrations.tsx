@@ -65,8 +65,11 @@ interface Props {
 // Contact Interaction Log Component
 function ContactInteractionLog({ contactId, contactName, token, apiBase }: { contactId: number; contactName: string; token: string; apiBase: string }) {
   const [interactions, setInteractions] = useState<any[]>([]);
+  const [filteredInteractions, setFilteredInteractions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ total: 0, calls: 0, meetings: 0, emails: 0, whatsapp: 0, other: 0 });
+  const [channelFilter, setChannelFilter] = useState<string>('all');
+  const [directionFilter, setDirectionFilter] = useState<string>('all');
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
   useEffect(() => {
@@ -78,6 +81,7 @@ function ContactInteractionLog({ contactId, contactName, token, apiBase }: { con
         if (d.success) {
           const data = d.data || [];
           setInteractions(data);
+          setFilteredInteractions(data);
           
           // Calculate stats
           const stats = {
@@ -94,6 +98,45 @@ function ContactInteractionLog({ contactId, contactName, token, apiBase }: { con
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [contactId, apiBase, token]);
+
+  // Apply filters
+  useEffect(() => {
+    let filtered = [...interactions];
+    
+    if (channelFilter !== 'all') {
+      filtered = filtered.filter(i => i.channel === channelFilter);
+    }
+    
+    if (directionFilter !== 'all') {
+      filtered = filtered.filter(i => i.direction === directionFilter);
+    }
+    
+    setFilteredInteractions(filtered);
+  }, [channelFilter, directionFilter, interactions]);
+
+  // Export interactions as CSV
+  const exportToCSV = () => {
+    const headers = ['التاريخ', 'القناة', 'الاتجاه', 'الموضوع', 'الملخص', 'المسؤول'];
+    const rows = filteredInteractions.map(i => [
+      new Date(i.created_at).toLocaleString('ar-SA'),
+      channelIcons[i.channel] || i.channel,
+      directionLabels[i.direction] || i.direction,
+      i.subject,
+      i.summary || '',
+      i.logged_by || ''
+    ]);
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `سجل_التواصل_${contactName}_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
 
   const channelIcons: Record<string, string> = {
     call: '📞',
@@ -126,8 +169,13 @@ function ContactInteractionLog({ contactId, contactName, token, apiBase }: { con
           border: '1px solid rgba(139,92,246,0.3)',
           borderRadius: 10, 
           padding: '12px 14px',
-          textAlign: 'center'
-        }}>
+          textAlign: 'center',
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+          opacity: channelFilter === 'all' && directionFilter === 'all' ? 1 : 0.5
+        }}
+        onClick={() => { setChannelFilter('all'); setDirectionFilter('all'); }}
+        >
           <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#a78bfa', marginBottom: 4 }}>{stats.total}</div>
           <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>إجمالي التواصلات</div>
         </div>
@@ -136,8 +184,13 @@ function ContactInteractionLog({ contactId, contactName, token, apiBase }: { con
           border: '1px solid rgba(59,130,246,0.3)',
           borderRadius: 10, 
           padding: '12px 14px',
-          textAlign: 'center'
-        }}>
+          textAlign: 'center',
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+          opacity: channelFilter === 'call' || channelFilter === 'all' ? 1 : 0.5
+        }}
+        onClick={() => setChannelFilter(channelFilter === 'call' ? 'all' : 'call')}
+        >
           <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#60a5fa', marginBottom: 4 }}>📞 {stats.calls}</div>
           <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>مكالمات</div>
         </div>
@@ -146,8 +199,13 @@ function ContactInteractionLog({ contactId, contactName, token, apiBase }: { con
           border: '1px solid rgba(16,185,129,0.3)',
           borderRadius: 10, 
           padding: '12px 14px',
-          textAlign: 'center'
-        }}>
+          textAlign: 'center',
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+          opacity: channelFilter === 'meeting' || channelFilter === 'all' ? 1 : 0.5
+        }}
+        onClick={() => setChannelFilter(channelFilter === 'meeting' ? 'all' : 'meeting')}
+        >
           <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#34d399', marginBottom: 4 }}>🤝 {stats.meetings}</div>
           <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>اجتماعات</div>
         </div>
@@ -156,8 +214,13 @@ function ContactInteractionLog({ contactId, contactName, token, apiBase }: { con
           border: '1px solid rgba(14,165,233,0.3)',
           borderRadius: 10, 
           padding: '12px 14px',
-          textAlign: 'center'
-        }}>
+          textAlign: 'center',
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+          opacity: channelFilter === 'email' || channelFilter === 'all' ? 1 : 0.5
+        }}
+        onClick={() => setChannelFilter(channelFilter === 'email' ? 'all' : 'email')}
+        >
           <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#38bdf8', marginBottom: 4 }}>📧 {stats.emails}</div>
           <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>بريد إلكتروني</div>
         </div>
@@ -166,20 +229,102 @@ function ContactInteractionLog({ contactId, contactName, token, apiBase }: { con
           border: '1px solid rgba(34,197,94,0.3)',
           borderRadius: 10, 
           padding: '12px 14px',
-          textAlign: 'center'
-        }}>
+          textAlign: 'center',
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+          opacity: channelFilter === 'whatsapp' || channelFilter === 'all' ? 1 : 0.5
+        }}
+        onClick={() => setChannelFilter(channelFilter === 'whatsapp' ? 'all' : 'whatsapp')}
+        >
           <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#4ade80', marginBottom: 4 }}>💬 {stats.whatsapp}</div>
           <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>واتساب</div>
         </div>
       </div>
 
+      {/* Filters and Export */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        gap: 10,
+        flexWrap: 'wrap',
+        padding: '12px 14px',
+        background: 'rgba(255,255,255,0.02)',
+        borderRadius: 8,
+        border: '1px solid rgba(255,255,255,0.06)'
+      }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>الاتجاه:</span>
+          <button
+            onClick={() => setDirectionFilter('all')}
+            style={{
+              background: directionFilter === 'all' ? 'rgba(108,99,255,0.2)' : 'transparent',
+              border: `1px solid ${directionFilter === 'all' ? '#6C63FF' : 'rgba(255,255,255,0.1)'}`,
+              color: directionFilter === 'all' ? '#a5b4fc' : '#94a3b8',
+              borderRadius: 6,
+              padding: '4px 10px',
+              fontSize: '0.72rem',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >الكل</button>
+          <button
+            onClick={() => setDirectionFilter('outbound')}
+            style={{
+              background: directionFilter === 'outbound' ? 'rgba(59,130,246,0.2)' : 'transparent',
+              border: `1px solid ${directionFilter === 'outbound' ? '#3b82f6' : 'rgba(255,255,255,0.1)'}`,
+              color: directionFilter === 'outbound' ? '#60a5fa' : '#94a3b8',
+              borderRadius: 6,
+              padding: '4px 10px',
+              fontSize: '0.72rem',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >↗️ صادر</button>
+          <button
+            onClick={() => setDirectionFilter('inbound')}
+            style={{
+              background: directionFilter === 'inbound' ? 'rgba(16,185,129,0.2)' : 'transparent',
+              border: `1px solid ${directionFilter === 'inbound' ? '#10b981' : 'rgba(255,255,255,0.1)'}`,
+              color: directionFilter === 'inbound' ? '#34d399' : '#94a3b8',
+              borderRadius: 6,
+              padding: '4px 10px',
+              fontSize: '0.72rem',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >↙️ وارد</button>
+        </div>
+
+        <button
+          onClick={exportToCSV}
+          disabled={filteredInteractions.length === 0}
+          style={{
+            background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(108,99,255,0.1))',
+            border: '1px solid rgba(139,92,246,0.3)',
+            color: '#a78bfa',
+            borderRadius: 6,
+            padding: '6px 14px',
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            cursor: filteredInteractions.length === 0 ? 'not-allowed' : 'pointer',
+            opacity: filteredInteractions.length === 0 ? 0.5 : 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6
+          }}
+        >
+          📥 تصدير CSV
+        </button>
+      </div>
+
       {/* Interaction Timeline */}
       <div style={{ marginTop: 8 }}>
         <h4 style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: 12, fontWeight: 600 }}>
-          🕐 السجل الزمني الكامل ({interactions.length} تواصل)
+          🕐 السجل الزمني {channelFilter !== 'all' || directionFilter !== 'all' ? '(مُصفّى)' : 'الكامل'} ({filteredInteractions.length} تواصل)
         </h4>
         
-        {interactions.length === 0 ? (
+        {filteredInteractions.length === 0 ? (
           <div style={{ 
             textAlign: 'center', 
             padding: '3rem 1rem', 
@@ -189,14 +334,19 @@ function ContactInteractionLog({ contactId, contactName, token, apiBase }: { con
             border: '1px dashed rgba(255,255,255,0.1)'
           }}>
             <div style={{ fontSize: '3rem', marginBottom: 12 }}>💬</div>
-            <div style={{ fontSize: '0.9rem', marginBottom: 4 }}>لا يوجد سجل تواصل بعد</div>
+            <div style={{ fontSize: '0.9rem', marginBottom: 4 }}>
+              {interactions.length === 0 ? 'لا يوجد سجل تواصل بعد' : 'لا توجد نتائج للفلتر المحدد'}
+            </div>
             <div style={{ fontSize: '0.75rem', color: '#4b5563' }}>
-              ابدأ بتسجيل أول تواصل مع {contactName}
+              {interactions.length === 0 
+                ? `ابدأ بتسجيل أول تواصل مع ${contactName}`
+                : 'جرب تغيير الفلتر لعرض نتائج مختلفة'
+              }
             </div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {interactions.map((interaction, idx) => (
+            {filteredInteractions.map((interaction, idx) => (
               <div 
                 key={interaction.id || idx}
                 style={{ 
@@ -313,6 +463,7 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
   // Contact interaction log
   const [showContactLog, setShowContactLog] = useState(false);
   const [selectedContactForLog, setSelectedContactForLog] = useState<{ id: number; name: string } | null>(null);
+  const [interactionStats, setInteractionStats] = useState<{ total: number; last: string | null }>({ total: 0, last: null });
 
   const currentUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('admin_user') || '{}') : {};
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
@@ -407,6 +558,8 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
           await fetch(`${API_BASE}/api/events/${eventId}/registrations/${reg.id}`, {
             method: 'PUT', headers, body: JSON.stringify({ contact_id: contactId }),
           }).catch(() => {});
+          // Load interaction stats
+          loadInteractionStats(contactId);
         }
         setSelected(s => s ? { ...s, contact_id: contactId } : null);
         if (d.existing_id) {
@@ -419,6 +572,30 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
       }
     } finally { setConverting(false); }
   };
+
+  // Load interaction statistics for a contact
+  const loadInteractionStats = async (contactId: number) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/crm/contacts/${contactId}/interactions`, { headers });
+      const d = await res.json();
+      if (d.success && d.data) {
+        const interactions = d.data || [];
+        setInteractionStats({
+          total: interactions.length,
+          last: interactions.length > 0 ? interactions[0].created_at : null
+        });
+      }
+    } catch {}
+  };
+
+  // Load stats when selected changes and has contact_id
+  useEffect(() => {
+    if (selected?.contact_id) {
+      loadInteractionStats(selected.contact_id);
+    } else {
+      setInteractionStats({ total: 0, last: null });
+    }
+  }, [selected?.contact_id]);
 
   const saveTask = async () => {
     if (!selected || !taskForm.title) return;
@@ -701,6 +878,36 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                               })}
                             </div>
                           )}
+                          {/* Quick add type button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (roAlert()) return;
+                              setSelected(reg);
+                              const cur = reg.reg_types ? reg.reg_types.split(',').filter(Boolean) : [];
+                              setPendingTypes(cur);
+                              setShowTypeEdit(true);
+                            }}
+                            disabled={readOnly}
+                            style={{
+                              background: 'rgba(16,185,129,0.12)',
+                              border: '1px solid rgba(16,185,129,0.3)',
+                              color: '#34d399',
+                              borderRadius: 4,
+                              padding: '2px 6px',
+                              fontSize: '0.65rem',
+                              fontWeight: 600,
+                              cursor: readOnly ? 'not-allowed' : 'pointer',
+                              marginTop: 2,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 2,
+                              ...(readOnly ? roStyle : {})
+                            }}
+                            title={readOnly ? 'وضع المشاهدة فقط' : 'إضافة نوع إضافي'}
+                          >
+                            ➕ نوع
+                          </button>
                         </div>
                       </td>
                       {/* المدينة */}
@@ -819,6 +1026,52 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                     </span>
                   );
                 })}
+              </div>
+            )}
+
+            {/* Interaction quick stats */}
+            {(converted.has(selected.id) || selected.contact_id) && interactionStats.total > 0 && (
+              <div style={{ 
+                marginTop: 10, 
+                padding: '8px 12px', 
+                background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(108,99,255,0.05))', 
+                border: '1px solid rgba(139,92,246,0.2)',
+                borderRadius: '0.5rem', 
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: '1.1rem' }}>💬</span>
+                  <div>
+                    <div style={{ color: '#a78bfa', fontSize: '0.8rem', fontWeight: 600 }}>
+                      {interactionStats.total} تواصل سابق
+                    </div>
+                    {interactionStats.last && (
+                      <div style={{ color: '#64748b', fontSize: '0.7rem', marginTop: 2 }}>
+                        آخر تواصل: {new Date(interactionStats.last).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedContactForLog({ id: selected.contact_id!, name: getName(selected) });
+                    setShowContactLog(true);
+                  }}
+                  style={{
+                    background: 'rgba(139,92,246,0.2)',
+                    border: '1px solid rgba(139,92,246,0.4)',
+                    color: '#a78bfa',
+                    borderRadius: 6,
+                    padding: '4px 10px',
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  عرض الكل →
+                </button>
               </div>
             )}
 
