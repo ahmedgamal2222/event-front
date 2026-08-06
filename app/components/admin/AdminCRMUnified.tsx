@@ -22,7 +22,7 @@ interface ContactDetail extends Contact {
 }
 
 interface Registration {
-  id: number; event_name?: string; event_name_ar?: string;
+  id: number; event_id?: number; event_name?: string; event_name_ar?: string;
   reg_type?: string; reg_types?: string; status?: string; created_at: string;
 }
 
@@ -902,13 +902,16 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly, onI
                                   value={(reg as any).communication_channel || ''}
                                   onChange={async (e) => {
                                     const ch = e.target.value;
+                                    if (!reg.event_id) { alert('خطأ: معرّف الحدث غير موجود'); return; }
                                     try {
                                       const res = await fetch(`${apiBase}/api/events/${reg.event_id}/registrations/${reg.id}`, {
                                         method: 'PUT', headers,
                                         body: JSON.stringify({ communication_channel: ch })
                                       });
-                                      if (res.ok) setRegistrations(prev => prev.map(r => r.id === reg.id ? { ...r, communication_channel: ch } : r));
-                                    } catch { alert('خطأ'); }
+                                      const d = await res.json();
+                                      if (d.success || res.ok) setRegistrations(prev => prev.map(r => r.id === reg.id ? { ...r, communication_channel: ch } : r));
+                                      else alert(d.error || 'فشل الحفظ');
+                                    } catch { alert('خطأ في الاتصال'); }
                                   }}
                                   style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.4rem', color: '#e2e8f0', padding: '0.4rem 0.6rem', fontSize: '0.75rem', cursor: 'pointer', outline: 'none' }}
                                 >
@@ -925,6 +928,7 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly, onI
                                 {(reg as any).communication_channel && (
                                   <button
                                     onClick={async () => {
+                                      if (!reg.event_id) return;
                                       try {
                                         const res = await fetch(`${apiBase}/api/events/${reg.event_id}/registrations/${reg.id}`, {
                                           method: 'PUT', headers,
