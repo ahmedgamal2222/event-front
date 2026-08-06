@@ -41,6 +41,7 @@ export default function AdminManagement({ token, apiBase, isSuperAdmin = false }
   const [processing, setProcessing] = useState<number | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [editingPermsFor, setEditingPermsFor] = useState<{ id: number; name: string } | null>(null);
+  const [confirmedSuperAdmin, setConfirmedSuperAdmin] = useState(false);
 
   const me = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('admin_user') || '{}') : {};
   const headers = { Authorization: `Bearer ${token}` };
@@ -52,6 +53,7 @@ export default function AdminManagement({ token, apiBase, isSuperAdmin = false }
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'خطأ'); return; }
       setAdmins(data.data || []);
+      setConfirmedSuperAdmin(true); // if API succeeded, user is super_admin
       setPendingCount((data.data || []).filter((a: Admin) => a.approval_status === 'pending').length);
     } catch { setError('خطأ في الاتصال'); }
     finally { setLoading(false); }
@@ -175,7 +177,7 @@ export default function AdminManagement({ token, apiBase, isSuperAdmin = false }
               </div>
 
               {/* Actions: only for super admin, not self */}
-              {isSuperAdmin && !isSelf && (
+              {confirmedSuperAdmin && !isSelf && (
                 <div style={{ display: 'flex', gap: 6, flexShrink: 0, flexWrap: 'wrap' }}>
                   {admin.approval_status === 'pending' && (
                     <>
