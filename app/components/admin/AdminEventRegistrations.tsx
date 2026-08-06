@@ -882,7 +882,7 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
       </div>
 
       {/* ── Detail Panel ── */}
-      {selected && (
+      {false && selected && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {/* Header card */}
           <div style={{ ...S.card, borderColor: 'rgba(108,99,255,0.3)' }}>

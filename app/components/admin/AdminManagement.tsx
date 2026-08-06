@@ -174,7 +174,7 @@ export default function AdminManagement({ token, apiBase }: Props) {
               </div>
 
               {/* Actions (super admin only, not self) */}
-              {!isSelf && (
+              {me.role === 'super_admin' && !isSelf && (
                 <div style={{ display: 'flex', gap: 6, flexShrink: 0, flexWrap: 'wrap' }}>
                   {admin.approval_status === 'pending' && (
                     <>
