@@ -141,7 +141,7 @@ export default function AdminCRMRegistrations({ token, apiBase, eventId }: Props
           registration_id: selected.id,
           contact_id: selected.contact_id,
           event_id: eventId,
-          creator_email: currentUser.email || '',
+          admin_email: currentUser.email || '',
           creator_name: currentUser.name || '',
           assignees,
         }),

@@ -62,6 +62,210 @@ interface Props {
   onInteractionSaved?: () => void;
 }
 
+// Contact Interaction Log Component
+function ContactInteractionLog({ contactId, contactName, token, apiBase }: { contactId: number; contactName: string; token: string; apiBase: string }) {
+  const [interactions, setInteractions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ total: 0, calls: 0, meetings: 0, emails: 0, whatsapp: 0, other: 0 });
+  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+
+  useEffect(() => {
+    if (!contactId) return;
+    setLoading(true);
+    fetch(`${apiBase}/api/crm/contacts/${contactId}/interactions`, { headers })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) {
+          const data = d.data || [];
+          setInteractions(data);
+          
+          // Calculate stats
+          const stats = {
+            total: data.length,
+            calls: data.filter((i: any) => i.channel === 'call').length,
+            meetings: data.filter((i: any) => i.channel === 'meeting').length,
+            emails: data.filter((i: any) => i.channel === 'email').length,
+            whatsapp: data.filter((i: any) => i.channel === 'whatsapp').length,
+            other: data.filter((i: any) => !['call', 'meeting', 'email', 'whatsapp'].includes(i.channel)).length,
+          };
+          setStats(stats);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [contactId, apiBase, token]);
+
+  const channelIcons: Record<string, string> = {
+    call: '📞',
+    whatsapp: '💬',
+    email: '📧',
+    meeting: '🤝',
+    sms: '📱',
+    other: '📝'
+  };
+
+  const directionLabels: Record<string, string> = {
+    outbound: '↗️ صادر',
+    inbound: '↙️ وارد'
+  };
+
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+        ⏳ جاري تحميل سجل التواصل...
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {/* Statistics Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
+        <div style={{ 
+          background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(108,99,255,0.1))', 
+          border: '1px solid rgba(139,92,246,0.3)',
+          borderRadius: 10, 
+          padding: '12px 14px',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#a78bfa', marginBottom: 4 }}>{stats.total}</div>
+          <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>إجمالي التواصلات</div>
+        </div>
+        <div style={{ 
+          background: 'rgba(59,130,246,0.1)', 
+          border: '1px solid rgba(59,130,246,0.3)',
+          borderRadius: 10, 
+          padding: '12px 14px',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#60a5fa', marginBottom: 4 }}>📞 {stats.calls}</div>
+          <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>مكالمات</div>
+        </div>
+        <div style={{ 
+          background: 'rgba(16,185,129,0.1)', 
+          border: '1px solid rgba(16,185,129,0.3)',
+          borderRadius: 10, 
+          padding: '12px 14px',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#34d399', marginBottom: 4 }}>🤝 {stats.meetings}</div>
+          <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>اجتماعات</div>
+        </div>
+        <div style={{ 
+          background: 'rgba(14,165,233,0.1)', 
+          border: '1px solid rgba(14,165,233,0.3)',
+          borderRadius: 10, 
+          padding: '12px 14px',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#38bdf8', marginBottom: 4 }}>📧 {stats.emails}</div>
+          <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>بريد إلكتروني</div>
+        </div>
+        <div style={{ 
+          background: 'rgba(34,197,94,0.1)', 
+          border: '1px solid rgba(34,197,94,0.3)',
+          borderRadius: 10, 
+          padding: '12px 14px',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#4ade80', marginBottom: 4 }}>💬 {stats.whatsapp}</div>
+          <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>واتساب</div>
+        </div>
+      </div>
+
+      {/* Interaction Timeline */}
+      <div style={{ marginTop: 8 }}>
+        <h4 style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: 12, fontWeight: 600 }}>
+          🕐 السجل الزمني الكامل ({interactions.length} تواصل)
+        </h4>
+        
+        {interactions.length === 0 ? (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '3rem 1rem', 
+            color: '#6b7280',
+            background: 'rgba(255,255,255,0.02)',
+            borderRadius: 10,
+            border: '1px dashed rgba(255,255,255,0.1)'
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: 12 }}>💬</div>
+            <div style={{ fontSize: '0.9rem', marginBottom: 4 }}>لا يوجد سجل تواصل بعد</div>
+            <div style={{ fontSize: '0.75rem', color: '#4b5563' }}>
+              ابدأ بتسجيل أول تواصل مع {contactName}
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {interactions.map((interaction, idx) => (
+              <div 
+                key={interaction.id || idx}
+                style={{ 
+                  background: 'rgba(255,255,255,0.04)', 
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRight: '3px solid #8b5cf6',
+                  borderRadius: 8, 
+                  padding: '12px 14px',
+                  position: 'relative'
+                }}
+              >
+                {/* Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: '1.3rem' }}>{channelIcons[interaction.channel] || '📝'}</span>
+                    <div>
+                      <div style={{ color: 'white', fontWeight: 600, fontSize: '0.88rem' }}>
+                        {interaction.subject}
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 2 }}>
+                        <span style={{ 
+                          fontSize: '0.7rem', 
+                          background: 'rgba(139,92,246,0.2)', 
+                          color: '#a78bfa',
+                          padding: '2px 8px',
+                          borderRadius: 4,
+                          fontWeight: 600
+                        }}>
+                          {directionLabels[interaction.direction] || interaction.direction}
+                        </span>
+                        <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                          بواسطة: {interaction.logged_by || 'غير محدد'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#64748b', textAlign: 'left' }}>
+                    {new Date(interaction.created_at).toLocaleDateString('ar-SA', { 
+                      year: 'numeric', 
+                      month: 'short', 
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </div>
+                </div>
+
+                {/* Summary */}
+                {interaction.summary && (
+                  <div style={{ 
+                    background: 'rgba(0,0,0,0.2)', 
+                    borderRadius: 6, 
+                    padding: '8px 10px',
+                    color: '#cbd5e1',
+                    fontSize: '0.8rem',
+                    lineHeight: 1.5
+                  }}>
+                    {interaction.summary}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminEventRegistrations({ token, eventId, readOnly, onInteractionSaved }: Props) {
 
   const roAlert = () => {
@@ -94,10 +298,21 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
   const [formConfigTypes, setFormConfigTypes] = useState<string[]>([]);
   const [formConfigLabels, setFormConfigLabels] = useState<Record<string, string>>({});
 
+  // Add new type feature
+  const [showAddType, setShowAddType] = useState(false);
+  const [newTypeKey, setNewTypeKey] = useState('');
+  const [newTypeLabel, setNewTypeLabel] = useState('');
+  const [newTypeIcon, setNewTypeIcon] = useState('👤');
+  const [savingNewType, setSavingNewType] = useState(false);
+
   // Interaction logging
   const [showInteraction, setShowInteraction] = useState(false);
   const [interactionForm, setInteractionForm] = useState({ channel: 'call', direction: 'outbound', subject: '', summary: '' });
   const [savingInteraction, setSavingInteraction] = useState(false);
+
+  // Contact interaction log
+  const [showContactLog, setShowContactLog] = useState(false);
+  const [selectedContactForLog, setSelectedContactForLog] = useState<{ id: number; name: string } | null>(null);
 
   const currentUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('admin_user') || '{}') : {};
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
@@ -220,7 +435,7 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
           registration_id: selected.id,
           contact_id: selected.contact_id,
           event_id: eventId,
-          creator_email: currentUser.email || '',
+          admin_email: currentUser.email || '',
           creator_name: currentUser.name || '',
           assignees,
         }),
@@ -246,6 +461,66 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
     setRegs(prev => prev.map(r => r.id === selected.id ? { ...r, reg_types: typesStr } : r));
     setSelected(s => s ? { ...s, reg_types: typesStr } : null);
     setShowTypeEdit(false);
+  };
+
+  // Add new registration type
+  const addNewType = async () => {
+    if (!newTypeKey || !newTypeLabel) {
+      alert('يرجى ملء اسم المفتاح والتسمية');
+      return;
+    }
+    
+    // Validate key format (no spaces, lowercase)
+    const cleanKey = newTypeKey.toLowerCase().replace(/\s+/g, '_');
+    if (formConfigTypes.includes(cleanKey) || REG_TYPE_CONFIG[cleanKey]) {
+      alert('هذا النوع موجود مسبقاً');
+      return;
+    }
+
+    setSavingNewType(true);
+    try {
+      // Update form_config in event
+      const newTypes = [...formConfigTypes, cleanKey];
+      const newLabels = { ...formConfigLabels, [cleanKey]: newTypeLabel };
+      
+      // Add to local REG_TYPE_CONFIG
+      (REG_TYPE_CONFIG as any)[cleanKey] = {
+        label: newTypeLabel,
+        color: '#6b7280',
+        icon: newTypeIcon || '👤'
+      };
+
+      const res = await fetch(`${API_BASE}/api/events/${eventId}`, { headers });
+      const eventData = await res.json();
+      
+      let formConfig: any = {};
+      if (eventData.data?.form_config) {
+        try {
+          formConfig = JSON.parse(eventData.data.form_config);
+        } catch {}
+      }
+
+      formConfig.enabled_types = newTypes;
+      formConfig.type_labels = newLabels;
+
+      await fetch(`${API_BASE}/api/events/${eventId}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ form_config: JSON.stringify(formConfig) })
+      });
+
+      setFormConfigTypes(newTypes);
+      setFormConfigLabels(newLabels);
+      setShowAddType(false);
+      setNewTypeKey('');
+      setNewTypeLabel('');
+      setNewTypeIcon('👤');
+      alert('✅ تم إضافة النوع بنجاح');
+    } catch (err) {
+      alert('حدث خطأ في الإضافة');
+    } finally {
+      setSavingNewType(false);
+    }
   };
 
   // Save interaction log
@@ -641,6 +916,31 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                 {showInteraction ? '✕ إلغاء' : '💬 تواصل'}
               </button>
 
+              {/* Contact interaction log button */}
+              {(converted.has(selected.id) || selected.contact_id) && (
+                <button
+                  onClick={() => {
+                    setSelectedContactForLog({
+                      id: selected.contact_id!,
+                      name: getName(selected)
+                    });
+                    setShowContactLog(true);
+                  }}
+                  style={{
+                    background: 'rgba(139,92,246,0.1)',
+                    border: '1px solid rgba(139,92,246,0.4)',
+                    color: '#a78bfa',
+                    borderRadius: '0.5rem',
+                    padding: '0.5rem 1rem',
+                    cursor: 'pointer',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  📊 سجل التواصل
+                </button>
+              )}
+
               {/* Status change */}
               <select
                 value={selected.status}
@@ -690,8 +990,137 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                     </button>
                   );
                 })}
+                {/* Add new type button */}
+                <button
+                  onClick={() => setShowAddType(true)}
+                  style={{
+                    padding: '0.4rem 0.9rem', borderRadius: 6, fontSize: '0.8rem', fontWeight: 600,
+                    cursor: 'pointer',
+                    border: '1px dashed rgba(108,99,255,0.5)',
+                    background: 'rgba(108,99,255,0.1)',
+                    color: '#a5b4fc',
+                    display: 'flex', alignItems: 'center', gap: 5,
+                  }}
+                  title="إضافة نوع جديد"
+                >
+                  ➕ نوع جديد
+                </button>
               </div>
               <button onClick={saveTypes} style={{ ...S.btn('#10b981') }}>💾 حفظ الأنواع</button>
+            </div>
+          )}
+
+          {/* Add New Type Modal */}
+          {showAddType && (
+            <div style={{
+              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', 
+              display: 'flex', alignItems: 'center', justifyContent: 'center', 
+              zIndex: 999, padding: '1rem'
+            }}>
+              <div style={{ 
+                ...S.card, 
+                maxWidth: 480, 
+                width: '100%',
+                borderColor: 'rgba(108,99,255,0.4)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                  <h3 style={{ color: 'white', fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>➕ إضافة نوع تسجيل جديد</h3>
+                  <button 
+                    onClick={() => setShowAddType(false)} 
+                    style={{ ...S.btn('#374151'), padding: '0.3rem 0.6rem' }}
+                  >✕</button>
+                </div>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div>
+                    <label style={S.label}>🔑 مفتاح النوع (بالإنجليزي)</label>
+                    <input 
+                      value={newTypeKey}
+                      onChange={e => setNewTypeKey(e.target.value)}
+                      placeholder="مثال: investor_angel"
+                      style={{ ...S.inp, textTransform: 'lowercase' }}
+                      dir="ltr"
+                    />
+                    <div style={{ color: '#64748b', fontSize: '0.7rem', marginTop: 4 }}>استخدم حروف إنجليزية صغيرة وشرطة سفلية (_)</div>
+                  </div>
+                  
+                  <div>
+                    <label style={S.label}>🏷️ التسمية (بالعربي)</label>
+                    <input 
+                      value={newTypeLabel}
+                      onChange={e => setNewTypeLabel(e.target.value)}
+                      placeholder="مثال: مستثمر ملائكي"
+                      style={S.inp}
+                      dir="rtl"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label style={S.label}>😀 أيقونة</label>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input 
+                        value={newTypeIcon}
+                        onChange={e => setNewTypeIcon(e.target.value)}
+                        placeholder="👤"
+                        style={{ ...S.inp, width: 80, textAlign: 'center', fontSize: '1.2rem' }}
+                        maxLength={2}
+                      />
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, flex: 1 }}>
+                        {['👤','🚀','💼','🎙️','🏅','📹','⭐','🤝','💰','🔬','🎨','📚','⚙️','🌐','🏢'].map(icon => (
+                          <button
+                            key={icon}
+                            onClick={() => setNewTypeIcon(icon)}
+                            style={{
+                              background: newTypeIcon === icon ? 'rgba(108,99,255,0.3)' : 'rgba(255,255,255,0.05)',
+                              border: `1px solid ${newTypeIcon === icon ? '#6C63FF' : 'rgba(255,255,255,0.1)'}`,
+                              borderRadius: 6,
+                              padding: '0.4rem',
+                              cursor: 'pointer',
+                              fontSize: '1.1rem',
+                              lineHeight: 1
+                            }}
+                          >{icon}</button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div style={{ 
+                    background: 'rgba(108,99,255,0.1)', 
+                    borderRadius: 8, 
+                    padding: '0.75rem 1rem',
+                    border: '1px solid rgba(108,99,255,0.2)'
+                  }}>
+                    <div style={{ color: '#a5b4fc', fontSize: '0.75rem', fontWeight: 600, marginBottom: 6 }}>معاينة:</div>
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      background: 'rgba(108,99,255,0.2)',
+                      color: '#a5b4fc',
+                      padding: '0.5rem 0.9rem',
+                      borderRadius: 8,
+                      fontSize: '0.85rem',
+                      fontWeight: 600
+                    }}>
+                      <span style={{ fontSize: '1.1rem' }}>{newTypeIcon || '👤'}</span>
+                      {newTypeLabel || 'اسم النوع'}
+                    </span>
+                  </div>
+                  
+                  <button 
+                    onClick={addNewType}
+                    disabled={savingNewType || !newTypeKey || !newTypeLabel}
+                    style={{
+                      ...S.btn('#10b981'),
+                      opacity: (!newTypeKey || !newTypeLabel) ? 0.5 : 1,
+                      cursor: (!newTypeKey || !newTypeLabel) ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    {savingNewType ? '⏳ جاري الإضافة...' : '✅ إضافة النوع'}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
@@ -835,6 +1264,41 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
                   {savingTask ? '⏳ جاري الإنشاء...' : '✅ إنشاء المهمة'}
                 </button>
                 <button style={S.btn('#374151')} onClick={() => setShowTaskForm(false)}>إلغاء</button>
+              </div>
+            </div>
+          )}
+
+          {/* Contact Log Modal */}
+          {showContactLog && selectedContactForLog && (
+            <div style={{
+              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', 
+              display: 'flex', alignItems: 'center', justifyContent: 'center', 
+              zIndex: 999, padding: '1rem', overflow: 'auto'
+            }}>
+              <div style={{ 
+                ...S.card, 
+                maxWidth: 700, 
+                width: '100%',
+                maxHeight: '85vh',
+                overflowY: 'auto',
+                borderColor: 'rgba(139,92,246,0.4)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, position: 'sticky', top: 0, background: '#13102a', paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                  <h3 style={{ color: 'white', fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>
+                    📊 سجل التواصل الكامل — {selectedContactForLog.name}
+                  </h3>
+                  <button 
+                    onClick={() => { setShowContactLog(false); setSelectedContactForLog(null); }} 
+                    style={{ ...S.btn('#374151'), padding: '0.3rem 0.6rem' }}
+                  >✕</button>
+                </div>
+                
+                <ContactInteractionLog 
+                  contactId={selectedContactForLog.id}
+                  contactName={selectedContactForLog.name}
+                  token={token}
+                  apiBase={API_BASE}
+                />
               </div>
             </div>
           )}

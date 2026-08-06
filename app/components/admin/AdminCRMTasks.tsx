@@ -92,8 +92,10 @@ export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all', r
       const url = taskData.id ? `${apiBase}/api/crm/tasks/${taskData.id}` : `${apiBase}/api/crm/tasks`;
       const body = { ...taskData, event_id: eventId };
       if (!taskData.id) {
-        (body as any).creator_email = currentAdmin.email || '';
-        (body as any).creator_name = currentAdmin.name || '';
+        // Use admin_email as creator for new tasks
+        if (!body.assigned_to && currentAdmin.email) {
+          body.assigned_to = currentAdmin.email;
+        }
       }
       const res = await fetch(url, { method, headers, body: JSON.stringify(body) });
       const data = await res.json();

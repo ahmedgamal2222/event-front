@@ -413,7 +413,7 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly, onI
           ...taskForm,
           contact_id: selected.id,
           event_id: eventId,
-          creator_email: currentUser.email || '',
+          admin_email: currentUser.email || '',
           creator_name: currentUser.name || '',
           assignees,
         }),
