@@ -19,6 +19,7 @@ interface Admin {
 interface Props {
   token: string;
   apiBase: string;
+  isSuperAdmin?: boolean;
 }
 
 const ROLE_LABELS: Record<string, { label: string; color: string }> = {
@@ -33,7 +34,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   rejected: { label: '❌ مرفوض', color: '#ef4444' },
 };
 
-export default function AdminManagement({ token, apiBase }: Props) {
+export default function AdminManagement({ token, apiBase, isSuperAdmin = false }: Props) {
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -173,8 +174,8 @@ export default function AdminManagement({ token, apiBase }: Props) {
                 </div>
               </div>
 
-              {/* Actions (super admin only, not self) */}
-              {me.role === 'super_admin' && !isSelf && (
+              {/* Actions: only for super admin, not self */}
+              {isSuperAdmin && !isSelf && (
                 <div style={{ display: 'flex', gap: 6, flexShrink: 0, flexWrap: 'wrap' }}>
                   {admin.approval_status === 'pending' && (
                     <>
