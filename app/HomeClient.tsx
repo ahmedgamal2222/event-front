@@ -2,7 +2,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
+const DIRECT_API = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
+
+// Use same-origin proxy on production to bypass regional SSL/blocking issues
+function getApiBase() {
+  if (typeof window === 'undefined') return DIRECT_API;
+  const host = window.location.hostname;
+  if (host !== 'localhost' && host !== '127.0.0.1' && !host.endsWith('.pages.dev')) {
+    return '/api-proxy';
+  }
+  return DIRECT_API;
+}
 
 export default function HomeClient() {
   const [events, setEvents] = useState<any[]>([]);
@@ -18,7 +28,7 @@ export default function HomeClient() {
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 10000);
-        const r = await fetch(`${API_BASE}/api/events`, {
+        const r = await fetch(`${getApiBase()}/api/events`, {
           cache: 'no-store',
           signal: controller.signal,
         });

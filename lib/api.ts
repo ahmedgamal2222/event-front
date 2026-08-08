@@ -1,5 +1,19 @@
 ﻿// lib/api.ts – API client
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
+const DIRECT_API = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
+
+// Use same-origin proxy on production to bypass SSL/blocking issues in some countries.
+// The proxy rule in public/_redirects forwards /api-proxy/* → DIRECT_API/*
+function getApiBase(): string {
+  if (typeof window === 'undefined') return DIRECT_API; // SSR: always direct
+  const host = window.location.hostname;
+  // Use proxy when on production domain (not localhost or Cloudflare preview)
+  if (host !== 'localhost' && host !== '127.0.0.1' && !host.endsWith('.pages.dev') && host !== '') {
+    return '/api-proxy';
+  }
+  return DIRECT_API;
+}
+
+const API_BASE = DIRECT_API; // keep for named exports that need it
 
 // Simple in-memory cache
 const cache = new Map<string, { data: any; time: number }>();
@@ -22,7 +36,7 @@ export async function apiFetch<T>(path: string, options?: RequestInit, bypassCac
     }
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(`${getApiBase()}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
