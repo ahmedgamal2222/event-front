@@ -1,1 +1,2 @@
-/api-proxy/* https://event-api.info1703.workers.dev/:splat 200
+# Proxy handled by functions/api-proxy/[[path]].js
+# Fallback redirect only (not proxy - Pages Functions handle /api-proxy/*)
