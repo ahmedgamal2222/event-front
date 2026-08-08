@@ -1,9 +1,5 @@
 ﻿'use client';
-/**
- * HomeClient — fetches events live on every visit.
- * Auto-redirects if only one visible event exists.
- */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
@@ -11,42 +7,80 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.
 export default function HomeClient() {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    fetch(`${API_BASE}/api/events`, { cache: 'no-store' })
-      .then(r => r.json())
-      .then(d => {
-        if (!d.success) { setLoading(false); return; }
-        // Auto-redirect when only one visible event
+  const loadEvents = useCallback(async () => {
+    setLoading(true);
+    setFetchError(false);
+    // Retry up to 3 times with 2s delay
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
+        const r = await fetch(`${API_BASE}/api/events`, {
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        const d = await r.json();
+        if (!d.success) { setFetchError(true); setLoading(false); return; }
         if (d.shouldRedirect && d.redirectSlug) {
+          // Don't return — set loading=false so user sees something if redirect is slow
+          setLoading(false);
           router.replace(`/${d.redirectSlug}`);
           return;
         }
-        const list = d.data as any[];
-        setEvents(list);
+        setEvents(d.data as any[]);
         setLoading(false);
-      })
-      .catch(() => setLoading(false));
+        return;
+      } catch {
+        if (attempt < 2) await new Promise(res => setTimeout(res, 2000));
+      }
+    }
+    setFetchError(true);
+    setLoading(false);
   }, [router]);
 
-  if (loading || events.length === 0) {
+  useEffect(() => { loadEvents(); }, [loadEvents]);
+
+  if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh', background: 'var(--bg-dark)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        {loading ? (
-          <div style={{ textAlign: 'center', color: '#94a3b8', fontFamily: 'system-ui, sans-serif' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.75rem', opacity: 0.5 }}>🌌</div>
-            <p style={{ margin: 0 }}>جاري التحميل...</p>
-          </div>
-        ) : (
-          <div style={{ textAlign: 'center', color: '#94a3b8', fontFamily: 'system-ui, sans-serif', direction: 'rtl' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🎯</div>
-            <p style={{ margin: 0 }}>لا توجد فعاليات منشورة حالياً</p>
-          </div>
-        )}
+      <div style={{ minHeight: '100vh', background: 'var(--bg-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center', color: '#94a3b8', fontFamily: 'system-ui, sans-serif' }}>
+          <div style={{ fontSize: '2rem', marginBottom: '0.75rem', opacity: 0.5 }}>🌌</div>
+          <p style={{ margin: 0 }}>جاري التحميل...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'var(--bg-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center', color: '#94a3b8', fontFamily: 'system-ui, sans-serif', direction: 'rtl', padding: '2rem' }}>
+          <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>⚠️</div>
+          <p style={{ margin: '0 0 0.5rem', color: 'white', fontWeight: 600 }}>تعذّر تحميل الفعاليات</p>
+          <p style={{ margin: '0 0 1.5rem', fontSize: '0.85rem' }}>تحقق من اتصالك بالإنترنت وحاول مجدداً</p>
+          <button
+            onClick={loadEvents}
+            style={{ background: '#6C63FF', color: 'white', border: 'none', borderRadius: '0.5rem', padding: '0.6rem 1.5rem', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}
+          >
+            🔄 إعادة المحاولة
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (events.length === 0) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'var(--bg-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center', color: '#94a3b8', fontFamily: 'system-ui, sans-serif', direction: 'rtl' }}>
+          <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🎯</div>
+          <p style={{ margin: '0 0 1rem' }}>لا توجد فعاليات منشورة حالياً</p>
+          <button onClick={loadEvents} style={{ background: 'transparent', color: '#6C63FF', border: '1px solid #6C63FF', borderRadius: '0.5rem', padding: '0.4rem 1rem', cursor: 'pointer', fontSize: '0.85rem' }}>🔄 تحديث</button>
+        </div>
       </div>
     );
   }
