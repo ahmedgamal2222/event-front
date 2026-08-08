@@ -1,4 +1,4 @@
-﻿// lib/api.ts – API client
+// lib/api.ts – API client
 const DIRECT_API = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
 
 // Use same-origin proxy on production to bypass SSL/blocking issues in some countries.
@@ -19,9 +19,8 @@ const API_BASE = DIRECT_API; // keep for named exports that need it
 const cache = new Map<string, { data: any; time: number }>();
 const CACHE_TTL = 10000; // 10 seconds — short enough for fresh data
 
-if (typeof window !== 'undefined' && !process.env.NEXT_PUBLIC_API_URL) {
-  console.warn('⚠️ NEXT_PUBLIC_API_URL not set, using default API endpoint');
-}
+// Note: NEXT_PUBLIC_API_URL is baked in at build time for static exports.
+// The fallback default above matches the production API, so no warning is needed.
 
 export async function apiFetch<T>(path: string, options?: RequestInit, bypassCache = false): Promise<T> {
   const isGet = !options?.method || options.method === 'GET';
