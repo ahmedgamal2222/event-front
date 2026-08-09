@@ -496,6 +496,8 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
   });
   const [savingManualReg, setSavingManualReg] = useState(false);
   const [countries, setCountries] = useState<{ id: number; name_ar: string; cities?: string }[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [deleting, setDeleting] = useState(false);
 
   const currentUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('admin_user') || '{}') : {};
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
@@ -702,9 +704,31 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
     } finally { setSavingInteraction(false); }
   };
 
-  const filteredAdmins = adminsList.filter(a =>
-    !assigneeSearch || a.name.toLowerCase().includes(assigneeSearch.toLowerCase()) || a.email.includes(assigneeSearch)
-  );
+  
+  const bulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`حذف ${selectedIds.size} تسجيل نهائياً مع جميع بياناتهم؟\nلا يمكن التراجع عن هذا الإجراء.`)) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/events/${eventId}/registrations/bulk`, {
+        method: 'DELETE', headers, body: JSON.stringify({ ids: [...selectedIds] }),
+      });
+      const d = await res.json();
+      if (d.success) { setSelectedIds(new Set()); await load(); }
+      else alert(d.error || 'فشل الحذف');
+    } finally { setDeleting(false); }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === regs.length && regs.length > 0) setSelectedIds(new Set());
+    else setSelectedIds(new Set(regs.map(r => r.id)));
+  };
+
+  const toggleSelect = (id: number) => {
+    const s = new Set(selectedIds);
+    if (s.has(id)) s.delete(id); else s.add(id);
+    setSelectedIds(s);
+  };
 
   const getName = (r: Reg) => r.full_name || r.name || '—';
   const getTypeInfo = (r: Reg) => {
@@ -726,20 +750,25 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
         {/* Header with Add Button */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
           <h3 style={{ color: 'white', fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>📋 التسجيلات</h3>
-          {!readOnly && (
-            <button
-              onClick={() => setShowManualRegForm(true)}
-              style={{
-                ...S.btn('#10b981'),
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                padding: '0.55rem 1.1rem'
-              }}
-            >
-              ➕ إضافة تسجيل يدوياً
-            </button>
-          )}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {selectedIds.size > 0 && (
+              <button
+                onClick={bulkDelete}
+                disabled={deleting}
+                style={{ ...S.btn('#ef4444'), fontSize: '0.82rem', padding: '0.45rem 0.9rem', opacity: deleting ? 0.7 : 1 }}
+              >
+                {deleting ? 'جاري الحذف...' : `🗑️ حذف ${selectedIds.size} محدد`}
+              </button>
+            )}
+            {!readOnly && (
+              <button
+                onClick={() => setShowManualRegForm(true)}
+                style={{ ...S.btn('#10b981'), display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1.1rem' }}
+              >
+                ➕ إضافة تسجيل يدوياً
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Filters */}
@@ -769,6 +798,13 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(0,0,0,0.18)' }}>
+                  <th style={{ padding: '0.55rem 0.5rem 0.55rem 0.85rem', width: 32 }}>
+                    <input type="checkbox"
+                      checked={selectedIds.size === regs.length && regs.length > 0}
+                      onChange={toggleSelectAll}
+                      style={{ accentColor: '#ef4444', cursor: 'pointer' }}
+                    />
+                  </th>
                   {[
                     { h: 'الاسم',         w: '160px' },
                     { h: 'البريد',        w: '160px' },
@@ -784,22 +820,21 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>جاري التحميل...</td></tr>
+                  <tr><td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>جاري التحميل...</td></tr>
                 ) : regs.length === 0 ? (
-                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>لا توجد تسجيلات</td></tr>
+                  <tr><td colSpan={8} style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>لا توجد تسجيلات</td></tr>
                 ) : regs.map(reg => {
                   const sc = STATUS_CONFIG[reg.status] || { label: reg.status, color: '#6b7280' };
                   const ti = getTypeInfo(reg);
-                  const isSelected = selected?.id === reg.id;
+                  const isSelected = selectedIds.has(reg.id);
                   const isConverted = converted.has(reg.id) || !!reg.contact_id;
                   return (
-                    <tr
-                      key={reg.id}
-                      style={{
-                        borderTop: '1px solid rgba(255,255,255,0.04)',
-                        background: 'transparent',
-                      }}
-                    >
+                    <tr key={reg.id} style={{ borderTop: '1px solid rgba(255,255,255,0.04)', background: isSelected ? 'rgba(239,68,68,0.06)' : 'transparent' }}>
+                      <td style={{ padding: '0.5rem 0.5rem 0.5rem 0.85rem', width: 32 }}>
+                        <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(reg.id)}
+                          style={{ accentColor: '#ef4444', cursor: 'pointer' }}
+                        />
+                      </td>
                       {/* الاسم */}
                       <td style={{ padding: '0.5rem 0.6rem 0.5rem 0.85rem', width: 160 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
