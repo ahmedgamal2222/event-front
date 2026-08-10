@@ -826,12 +826,12 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
               <img 
                 src={siteCfg.logo_url} 
                 alt="logo" 
-                className="h-10 object-contain" 
+                className="h-14 object-contain" 
                 style={{
                   background: theme === 'dark' ? 'rgba(255, 255, 255, 0.95)' : 'transparent',
-                  padding: theme === 'dark' ? '8px 12px' : '0',
-                  borderRadius: theme === 'dark' ? '10px' : '0',
-                  boxShadow: theme === 'dark' ? '0 4px 12px rgba(108, 99, 255, 0.2)' : 'none',
+                  padding: theme === 'dark' ? '10px 14px' : '0',
+                  borderRadius: theme === 'dark' ? '12px' : '0',
+                  boxShadow: theme === 'dark' ? '0 4px 16px rgba(108, 99, 255, 0.25)' : 'none',
                   transition: 'all 0.3s ease'
                 }}
               />
@@ -1303,12 +1303,12 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
             <img 
               src={siteCfg.logo_url} 
               alt="logo" 
-              className="h-12 object-contain mx-auto mb-4" 
+              className="h-16 object-contain mx-auto mb-4" 
               style={{
                 background: theme === 'dark' ? 'rgba(255, 255, 255, 0.95)' : 'transparent',
                 padding: theme === 'dark' ? '12px 16px' : '0',
-                borderRadius: theme === 'dark' ? '12px' : '0',
-                boxShadow: theme === 'dark' ? '0 4px 16px rgba(108, 99, 255, 0.25)' : 'none',
+                borderRadius: theme === 'dark' ? '14px' : '0',
+                boxShadow: theme === 'dark' ? '0 6px 20px rgba(108, 99, 255, 0.3)' : 'none',
                 transition: 'all 0.3s ease'
               }}
             />

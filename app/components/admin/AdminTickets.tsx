@@ -62,7 +62,7 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
     name_en: '',
     description: '',
     price_per_unit: 0,
-    duration_type: 'single_day' as const,
+    duration_type: 'single_day' as 'single_day' | 'three_days' | 'full_event' | 'custom_days',
     custom_days: 1,
     sort_order: 0,
     features: [] as TicketFeature[],
@@ -77,7 +77,7 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
     feature_2: 'حقيبة الحدث والمواد',
     feature_3: 'شهادة حضور رسمية',
     info_text: '💡 هل تحتاج مساعدة؟ تواصل معنا عبر نموذج الدعم الفني',
-    reg_type_mapping: {} as Record<string, number>,
+    reg_type_mapping: {} as Record<string, number | undefined>,
     global_features: [] as TicketFeature[], // مزايا افتراضية غنية (أيقونة + عنوان + وصف)
   });
   const [newGlobalFeature, setNewGlobalFeature] = useState<TicketFeature>({ icon: 'check', title: '', desc: '' });
@@ -153,7 +153,7 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
         sort_order: 0,
         features: [],
       });
-      setNewFeature('');
+      setNewFeature({ icon: 'check', title: '', desc: '' });
       setEditingId(null);
       setIsFormOpen(false);
       
@@ -271,7 +271,7 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
           <button
             onClick={() => {
               setEditingId(null);
-              setForm({
+               setForm({
                 name_ar: '',
                 name_en: '',
                 description: '',
@@ -279,6 +279,7 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
                 duration_type: 'single_day',
                 custom_days: 1,
                 sort_order: 0,
+                features: [],
               });
               setIsFormOpen(!isFormOpen);
             }}
