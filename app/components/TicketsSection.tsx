@@ -113,7 +113,7 @@ export default function TicketsSection({ eventId }: { eventId: number }) {
   };
 
   return (
-    <section className="py-20 px-6" style={{ background: 'var(--bg-dark)' }}>
+    <section className="py-20 px-6 tickets-section" style={{ background: 'var(--bg-dark)' }}>
       <div className="max-w-6xl mx-auto">
         {/* Section Header */}
         <div className="text-center mb-16">
@@ -180,22 +180,22 @@ export default function TicketsSection({ eventId }: { eventId: number }) {
                         display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
                         padding: '0.65rem 0.85rem',
                         borderRadius: '0.6rem',
-                        background: 'rgba(16,185,129,0.05)',
-                        border: '1px solid rgba(16,185,129,0.15)',
+                        background: 'var(--feature-bg, rgba(16,185,129,0.05))',
+                        border: '1px solid var(--feature-border, rgba(16,185,129,0.15))',
                         transition: 'background 0.2s',
                       }}>
                         {/* Icon */}
                         <div style={{
                           width: 32, height: 32, borderRadius: '0.4rem', flexShrink: 0,
-                          background: 'rgba(16,185,129,0.15)',
+                          background: 'var(--feature-icon-bg, rgba(16,185,129,0.15))',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           marginTop: 1,
                         }}>
-                          <TicketIcon iconKey={feat.icon} size={16} color="#10b981" />
+                          <TicketIcon iconKey={feat.icon} size={16} color="var(--feature-icon-color, #10b981)" />
                         </div>
                         {/* Text */}
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ color: 'var(--text)', fontWeight: 600, fontSize: '0.85rem', lineHeight: 1.3 }}>{feat.title}</div>
+                          <div style={{ color: '#000000', fontWeight: 600, fontSize: '0.85rem', lineHeight: 1.3 }}>{feat.title}</div>
                           {feat.desc && (
                             <div style={{ color: 'var(--text-muted)', fontSize: '0.76rem', marginTop: '0.2rem', lineHeight: 1.4 }}>{feat.desc}</div>
                           )}
@@ -209,16 +209,16 @@ export default function TicketsSection({ eventId }: { eventId: number }) {
                 <div
                   className="p-4 rounded-lg transition-all"
                   style={{
-                    background: 'rgba(108,99,255,0.1)',
-                    border: '1px solid rgba(108,99,255,0.2)',
+                    background: 'var(--price-section-bg, rgba(108,99,255,0.1))',
+                    border: '1px solid var(--price-section-border, rgba(108,99,255,0.2))',
                   }}
                 >
-                  <div className="text-xs text-[var(--text-muted)] mb-1">السعر</div>
+                  <div className="text-xs text-[var(--text-muted)] mb-1" style={{ fontWeight: 500 }}>السعر</div>
                   <div className="text-3xl font-black" style={{ color: 'var(--heading)' }}>
                     {ticket.formattedPrice}
                   </div>
-                  <div className="text-xs text-[var(--text-muted)] mt-1 opacity-70">
-                    لكل شخص {ticket.duration_type === 'custom_days' ? `/ ${ticket.custom_days} أيام` : ''}
+                  <div className="text-xs text-[var(--text-muted)] mt-1" style={{ fontWeight: 500 }}>
+                     لكل شخص {ticket.duration_type === 'custom_days' ? `/ ${ticket.custom_days} أيام` : ''}
                   </div>
                 </div>
               </div>

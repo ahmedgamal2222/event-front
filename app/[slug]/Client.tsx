@@ -1,8 +1,8 @@
 ﻿'use client';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Event, Speaker, AgendaDay, Stats, Sponsor, Faq, FormConfig, SiteConfig } from '../../lib/types';
-import { fetchEvent, fetchSpeakers, fetchAgenda, fetchStats, fetchSponsors, fetchFaqs, submitRegistration, fetchVenueGallery, fetchArticles, fetchTerms, fetchPages, fetchPaymentSettingsPublic, fetchCountries, fetchEventNavigation } from '../../lib/api';
+import { Event, Speaker, AgendaDay, Sponsor, Faq, FormConfig, SiteConfig } from '../../lib/types';
+import { fetchEvent, fetchSpeakers, fetchAgenda, fetchSponsors, fetchFaqs, submitRegistration, fetchVenueGallery, fetchArticles, fetchTerms, fetchPages, fetchPaymentSettingsPublic, fetchCountries, fetchEventNavigation } from '../../lib/api';
 import { VenueMedia } from '../../lib/types';
 import PixelInjector from '../components/PixelInjector';
 import TicketsSection from '../components/TicketsSection';
@@ -47,42 +47,42 @@ function EventNavBar({ eventId, primaryColor, archiveLabel, showArchive, showThe
   const hasNext = nav?.next;
 
   return (
-    <div style={{ background: 'rgba(0,0,0,0.4)', borderBottom: `1px solid ${primaryColor}30`, padding: '0.6rem 1.5rem', direction: 'rtl' }}>
+    <div className="event-nav-bar" style={{ background: 'var(--event-nav-bg)', borderBottom: `1px solid var(--event-nav-border)`, padding: '0.6rem 1.5rem', direction: 'rtl' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-        {/* \u0627\u0644\u062C\u0647\u0629 \u0627\u0644\u064A\u0645\u0646\u0649: \u0627\u0644\u062D\u062F\u062B \u0627\u0644\u0633\u0627\u0628\u0642 + \u0627\u0644\u0623\u0631\u0634\u064A\u0641 */}
+        {/* الجهة اليمنى: الحدث السابق + الأرشيف */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
           {showArc && hasPrev && (
             <Link href={`/${nav!.prev.slug}`}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', color: '#94a3b8', fontSize: '0.82rem', transition: 'color 0.15s' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'white')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}>
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', color: 'var(--event-nav-text)', fontSize: '0.82rem', transition: 'color 0.15s' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--event-nav-text-hover)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--event-nav-text)')}>
               <IconArrowRight size={16} />
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#475569' }}>\u0627\u0644\u062D\u062F\u062B \u0627\u0644\u0633\u0627\u0628\u0642</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--event-nav-text)' }} className="nav-subtext">الحدث السابق</div>
                 <div style={{ fontWeight: 600 }}>{nav!.prev.name_ar || nav!.prev.name} {nav!.prev.edition_number ? `(${nav!.prev.edition_number})` : fmt(nav!.prev.start_date)}</div>
               </div>
             </Link>
           )}
           {showArc && (
             <Link href="/archive"
-              style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.78rem', color: '#64748b', textDecoration: 'none', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '2rem', transition: 'all 0.15s' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${primaryColor}60`; (e.currentTarget as HTMLElement).style.color = '#a5b4fc'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLElement).style.color = '#64748b'; }}>
+              style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.78rem', color: 'var(--event-nav-text)', textDecoration: 'none', padding: '0.25rem 0.75rem', border: '1px solid var(--event-nav-border)', borderRadius: '2rem', transition: 'all 0.15s' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--event-nav-text-hover)'; (e.currentTarget as HTMLElement).style.color = 'var(--event-nav-text-hover)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--event-nav-border)'; (e.currentTarget as HTMLElement).style.color = 'var(--event-nav-text)'; }}>
               <IconArchive size={13} /> {label}
             </Link>
           )}
         </div>
 
-        {/* \u0627\u0644\u062C\u0647\u0629 \u0627\u0644\u064A\u0633\u0631\u0649: \u0632\u0631 \u0627\u0644\u062B\u064A\u0645 + \u0627\u0644\u062D\u062F\u062B \u0627\u0644\u062A\u0627\u0644\u064A */}
+        {/* الجهة اليسرى: زر الثيم + الحدث التالي */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           {showTheme && <ThemeToggle isDark={theme === 'dark'} onToggle={toggleTheme} size={42} />}
           {showArc && hasNext && (
             <Link href={`/${nav!.next.slug}`}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', color: '#94a3b8', fontSize: '0.82rem', transition: 'color 0.15s', textAlign: 'left' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'white')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}>
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', color: 'var(--event-nav-text)', fontSize: '0.82rem', transition: 'color 0.15s', textAlign: 'left' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--event-nav-text-hover)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--event-nav-text)')}>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '0.68rem', color: '#475569' }}>\u0627\u0644\u062D\u062F\u062B \u0627\u0644\u062A\u0627\u0644\u064A</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--event-nav-text)' }} className="nav-subtext">الحدث التالي</div>
                 <div style={{ fontWeight: 600 }}>{nav!.next.name_ar || nav!.next.name} {nav!.next.edition_number ? `(${nav!.next.edition_number})` : fmt(nav!.next.start_date)}</div>
               </div>
               <IconArrowLeft size={16} />
@@ -133,8 +133,8 @@ function Countdown({ targetDate }: { targetDate: string }) {
         { value: time.seconds, label: 'ثانية' },
       ].map(({ value, label }) => (
         <div key={label} className="text-center">
-          <div className="card w-20 h-20 flex items-center justify-center text-3xl font-black text-white"
-               style={{ background: 'rgba(108,99,255,0.15)', border: '1px solid rgba(108,99,255,0.4)' }}>
+          <div className="countdown-card card w-20 h-20 flex items-center justify-center text-3xl font-black"
+               style={{ background: 'rgba(108,99,255,0.15)', border: '1px solid rgba(108,99,255,0.4)', color: 'white' }}>
             {String(value).padStart(2, '0')}
           </div>
           <div className="text-xs text-[var(--text-muted)] mt-1">{label}</div>
@@ -241,7 +241,7 @@ function TicketSelector({ eventId, onSelect, primaryColor }: { eventId: number; 
       fetchTickets(eventId).then(r => setTickets(r.data || [])).catch(() => {});
     });
   }, [eventId]);
-  if (!tickets.length) return <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>لا توجد تذاكر متاحة حالياً</p>;
+  if (!tickets.length) return <p className="text-[var(--text-muted)]" style={{ fontSize: '0.85rem' }}>لا توجد تذاكر متاحة حالياً</p>;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
       {tickets.map(t => (
@@ -250,8 +250,8 @@ function TicketSelector({ eventId, onSelect, primaryColor }: { eventId: number; 
           onMouseEnter={e => { e.currentTarget.style.background = 'rgba(108,99,255,0.15)'; e.currentTarget.style.borderColor = primaryColor; }}
           onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(108,99,255,0.3)'; }}>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ color: 'white', fontWeight: 700, fontSize: '0.9rem' }}>{t.name_ar}</div>
-            {t.description && <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>{t.description}</div>}
+            <div className="text-white font-bold" style={{ fontSize: '0.9rem' }}>{t.name_ar}</div>
+            {t.description && <div className="text-[var(--text-muted)]" style={{ fontSize: '0.75rem' }}>{t.description}</div>}
           </div>
           <div style={{ color: primaryColor, fontWeight: 800, fontSize: '1.1rem', flexShrink: 0 }}>${t.price_per_unit}</div>
         </button>
@@ -341,7 +341,7 @@ function RegistrationForm({ event, onClose, cfg, initialTab, ticketInstructions 
           </div>
           <div style={{ background: 'rgba(37,211,102,0.08)', border: '1px solid rgba(37,211,102,0.3)', borderRadius: '0.75rem', padding: '1.25rem', direction: 'rtl' }}>
             <p style={{ color: '#4ade80', fontWeight: 700, marginBottom: '0.5rem' }}>💳 لإتمام الدفع</p>
-            <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '1rem' }}>
+             <p className="text-[var(--text-muted)]" style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>
               {paymentSettings.payment_subtitle || 'أرسل صورة الفاتورة عبر واتساب لتأكيد تسجيلك'}
             </p>
             <a href={waUrl} target="_blank" rel="noopener noreferrer"
@@ -350,7 +350,7 @@ function RegistrationForm({ event, onClose, cfg, initialTab, ticketInstructions 
               تواصل عبر واتساب
             </a>
           </div>
-          <p style={{ color: '#64748b', fontSize: '0.78rem' }}>سيقوم الفريق بتأكيد دفعك خلال 24 ساعة وإرسال تذكرتك على بريدك</p>
+          <p className="text-[var(--text-muted)]" style={{ fontSize: '0.78rem' }}>سيقوم الفريق بتأكيد دفعك خلال 24 ساعة وإرسال تذكرتك على بريدك</p>
           <button onClick={onClose} className="btn-outline text-sm">إغلاق</button>
         </div>
       );
@@ -397,7 +397,7 @@ function RegistrationForm({ event, onClose, cfg, initialTab, ticketInstructions 
         {cfg.show_phone && (
           <div>
             <label className="block text-sm text-[var(--text-muted)] mb-1">رقم الهاتف {cfg.require_phone ? '*' : ''}</label>
-            <input className="input-field" required={cfg.require_phone} value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+963..." />
+             <input className="input-field" required={cfg.require_phone} value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+963..." dir="ltr"/>
           </div>
         )}
         {/* Communication Channel (Admin Only) */}
@@ -532,7 +532,6 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
   const [event, setEvent] = useState<Event | null>(null);
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
   const [agenda, setAgenda] = useState<AgendaDay[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [faqs, setFaqs] = useState<Faq[]>([]);
   const [footerPages, setFooterPages] = useState<any[]>([]);
@@ -646,7 +645,6 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
     setEvent(null);
     setSpeakers([]);
     setAgenda([]);
-    setStats(null);
     setSponsors([]);
     setFaqs([]);
     setVenueGallery([]);
@@ -698,10 +696,9 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
         document.title = `${ev.name_ar || ev.name} – ${ev.tagline_ar || ev.tagline || ''}`;
 
         // Fetch all sub-resources in parallel — don't let any single failure block the rest
-        const [spRes, agRes, stRes, spnRes, fqRes, venueRes, artRes] = await Promise.allSettled([
+        const [spRes, agRes, spnRes, fqRes, venueRes, artRes] = await Promise.allSettled([
           fetch(`${API_URL}/api/events/${ev.id}/speakers`).then(r => r.json()),
           fetch(`${API_URL}/api/events/${ev.id}/agenda`).then(r => r.json()),
-          fetch(`${API_URL}/api/events/${ev.id}/stats`).then(r => r.json()),
           fetch(`${API_URL}/api/events/${ev.id}/sponsors`).then(r => r.json()),
           fetch(`${API_URL}/api/events/${ev.id}/faqs`).then(r => r.json()),
           fetch(`${API_URL}/api/events/${ev.id}/venue`).then(r => r.json()),
@@ -711,7 +708,6 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
         const val = (r: PromiseSettledResult<any>) => r.status === 'fulfilled' ? r.value : null;
         setSpeakers(val(spRes)?.data || []);
         setAgenda(val(agRes)?.data || []);
-        setStats(val(stRes)?.data || null);
         setSponsors(val(spnRes)?.data || []);
         setFaqs(val(fqRes)?.data || []);
         setVenueGallery(val(venueRes)?.data || []);
@@ -730,6 +726,22 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
     })();
   }, [slug]); // re-fetch whenever slug changes
   const [hasArticles, setHasArticles] = useState(false);
+
+  // Poll site config every 30s for near-real-time updates from admin panel
+  useEffect(() => {
+    if (!event?.id) return;
+    const id = event.id;
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
+    const timer = setInterval(async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/events/${id}`).then(r => r.json());
+        if (res?.success && res?.data?.site_config) {
+          setSiteCfg(prev => normalizeSiteConfig({ ...prev, ...JSON.parse(res.data.site_config) }));
+        }
+      } catch {}
+    }, 30000);
+    return () => clearInterval(timer);
+  }, [event?.id]);
 
   const navLinks = [
     { href: '#about', label: 'عن الفعالية' },
@@ -803,23 +815,23 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
     <div style={{ minHeight: '100vh', background: 'var(--bg-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center', direction: 'rtl', fontFamily: 'system-ui, sans-serif' }}>
       <div style={{ textAlign: 'center', padding: '2rem' }}>
         <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
-        <h2 style={{ color: 'white', fontSize: '1.25rem', marginBottom: '0.5rem' }}>تعذّر تحميل بيانات الفعالية</h2>
-        <p style={{ color: '#94a3b8', marginBottom: '1.5rem', fontSize: '0.9rem' }}>تحقق من اتصالك بالإنترنت أو حاول مجدداً</p>
+        <h2 className="text-white" style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>تعذّر تحميل بيانات الفعالية</h2>
+        <p className="text-[var(--text-muted)]" style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}>تحقق من اتصالك بالإنترنت أو حاول مجدداً</p>
         <button
           onClick={() => window.location.reload()}
           style={{ background: '#6C63FF', color: 'white', border: 'none', borderRadius: '0.5rem', padding: '0.65rem 1.5rem', cursor: 'pointer', fontSize: '0.95rem', fontWeight: 600, marginLeft: '0.75rem' }}
         >↻ إعادة المحاولة</button>
-        <a href="/" style={{ color: '#94a3b8', fontSize: '0.9rem', display: 'block', marginTop: '1rem' }}>← العودة للرئيسية</a>
+        <a href="/" className="text-[var(--text-muted)]" style={{ fontSize: '0.9rem', display: 'block', marginTop: '1rem' }}>← العودة للرئيسية</a>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg-dark)', ...(themeVarsStyle || {}) }}>
+    <div className="event-page min-h-screen" style={{ background: 'var(--bg-dark)', ...(themeVarsStyle || {}) }}>
       {/* Pixel Tracking */}
       <PixelInjector eventId={event?.id || 1} />
       {/* ── Navbar ───────────────────────────────────────────────────────────── */}
-      <nav className="fixed top-0 w-full z-50 glass" style={{ borderBottom: '1px solid rgba(108,99,255,0.2)' }}>
+      <nav className="fixed top-0 w-full z-50 glass" >
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             {(siteCfg.logo_position === 'navbar' || siteCfg.logo_position === 'both') && siteCfg.logo_url && (
@@ -830,21 +842,21 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
                 style={{
                   background: theme === 'dark' ? 'rgba(255, 255, 255, 0.95)' : 'transparent',
                   padding: theme === 'dark' ? '10px 14px' : '0',
-                  borderRadius: theme === 'dark' ? '12px' : '0',
+                  borderRadius: theme === 'dark' ? '15px' : '0',
                   boxShadow: theme === 'dark' ? '0 4px 16px rgba(108, 99, 255, 0.25)' : 'none',
                   transition: 'all 0.3s ease'
                 }}
               />
             )}
             <a href="#" className="font-black text-xl text-white" style={{ letterSpacing: '-0.02em' }}>
-              <span style={{ color: primaryColor }}>{event?.name?.split(' ')[0] || 'S3'}</span> {event?.name?.split(' ').slice(1).join(' ') || 'Summit'}
+              <span className="text-[var(--primary)]">{event?.name?.split(' ')[0] || 'S3'}</span> {event?.name?.split(' ').slice(1).join(' ') || 'Summit'}
             </a>
           </div>
           <div className="hidden md:flex items-center gap-6">
             {navLinks.map(l => (
               l.href.startsWith('/') && l.href !== '#'
-                ? <Link key={l.href} href={l.href} className="text-sm text-[var(--text-muted)] hover:text-white transition-colors" style={{ color: undefined }}>{l.label}</Link>
-                : <a key={l.href} href={l.href} className="text-sm text-[var(--text-muted)] hover:text-white transition-colors" style={{ color: undefined }}>{l.label}</a>
+                ? <Link key={l.href} href={l.href} className="text-sm text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors">{l.label}</Link>
+                : <a key={l.href} href={l.href} className="text-sm text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors">{l.label}</a>
             ))}
           </div>
           <div className="flex items-center gap-3">
@@ -887,10 +899,10 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
             </div>
           )}
 
-          <h1 className="text-5xl md:text-7xl font-black text-white mb-4" style={{ letterSpacing: '-0.03em' }}>
-            <span style={{ color: primaryColor }}>{siteCfg.hero_abbr}</span>
+          <h1 className="text-5xl md:text-7xl font-black mb-4" style={{ letterSpacing: '-0.03em', color: 'white' }}>
+            <span className="text-[var(--primary)]">{siteCfg.hero_abbr}</span>
           </h1>
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{eventName}</h2>
+          <h2 className="text-2xl md:text-3xl font-bold mb-2 text-white">{eventName}</h2>
           <p className="text-lg text-[var(--text-muted)] mb-2">{eventTagline}</p>
           <p className="text-[var(--text-muted)] max-w-xl mx-auto mb-8">{description}</p>
 
@@ -967,7 +979,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
         <div className="max-w-4xl mx-auto">
           <div className="card grid grid-cols-2 md:grid-cols-4 gap-8 py-8">
             {(siteCfg.stats || []).map(s => (
-              <StatCounter key={s.label} value={(stats as any)?.[s.field] || s.fallback} label={s.label} />
+              <StatCounter key={s.label} value={s.fallback} label={s.label} />
             ))}
           </div>
         </div>
@@ -984,7 +996,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
             {(siteCfg.about_cards || []).map(({ emoji, icon, title, desc }) => (
               <div key={title} className="card hover:border-[var(--primary)] transition-all group">
                 <div className="mb-4" style={{ color: 'var(--primary)' }}><AboutIcon name={icon} emoji={emoji} size={40} /></div>
-                <h3 className="text-white font-bold text-lg mb-2 group-hover:text-[var(--primary)] transition-colors">{title}</h3>
+                <h3 className="text-lg font-bold mb-2 group-hover:text-[var(--primary)] transition-colors text-white">{title}</h3>
                 <p className="text-[var(--text-muted)] text-sm leading-relaxed">{desc}</p>
               </div>
             ))}
@@ -1007,8 +1019,8 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
               <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
                 {agenda.map((day, i) => (
                   <button key={day.id} onClick={() => setActiveDay(i)}
-                    className={`flex-shrink-0 px-6 py-3 rounded-lg text-sm font-semibold transition-all ${activeDay === i ? 'text-white' : 'text-[var(--text-muted)]'}`}
-                    style={{ background: activeDay === i ? primaryColor : 'rgba(255,255,255,0.05)', border: activeDay === i ? 'none' : '1px solid rgba(255,255,255,0.1)' }}>
+                    className={`flex-shrink-0 px-6 py-3 rounded-lg text-sm font-semibold transition-all ${activeDay === i ? '' : ''}`}
+                    style={{ color: activeDay === i ? 'white' : 'var(--text-muted)', background: activeDay === i ? primaryColor : 'rgba(255,255,255,0.05)', border: activeDay === i ? 'none' : '1px solid rgba(255,255,255,0.1)' }}>
                     {day.label}
                     {day.date && <span className="block text-xs opacity-70">
                       {new Date(day.date).toLocaleDateString('ar', { day: 'numeric', month: 'long' })}
@@ -1024,8 +1036,8 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
                     <div key={session.id} className="card flex gap-4 items-start hover:border-opacity-60 transition-all" style={{ borderColor: style.bg + '40' }}>
                       <div className="text-[var(--text-muted)] text-sm font-mono w-12 flex-shrink-0 pt-0.5">{session.time_start}</div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-white font-semibold">{session.title_ar}</h4>
-                        {session.description_ar && <p className="text-[var(--text-muted)] text-sm mt-1">{session.description_ar}</p>}
+                         <h4 className="font-semibold text-white">{session.title_ar}</h4>
+                         {session.description_ar && <p className="text-[var(--text-muted)] text-sm mt-1">{session.description_ar}</p>}
                         {session.speaker_name && (
                           <div className="flex items-center gap-2 mt-2">
                             {session.speaker_photo ? (
@@ -1077,9 +1089,9 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
                     {speaker.is_surprise ? '?' : (speaker.name_ar?.split(' ').map((w: string) => w[0]).slice(0,2).join('') || speaker.name[0])}
                   </div>
                 )}
-                <h3 className="text-white font-bold text-sm">{speaker.name_ar || speaker.name}</h3>
+                <h3 className="font-bold text-sm text-white">{speaker.name_ar || speaker.name}</h3>
                 <p className="text-xs text-[var(--text-muted)] mt-0.5">{speaker.title_ar}</p>
-                <p className="text-xs mt-1 font-semibold" style={{ color: primaryColor }}>{speaker.company}</p>
+                <p className="text-xs mt-1 font-semibold" className="text-[var(--primary)]">{speaker.company}</p>
                 {speaker.is_featured === 1 && (
                   <span className="tag mt-2 text-xs" style={{ background: '#f59e0b20', color: '#f59e0b' }}>✦ مميز</span>
                 )}
@@ -1198,7 +1210,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
                       <div style={{ width: 52, height: 52, borderRadius: '50%', background: `${tierColor}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>🏅</div>
                     )}
                     {/* Name */}
-                    <span className="text-white font-bold text-sm text-center">{sp.name}</span>
+                    <span className="font-bold text-sm text-center text-white">{sp.name}</span>
                     {/* Tier badge */}
                     {sp.tier && (
                       <span style={{ fontSize: '0.68rem', padding: '0.15rem 0.6rem', borderRadius: 20, background: `${tierColor}18`, color: tierColor, border: `1px solid ${tierColor}35`, fontWeight: 700 }}>
@@ -1250,7 +1262,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
               {faqs.map(faq => (
                 <div key={faq.id} className="card cursor-pointer" onClick={() => setOpenFaq(openFaq === faq.id ? null : faq.id)}>
                   <div className="flex justify-between items-center">
-                    <span className="text-white font-semibold">{faq.question_ar}</span>
+                    <span className="font-semibold text-white">{faq.question_ar}</span>
                     <span className="text-[var(--primary)] text-xl transition-transform" style={{ transform: openFaq === faq.id ? 'rotate(45deg)' : 'rotate(0)' }}>+</span>
                   </div>
                   {openFaq === faq.id && (
@@ -1264,42 +1276,42 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       )}
 
       {/* ── Footer ────────────────────────────────────────────────────────────── */}
-      <footer className="py-12 px-6" style={{ borderTop: '1px solid rgba(108,99,255,0.15)' }}>
+      <footer className="py-12 px-6 border-t">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
-            <div className="font-black text-xl text-white mb-2"><span style={{ color: primaryColor }}>S3</span> Summit</div>
-            <p className="text-[var(--text-muted)] text-sm">{eventName}</p>
-            <p className="text-[var(--text-muted)] text-sm">{sd.day}–{ed.day} {ed.month} {ed.year}</p>
-          </div>
-          <div>
-            <h4 className="text-white font-semibold mb-3">روابط سريعة</h4>
-            <div className="flex flex-col gap-2">
-              {navLinks.filter(l => !l.href.startsWith('/')).map(l => <a key={l.href} href={l.href} className="text-sm text-[var(--text-muted)] hover:text-white transition-colors">{l.label}</a>)}
-              {/* رابط الأرشيف — حسب إعدادات الأدمن */}
-              {siteCfg.archive_link_enabled !== false && (siteCfg.archive_link_position === 'footer' || siteCfg.archive_link_position === 'both' || siteCfg.archive_link_position === undefined) && (
-                <Link href="/archive" className="text-sm text-[var(--text-muted)] hover:text-white transition-colors">
-                  {siteCfg.archive_link_label || '🗂 أرشيف الأحداث'}
-                </Link>
-              )}
-            </div>
-          </div>
-          <div>
-            <h4 className="text-white font-semibold mb-3">تواصل معنا</h4>
-            {event?.email && <a href={`mailto:${event.email}`} className="block text-sm text-[var(--text-muted)] hover:text-white transition-colors mb-1">{event.email}</a>}
-            <div className="flex gap-3 mt-3 flex-wrap" style={{ alignItems: 'center' }}>
-              {event?.twitter && <a href={event.twitter.startsWith('http') ? event.twitter : `https://twitter.com/${event.twitter}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-white transition-colors" title="X (Twitter)"><IconX size={18} /></a>}
-              {event?.instagram && <a href={event.instagram.startsWith('http') ? event.instagram : `https://instagram.com/${event.instagram}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-white transition-colors" title="Instagram"><IconInstagram size={18} /></a>}
-              {event?.linkedin && <a href={event.linkedin.startsWith('http') ? event.linkedin : `https://linkedin.com/company/${event.linkedin}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-white transition-colors" title="LinkedIn"><IconLinkedIn size={18} /></a>}
-              {(event as any)?.tiktok && <a href={(event as any).tiktok.startsWith('http') ? (event as any).tiktok : `https://tiktok.com/@${(event as any).tiktok}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-white transition-colors" title="TikTok"><IconTikTok size={18} /></a>}
-              {(event as any)?.youtube && <a href={(event as any).youtube.startsWith('http') ? (event as any).youtube : `https://youtube.com/@${(event as any).youtube}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-white transition-colors" title="YouTube"><IconYouTube size={18} /></a>}
-              {(event as any)?.facebook && <a href={(event as any).facebook.startsWith('http') ? (event as any).facebook : `https://facebook.com/${(event as any).facebook}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-white transition-colors" title="Facebook"><IconFacebook size={18} /></a>}
-              {(event as any)?.whatsapp_link && <a href={(event as any).whatsapp_link} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-white transition-colors" title="WhatsApp"><IconWhatsApp size={18} /></a>}
-              {(event as any)?.telegram && <a href={(event as any).telegram.startsWith('http') ? (event as any).telegram : `https://t.me/${(event as any).telegram}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-white transition-colors" title="Telegram"><IconTelegram size={18} /></a>}
-            </div>
+          <div className="font-black text-xl mb-2 text-white"><span className="text-[var(--primary)]">S3</span> Summit</div>
+          <p className="text-[var(--text-muted)] text-sm">{eventName}</p>
+          <p className="text-[var(--text-muted)] text-sm">{sd.day}–{ed.day} {ed.month} {ed.year}</p>
+        </div>
+        <div>
+          <h4 className="font-semibold mb-3 text-white">روابط سريعة</h4>
+          <div className="flex flex-col gap-2">
+            {navLinks.filter(l => !l.href.startsWith('/')).map(l => <a key={l.href} href={l.href} className="text-sm text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors">{l.label}</a>)}
+            {/* رابط الأرشيف — حسب إعدادات الأدمن */}
+            {siteCfg.archive_link_enabled !== false && (siteCfg.archive_link_position === 'footer' || siteCfg.archive_link_position === 'both' || siteCfg.archive_link_position === undefined) && (
+              <Link href="/archive" className="text-sm text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors">
+                {siteCfg.archive_link_label || '🗂 أرشيف الأحداث'}
+              </Link>
+            )}
           </div>
         </div>
+        <div>
+          <h4 className="font-semibold mb-3 text-white">تواصل معنا</h4>
+          {event?.email && <a href={`mailto:${event.email}`} className="block text-sm text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors mb-1">{event.email}</a>}
+          <div className="flex gap-3 mt-3 flex-wrap" style={{ alignItems: 'center' }}>
+            {event?.twitter && <a href={event.twitter.startsWith('http') ? event.twitter : `https://twitter.com/${event.twitter}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors" title="X (Twitter)"><IconX size={18} /></a>}
+            {event?.instagram && <a href={event.instagram.startsWith('http') ? event.instagram : `https://instagram.com/${event.instagram}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors" title="Instagram"><IconInstagram size={18} /></a>}
+            {event?.linkedin && <a href={event.linkedin.startsWith('http') ? event.linkedin : `https://linkedin.com/company/${event.linkedin}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors" title="LinkedIn"><IconLinkedIn size={18} /></a>}
+            {(event as any)?.tiktok && <a href={(event as any).tiktok.startsWith('http') ? (event as any).tiktok : `https://tiktok.com/@${(event as any).tiktok}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors" title="TikTok"><IconTikTok size={18} /></a>}
+            {(event as any)?.youtube && <a href={(event as any).youtube.startsWith('http') ? (event as any).youtube : `https://youtube.com/@${(event as any).youtube}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors" title="YouTube"><IconYouTube size={18} /></a>}
+            {(event as any)?.facebook && <a href={(event as any).facebook.startsWith('http') ? (event as any).facebook : `https://facebook.com/${(event as any).facebook}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors" title="Facebook"><IconFacebook size={18} /></a>}
+            {(event as any)?.whatsapp_link && <a href={(event as any).whatsapp_link} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors" title="WhatsApp"><IconWhatsApp size={18} /></a>}
+            {(event as any)?.telegram && <a href={(event as any).telegram.startsWith('http') ? (event as any).telegram : `https://t.me/${(event as any).telegram}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors" title="Telegram"><IconTelegram size={18} /></a>}
+          </div>
+        </div>
+        </div>
         {(siteCfg.logo_position === 'footer' || siteCfg.logo_position === 'both') && siteCfg.logo_url && (
-          <div className="max-w-6xl mx-auto mt-8 pt-6 pb-6 text-center" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="max-w-6xl mx-auto mt-8 pt-6 pb-6 text-center border-t" style={{ borderColor: 'rgba(108,99,255,0.12)' }}>
             <img 
               src={siteCfg.logo_url} 
               alt="logo" 
@@ -1307,7 +1319,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
               style={{
                 background: theme === 'dark' ? 'rgba(255, 255, 255, 0.95)' : 'transparent',
                 padding: theme === 'dark' ? '12px 16px' : '0',
-                borderRadius: theme === 'dark' ? '14px' : '0',
+                borderRadius: theme === 'dark' ? '15px' : '0',
                 boxShadow: theme === 'dark' ? '0 6px 20px rgba(108, 99, 255, 0.3)' : 'none',
                 transition: 'all 0.3s ease'
               }}
@@ -1353,7 +1365,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
               )}
               <div>
                 <h3 className="text-xl font-bold text-white mb-1">{selectedSpeaker.name_ar || selectedSpeaker.name}</h3>
-                <p className="text-sm font-semibold" style={{ color: primaryColor }}>{selectedSpeaker.title_ar}</p>
+                <p className="text-sm font-semibold" className="text-[var(--primary)]">{selectedSpeaker.title_ar}</p>
                 <p className="text-sm text-[var(--text-muted)]">{selectedSpeaker.company}</p>
                 {selectedSpeaker.is_featured === 1 && (
                   <span className="tag text-xs mt-2 inline-block" style={{ background: '#f59e0b20', color: '#f59e0b' }}>✦ متحدث مميز</span>
@@ -1381,12 +1393,12 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
 
             {/* Achievements */}
             {selectedSpeaker.achievements && (
-              <div className="mb-4 p-4 rounded-lg" style={{ background: 'rgba(108,99,255,0.08)', border: '1px solid rgba(108,99,255,0.2)' }}>
+              <div className="mb-4 p-4 rounded-lg" style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(108,99,255,0.2)' }}>
                 <h4 className="text-white font-semibold mb-3 text-sm">🏆 الإنجازات</h4>
                 <ul className="space-y-2">
                   {selectedSpeaker.achievements.split('\n').filter(Boolean).map((a: string, i: number) => (
                     <li key={i} className="text-[var(--text-muted)] text-sm flex items-start gap-2">
-                      <span style={{ color: primaryColor }}>◆</span>
+                      <span className="text-[var(--primary)]">◆</span>
                       <span>{a}</span>
                     </li>
                   ))}
@@ -1422,10 +1434,10 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
           <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl p-6"
                style={{ background: 'var(--bg-card)', border: '1px solid rgba(108,99,255,0.3)' }}>
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold section-title" style={{ color: 'var(--heading)' }}>التسجيل في القمة</h3>
-              <button onClick={() => setShowRegModal(false)} className="text-[var(--text-muted)] hover:text-white text-2xl leading-none">×</button>
-            </div>
+             <div className="flex justify-between items-center mb-6">
+               <h3 className="text-xl font-bold text-white">التسجيل في القمة</h3>
+               <button onClick={() => setShowRegModal(false)} className="text-[var(--text-muted)] hover:text-[var(--primary)] text-2xl leading-none">×</button>
+             </div>
             {event && <RegistrationForm event={event} onClose={() => setShowRegModal(false)} cfg={cfg} initialTab={regInitialTab} ticketInstructions={(siteCfg as any)?.ticket_instructions} />}
           </div>
         </div>
@@ -1437,7 +1449,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
           <div style={{ maxWidth: 900, margin: '0 auto', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.5rem 1.5rem' }}>
             {footerPages.map(page => (
               <a key={page.id} href={`/terms?page=${page.slug}`}
-                style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.82rem', transition: 'color 0.15s' }}
+                className="text-[var(--text-muted)]" style={{ textDecoration: 'none', fontSize: '0.82rem', transition: 'color 0.15s' }}
                 onMouseEnter={e => (e.currentTarget.style.color = '#6C63FF')}
                 onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}>
                 {page.title_ar || page.title}
@@ -1445,7 +1457,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
             ))}
             {termsData?.show_in_footer && termsData?.terms_content && (
               <a href={`/terms?tab=terms`}
-                style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.82rem', transition: 'color 0.15s' }}
+                className="text-[var(--text-muted)]" style={{ textDecoration: 'none', fontSize: '0.82rem', transition: 'color 0.15s' }}
                 onMouseEnter={e => (e.currentTarget.style.color = '#6C63FF')}
                 onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}>
                 الشروط والأحكام
@@ -1453,14 +1465,14 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
             )}
             {termsData?.show_in_footer && termsData?.privacy_content && (
               <a href={`/terms?tab=privacy`}
-                style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.82rem', transition: 'color 0.15s' }}
+                className="text-[var(--text-muted)]" style={{ textDecoration: 'none', fontSize: '0.82rem', transition: 'color 0.15s' }}
                 onMouseEnter={e => (e.currentTarget.style.color = '#6C63FF')}
                 onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}>
                 سياسة الخصوصية
               </a>
             )}
           </div>
-          <p style={{ color: '#475569', fontSize: '0.75rem', margin: '0.75rem 0 0' }}>© {new Date().getFullYear()} {event?.name_ar || 'S3 Summit'}. جميع الحقوق محفوظة.</p>
+          <p className="text-[var(--text-muted)]" style={{ fontSize: '0.75rem', margin: '0.75rem 0 0' }}>© {new Date().getFullYear()} {event?.name_ar || 'S3 Summit'}. جميع الحقوق محفوظة.</p>
         </footer>
       )}
     </div>

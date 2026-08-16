@@ -101,15 +101,15 @@ export default function HomeClient() {
 
 function EventSelector({ events }: { events: any[] }) {
   return (
-    <div style={{ margin: 0, background: 'var(--bg-dark)', fontFamily: "'Cairo', system-ui, -apple-system, sans-serif", minHeight: '100vh', direction: 'rtl' }}>
+    <div className="home-page" style={{ margin: 0, background: 'var(--bg-dark)', fontFamily: "'Cairo', system-ui, -apple-system, sans-serif", minHeight: '100vh', direction: 'rtl' }}>
       {/* Background effect */}
-      <div style={{ position: 'fixed', inset: 0, background: 'radial-gradient(ellipse 80% 50% at 50% -20%, rgba(108,99,255,0.18) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'fixed', inset: 0, background: 'radial-gradient(ellipse 80% 50% at 50% -20%, rgba(108,99,255,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '3.5rem 1.25rem 3rem', position: 'relative' }}>
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(108,99,255,0.12)', border: '1px solid rgba(108,99,255,0.25)', borderRadius: '2rem', padding: '6px 18px', marginBottom: '1.5rem' }}>
-            <span style={{ fontSize: '0.75rem', color: '#818cf8', fontWeight: 600, letterSpacing: '0.05em' }}>🎯 اختر الحدث</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600, letterSpacing: '0.05em' }}>🎯 اختر الحدث</span>
           </div>
           <h1 style={{ color: 'var(--heading)', fontSize: 'clamp(1.6rem, 4vw, 2.4rem)', margin: '0 0 0.75rem', fontWeight: 800, lineHeight: 1.2 }}>
             فعاليات ومؤتمرات
@@ -136,7 +136,7 @@ function EventSelector({ events }: { events: any[] }) {
           })}
         </div>
 
-        <p style={{ textAlign: 'center', color: '#374151', fontSize: '0.78rem', marginTop: '2.5rem' }}>
+        <p style={{ textAlign: 'center', color: '#64748b', fontSize: '0.78rem', marginTop: '2.5rem' }}>
           {events.length} {events.length === 1 ? 'فعالية' : 'فعاليات'} متاحة حالياً
         </p>
       </div>
@@ -157,11 +157,11 @@ function EventCard({ event, color, isOpen }: { event: any; color: string; isOpen
       style={{
         display: 'block', textDecoration: 'none',
         background: 'var(--bg-card)',
-        border: `1px solid ${hovered ? color + '70' : color + '30'}`,
+        border: `1px solid ${hovered ? 'rgba(108,99,255,0.4)' : 'rgba(108,99,255,0.2)'}`,
         borderRadius: '1.25rem',
         overflow: 'hidden',
         transition: 'transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease',
-        boxShadow: hovered ? `0 12px 40px ${color}25` : '0 4px 20px rgba(0,0,0,0.3)',
+        boxShadow: hovered ? '0 12px 40px rgba(108,99,255,0.25)' : '0 4px 20px rgba(0,0,0,0.3)',
         transform: hovered ? 'translateY(-6px)' : 'none',
       }}
       onMouseEnter={() => setHovered(true)}
@@ -175,12 +175,12 @@ function EventCard({ event, color, isOpen }: { event: any; color: string; isOpen
         }}>
           {event.logo && (
             <div style={{ position: 'absolute', bottom: 12, right: 16 }}>
-              <img src={event.logo} alt="logo" style={{ height: 36, objectFit: 'contain', filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.4))' }} />
+              <img src={event.logo} alt="logo" style={{ height: 36, objectFit: 'contain', filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.15))' }} />
             </div>
           )}
         </div>
       ) : (
-        <div style={{ height: 120, background: `linear-gradient(135deg, ${color}18, ${color}06)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ height: 120, background: `linear-gradient(135deg, ${color}15, ${color}08)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {event.logo
             ? <img src={event.logo} alt="logo" style={{ height: 50, objectFit: 'contain' }} />
             : <span style={{ fontSize: '2.5rem' }}>🎯</span>
@@ -194,7 +194,7 @@ function EventCard({ event, color, isOpen }: { event: any; color: string; isOpen
           {event.name_ar || event.name}
         </h2>
         {event.tagline_ar && (
-          <p style={{ color: '#94a3b8', margin: '0 0 0.85rem', fontSize: '0.85rem', lineHeight: 1.5 }}>{event.tagline_ar}</p>
+          <p style={{ color: '#64748b', margin: '0 0 0.85rem', fontSize: '0.85rem', lineHeight: 1.5 }}>{event.tagline_ar}</p>
         )}
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: '1rem' }}>
           {event.location_ar && (
@@ -205,7 +205,7 @@ function EventCard({ event, color, isOpen }: { event: any; color: string; isOpen
           )}
         </div>
         <div style={{
-          display: 'flex', background: isOpen ? color : 'rgba(107,114,128,0.2)',
+          display: 'flex', background: isOpen ? color : 'rgba(107,114,128,0.12)',
           color: 'white', padding: '0.6rem 1.1rem', borderRadius: '0.6rem',
           fontSize: '0.88rem', fontWeight: 600, alignItems: 'center', justifyContent: 'space-between',
         }}>

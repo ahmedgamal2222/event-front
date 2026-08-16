@@ -737,6 +737,7 @@ function EventTab({ eventId, eventSlug, token, save, saving }: any) {
               // Clear client cache for this event's slug so next load gets fresh data
               clearApiCacheFor(`/api/events/${eventSlug}`);
               clearApiCacheFor('/api/events');
+              clearApiCacheFor(`/api/events/${eventId}/stats`);
             })} />
           </div>
         </div>
@@ -2066,6 +2067,7 @@ function SiteConfigTab({ eventId, eventSlug, token, save, saving }: any) {
     await updateEvent(eventId, { site_config: sc }, token);
     clearApiCacheFor(`/api/events/${eventSlug}`);
     clearApiCacheFor('/api/events');
+    clearApiCacheFor(`/api/events/${eventId}/stats`);
   });
 
   if (!loaded) return <p style={{ color: '#94a3b8' }}>جار التحميل...</p>;

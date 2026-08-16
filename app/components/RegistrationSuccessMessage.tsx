@@ -93,7 +93,7 @@ export default function RegistrationSuccessMessage({
         {companyName ? ` من ${companyName}` : city ? ` من ${city}` : ''}
       </p>
       {ticketCode && (
-        <p style={{ color: '#64748b', fontSize: '0.82rem', margin: '0 0 1.5rem' }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: '0 0 1.5rem' }}>
           رقم التسجيل: <span style={{ color: '#818cf8', fontWeight: 700 }}>{ticketCode}</span>
         </p>
       )}
@@ -145,7 +145,7 @@ export default function RegistrationSuccessMessage({
             textAlign: 'right',
           }}>
             <div style={{ color: '#818cf8', fontWeight: 600, marginBottom: '0.4rem' }}>🎫 {c.general_ticket_title}</div>
-            <div style={{ color: '#94a3b8', fontSize: '0.88rem' }}>{c.general_ticket_desc}</div>
+             <div style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>{c.general_ticket_desc}</div>
           </div>
         </div>
       )}
