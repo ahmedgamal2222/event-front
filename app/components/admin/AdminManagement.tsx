@@ -258,7 +258,12 @@ export default function AdminManagement({
       const res = await fetch(`${apiBase}/api/auth/admins`, {
         method: 'POST',
         headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify(addForm),
+        body: JSON.stringify({
+          name: addForm.name,
+          email: addForm.email,
+          password: addForm.password,
+          role: addForm.role,
+        }),
       });
       const data = await res.json();
       if (!data.success) {
