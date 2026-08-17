@@ -571,6 +571,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
     ],
     logo_url: '',
     logo_position: 'navbar',
+    show_theme_toggle: true,
   });
   const normalizeSiteConfig = (raw: any): SiteConfig => {
     const fallback = {
@@ -593,6 +594,26 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       ],
       logo_url: '',
       logo_position: 'navbar',
+      ticket_instructions: {
+        startup_step1_title: 'طلبك قيد المراجعة',
+        startup_step1_desc: 'يراجع الفريق طلبك ومعلومات مشروعك خلال 24-48 ساعة',
+        startup_step2_title: 'مكالمة استعلام',
+        startup_step2_desc: 'سيتواصل معك أحد أعضاء الفريق عبر واتساب لتحديد موعد مكالمة قصيرة (15 دقيقة) عن مشروعكم',
+        startup_step3_title: 'القبول والدفع',
+        startup_step3_desc: 'في حال القبول ستصلك رسالة تأكيد مع تفاصيل الدفع',
+        startup_step4_title: 'تذكرتك ومقعدك',
+        startup_step4_desc: 'بعد تأكيد الدفع تصلك تذاكر الفريق برموز QR مباشرة على واتساب',
+        startup_note: 'تأكد من إبقاء واتساب مفعلاً على الرقم المسجل – سيتواصل معك الفريق خلاله',
+        general_confirm_title: 'رسالة تأكيد',
+        general_confirm_desc: 'ستصلك رسالة تأكيد على البريد الإلكتروني المسجل تتضمن تفاصيل الحدث وكيفية الحضور',
+        general_ticket_title: 'تذكرتك',
+        general_ticket_desc: 'تذكرة الدخول ستصلك برمز QR قبل انطلاق الفعالية. احتفظ برقم هاتفك المسجل لاستقبالها',
+        general_note: 'تأكد من إبقاء واتساب مفعلاً على الرقم المسجل – سيتواصل معك الفريق خلاله',
+        close_btn_text: 'حسناً، شكراً!',
+        startup_success_title: 'استلمنا طلب شركتك!',
+        general_success_title: 'تم التسجيل بنجاح!',
+        custom_messages: [],
+      },
     } as SiteConfig;
     if (!raw || typeof raw !== 'object') return fallback;
 
@@ -618,8 +639,8 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       archive_link_enabled: raw.archive_link_enabled !== undefined ? !!raw.archive_link_enabled : true,
       archive_link_label: typeof raw.archive_link_label === 'string' ? raw.archive_link_label : '🗂 النسخ السابقة',
       archive_link_position: ['navbar', 'footer', 'both', 'none'].includes(raw.archive_link_position) ? raw.archive_link_position : 'both',
-      show_theme_toggle: raw.show_theme_toggle !== undefined ? !!raw.show_theme_toggle : true,
-      ticket_instructions: raw.ticket_instructions || undefined,
+      show_theme_toggle: raw.show_theme_toggle !== undefined ? !!raw.show_theme_toggle : false,
+      ticket_instructions: { ...fallback.ticket_instructions, ...(raw.ticket_instructions || {}) },
     };
   };
   const [activeDay, setActiveDay] = useState(0);
@@ -842,7 +863,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
                 style={{
                   background: theme === 'dark' ? 'rgba(255, 255, 255, 0.95)' : 'transparent',
                   padding: theme === 'dark' ? '10px 14px' : '0',
-                  borderRadius: theme === 'dark' ? '15px' : '0',
+                  borderRadius: theme === 'dark' ? '12px' : '0',
                   boxShadow: theme === 'dark' ? '0 4px 16px rgba(108, 99, 255, 0.25)' : 'none',
                   transition: 'all 0.3s ease'
                 }}
@@ -860,7 +881,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
             ))}
           </div>
           <div className="flex items-center gap-3">
-            {(siteCfg as any)?.show_theme_toggle !== false && <ThemeToggleAuto size={42} />}
+            {false && <ThemeToggleAuto size={42} />}
             <button onClick={() => openModal()} className="btn-primary text-sm py-2 px-4">
               سجّل الآن
             </button>
@@ -1319,7 +1340,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
               style={{
                 background: theme === 'dark' ? 'rgba(255, 255, 255, 0.95)' : 'transparent',
                 padding: theme === 'dark' ? '12px 16px' : '0',
-                borderRadius: theme === 'dark' ? '15px' : '0',
+                borderRadius: theme === 'dark' ? '14px' : '0',
                 boxShadow: theme === 'dark' ? '0 6px 20px rgba(108, 99, 255, 0.3)' : 'none',
                 transition: 'all 0.3s ease'
               }}

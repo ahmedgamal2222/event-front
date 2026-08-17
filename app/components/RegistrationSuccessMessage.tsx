@@ -50,11 +50,12 @@ const DEFAULT: TicketInstructions = {
   general_confirm_title: 'رسالة تأكيد',
   general_confirm_desc: 'ستصلك رسالة تأكيد على البريد الإلكتروني المسجل تتضمن تفاصيل الحدث وكيفية الحضور',
   general_ticket_title: 'تذكرتك',
-  general_ticket_desc: 'تذكرة الدخول ستصلك برمز QR قبل انطلاق الفعالية. احتفظ برقم هاتفك المسجل لاستقبالها',
+  general_ticket_desc: 'تذكرة الدخول ستصلك برمز QR بعد تسديد الرسوم وقبل انطلاق الفعالية. احتفظ برقم هاتفك المسجل لاستقبالها',
   general_note: 'تأكد من إبقاء واتساب مفعلاً على الرقم المسجل – سيتواصل معك الفريق خلاله',
   close_btn_text: 'حسناً، شكراً!',
   startup_success_title: 'استلمنا طلب شركتك!',
   general_success_title: 'تم التسجيل بنجاح!',
+  custom_messages: [],
 };
 
 export default function RegistrationSuccessMessage({
@@ -163,6 +164,22 @@ export default function RegistrationSuccessMessage({
       }}>
         💬 {isStartup ? c.startup_note : c.general_note}
       </div>
+
+      {/* Custom messages from admin */}
+      {(c.custom_messages || []).filter((m: any) => m && m.text).map((m: any, idx: number) => (
+        <div key={m.id || idx} style={{
+          padding: '0.75rem 1rem',
+          background: 'rgba(108,99,255,0.06)',
+          border: '1px solid rgba(108,99,255,0.15)',
+          borderRadius: '0.6rem',
+          marginBottom: '0.75rem',
+          textAlign: 'right',
+          fontSize: '0.88rem',
+          color: 'var(--text)',
+        }}>
+          {m.text}
+        </div>
+      ))}
 
       {/* Close button */}
       <button

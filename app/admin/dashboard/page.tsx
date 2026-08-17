@@ -2000,6 +2000,26 @@ const DEFAULT_SITE_CFG: SiteConfig = {
   archive_link_label: '🗂 النسخ السابقة',
   archive_link_position: 'both',
   show_theme_toggle: true,
+  ticket_instructions: {
+    startup_step1_title: 'طلبك قيد المراجعة',
+    startup_step1_desc: 'يراجع الفريق طلبك ومعلومات مشروعك خلال 24-48 ساعة',
+    startup_step2_title: 'مكالمة استعلام',
+    startup_step2_desc: 'سيتواصل معك أحد أعضاء الفريق عبر واتساب لتحديد موعد مكالمة قصيرة (15 دقيقة) عن مشروعكم',
+    startup_step3_title: 'القبول والدفع',
+    startup_step3_desc: 'في حال القبول ستصلك رسالة تأكيد مع تفاصيل الدفع',
+    startup_step4_title: 'تذكرتك ومقعدك',
+    startup_step4_desc: 'بعد تأكيد الدفع تصلك تذاكر الفريق برموز QR مباشرة على واتساب',
+    startup_note: 'تأكد من إبقاء واتساب مفعلاً على الرقم المسجل – سيتواصل معك الفريق خلاله',
+    general_confirm_title: 'رسالة تأكيد',
+    general_confirm_desc: 'ستصلك رسالة تأكيد على البريد الإلكتروني المسجل تتضمن تفاصيل الحدث وكيفية الحضور',
+    general_ticket_title: 'تذكرتك',
+    general_ticket_desc: 'تذكرة الدخول ستصلك برمز QR قبل انطلاق الفعالية. احتفظ برقم هاتفك المسجل لاستقبالها',
+    general_note: 'تأكد من إبقاء واتساب مفعلاً على الرقم المسجل – سيتواصل معك الفريق خلاله',
+    close_btn_text: 'حسناً، شكراً!',
+    startup_success_title: 'استلمنا طلب شركتك!',
+    general_success_title: 'تم التسجيل بنجاح!',
+    custom_messages: [],
+  },
 };
 const STAT_FIELDS = ['days_count','startup_count','speaker_count','total_registrations','approved_count','investor_count'];
 
@@ -2038,6 +2058,7 @@ function normalizeSiteConfig(raw: any): SiteConfig {
     archive_link_label:    typeof raw.archive_link_label === 'string' ? raw.archive_link_label : '🗂 النسخ السابقة',
     archive_link_position: ['navbar','footer','both','none'].includes(raw.archive_link_position) ? raw.archive_link_position : 'both',
     show_theme_toggle:     raw.show_theme_toggle !== undefined ? !!raw.show_theme_toggle : true,
+    ticket_instructions:   raw.ticket_instructions || base.ticket_instructions,
   };
 }
 
@@ -2355,6 +2376,45 @@ function SiteConfigTab({ eventId, eventSlug, token, save, saving }: any) {
             </div>
           </div>
         </div>
+
+        {/* Custom Messages */}
+        <div style={{ marginTop: 18, paddingTop: 18, borderTop: '1px solid rgba(108,99,255,0.12)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <div>
+              <div style={{ color: '#818cf8', fontWeight: 600, fontSize: '0.82rem' }}>💬 رسائل مخصصة إضافية</div>
+              <div style={{ color: '#64748b', fontSize: '0.72rem', marginTop: 2 }}>تظهر هذه النصوص تحت رسائل النجاح الافتراضية</div>
+            </div>
+            <button style={{ ...S.btn(), padding: '0.35rem 0.8rem', fontSize: '0.78rem' }} onClick={() => {
+              const next = [...((sc as any).ticket_instructions?.custom_messages || []), { text: '' }];
+              set('ticket_instructions' as any, { ...((sc as any).ticket_instructions || {}), custom_messages: next });
+            }}>+ إضافة</button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {((sc as any).ticket_instructions?.custom_messages || []).map((m: any, idx: number) => (
+              <div key={m.id || idx} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                <textarea
+                  rows={2}
+                  style={{ ...S.inp, flex: 1, resize: 'vertical', minHeight: 42 }}
+                  placeholder="اكتب رسالة مخصصة..."
+                  value={m.text}
+                  onChange={e => {
+                    const next = [...((sc as any).ticket_instructions?.custom_messages || [])];
+                    next[idx] = { ...next[idx], text: e.target.value };
+                    set('ticket_instructions' as any, { ...((sc as any).ticket_instructions || {}), custom_messages: next });
+                  }}
+                />
+                <button style={{ ...S.del, padding: '0.35rem 0.6rem', fontSize: '0.78rem', marginTop: 2 }} onClick={() => {
+                  const next = ((sc as any).ticket_instructions?.custom_messages || []).filter((_: any, i: number) => i !== idx);
+                  set('ticket_instructions' as any, { ...((sc as any).ticket_instructions || {}), custom_messages: next });
+                }}>حذف</button>
+              </div>
+            ))}
+            {(!((sc as any).ticket_instructions?.custom_messages?.length)) && (
+              <div style={{ color: '#64748b', fontSize: '0.78rem', textAlign: 'center', padding: '0.5rem' }}>لا توجد رسائل مخصصة</div>
+            )}
+          </div>
+        </div>
+
         <div style={{ marginTop: 14 }}><SaveBtn loading={saving} onClick={saveAll} /></div>
       </div>
     </div>

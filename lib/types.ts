@@ -17,6 +17,7 @@ export interface TicketInstructions {
   close_btn_text?: string;
   startup_success_title?: string;
   general_success_title?: string;
+  custom_messages?: Array<{ id?: string | number; text: string }>;
 }
 
 export interface ThemeColors {
