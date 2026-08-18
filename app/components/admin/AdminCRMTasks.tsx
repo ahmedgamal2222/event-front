@@ -85,7 +85,7 @@ export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all', r
 
   useEffect(() => { load(); }, [load]);
 
-  const save = async (taskData: Partial<Task> & { assignees?: { email: string; name?: string }[] }) => {
+  const save = async (taskData: Partial<Task> & { assignees?: (Assignee | { email: string; name?: string })[] }) => {
     setSaving(true);
     try {
       const method = taskData.id ? 'PUT' : 'POST';

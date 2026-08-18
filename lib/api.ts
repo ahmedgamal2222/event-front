@@ -384,14 +384,36 @@ export async function uploadFile(file: File, token: string): Promise<{ url: stri
 export async function uploadMedia(file: File, token: string): Promise<{ url: string; filename: string }> {
   const formData = new FormData();
   formData.append('file', file);
-  const res = await fetch(`${API_BASE}/api/uploads/media`, {
+  // Use the same base as the rest of the API client (same-origin proxy on production)
+  // instead of the hardcoded DIRECT_API, to avoid cross-origin/SSL issues.
+  const res = await fetch(`${getApiBase()}/api/uploads/image`, {
     method: 'POST',
     body: formData,
-    headers: { Authorization: `Bearer ${token}` },
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    cache: 'no-store' as const,
   });
-  const data = await res.json();
-  if (!data.success) throw new Error(data.error || 'Upload failed');
-  return { url: data.url, filename: data.filename || data.key };
+  const contentType = res.headers.get('content-type') || '';
+  const raw = await res.text();
+  // Guard against the API returning HTML/error pages (the #1 cause of the
+  // cryptic "JSON.parse: unexpected non-whitespace character ..." error).
+  if (!contentType.includes('application/json')) {
+    console.error('❌ Upload returned non-JSON:', res.status, raw);
+    throw new Error(`رفع الملف فشل (${res.status}) — الخادم لم يُرجع JSON. الاستجابة: ${raw.slice(0, 200)}`);
+  }
+  let data: any;
+  try {
+    data = JSON.parse(raw);
+  } catch (e: any) {
+    console.error('❌ Upload JSON.parse failed:', res.status, raw);
+    throw new Error(`رفع الملف فشل — استجابة غير صالحة (${res.status}): ${raw.slice(0, 200)}`);
+  }
+  if (!res.ok || !data?.success) {
+    throw new Error(data?.error || `رفع الملف فشل (${res.status}) — ${raw.slice(0, 200)}`);
+  }
+  return {
+    url: data.url || data.data?.url,
+    filename: data.filename || data.data?.filename || data.key || file.name,
+  };
 }
 
 // ── Public – Payments ──────────────────────────────────────────────────────

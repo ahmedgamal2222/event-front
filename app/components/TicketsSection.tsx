@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { TicketType, TicketFeature } from '@/lib/types';
 import { TicketIcon } from './TicketIcons';
 import { fetchTickets, fetchTicketsConfig } from '@/lib/api';
@@ -27,7 +27,14 @@ function parseFeatures(raw: any): TicketFeature[] {
   });
 }
 
-export default function TicketsSection({ eventId }: { eventId: number }) {
+// عرض نص قد يحتوي وسوم <span> ملوّنة (تلوين كل كلمة على حدة)
+function RichTextInline({ html, fallback }: { html?: string; fallback?: React.ReactNode }) {
+  if (!html || !String(html).trim()) return <>{fallback}</>;
+  if (/<[a-z][^>]*>/i.test(String(html))) return <span dangerouslySetInnerHTML={{ __html: String(html) }} />;
+  return <>{String(html)}</>;
+}
+
+export default function TicketsSection({ eventId, editableText }: { eventId: number; editableText?: Record<string, string> }) {
   const [tickets, setTickets] = useState<TicketType[]>([]);
   const [config, setConfig] = useState<TicketsConfigData>({
     section_title: 'احصل على تذكرتك الآن',
@@ -113,29 +120,36 @@ export default function TicketsSection({ eventId }: { eventId: number }) {
   };
 
   return (
-    <section className="py-20 px-6 tickets-section" style={{ background: 'var(--bg-dark)' }}>
+        <section className="py-20 px-6 tickets-section" style={{ background: 'var(--section-tickets-bg, var(--bg-dark))' }}
+            data-edit="section-bg" data-label="خلفية قسم التذاكر" data-bg="section_tickets_bg" data-bgmodeaware="1" data-options="transparent">
       <div className="max-w-6xl mx-auto">
         {/* Section Header */}
-        <div className="text-center mb-16">
+                <div className="text-center mb-16">
           {config.section_badge && (
-            <div className="inline-block mb-3 px-4 py-1.5 rounded-full text-sm font-semibold" style={{ background: 'rgba(108,99,255,0.15)', border: '1px solid rgba(108,99,255,0.4)', color: '#6C63FF' }}>
-              {config.section_badge}
+                        <div className="inline-block mb-3 px-4 py-1.5 rounded-full text-sm font-semibold" style={{ background: 'rgba(108,99,255,0.15)', border: '1px solid rgba(108,99,255,0.4)', color: 'var(--primary)', fontSize: 'var(--fs-small, 13px)' }}
+              data-edit="text" data-label="شارة قسم التذاكر" data-text="tickets_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
+              <RichTextInline html={editableText?.tickets_badge} fallback={config.section_badge} />
             </div>
           )}
-          <h2 className="text-4xl md:text-5xl font-black mb-4 section-title" style={{ letterSpacing: '-0.02em', color: 'var(--heading)' }}>
-            {config.section_title}
+          <h2 className="text-4xl md:text-5xl font-black mb-4 section-title" style={{ letterSpacing: '-0.02em', color: 'var(--heading)' }}
+            data-edit="text" data-label="عنوان قسم التذاكر" data-text="tickets_title" data-color="heading" data-size="fs_section" data-min="14" data-max="60">
+            <RichTextInline html={editableText?.tickets_title} fallback={config.section_title} />
           </h2>
-          <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--text-muted)' }}>
-            {config.section_subtitle}
+          <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--text-muted)' }}
+            data-edit="text" data-label="وصف قسم التذاكر" data-text="tickets_subtitle" data-color="text" data-size="fs_body" data-min="10" data-max="30">
+            <RichTextInline html={editableText?.tickets_subtitle} fallback={config.section_subtitle} />
           </p>
         </div>
 
         {/* Tickets Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {formattedTickets.map((ticket, idx) => (
             <div
               key={ticket.id}
               className="group card relative overflow-hidden transition-all duration-300 hover:border-[var(--primary)]"
+              data-edit="card" data-label={`بطاقة تذكرة: ${ticket.name_ar} (خلفية + لون/حجم النصوص)`}
+              data-bg="bg_card" data-bgmodeaware="1"
+              data-colors="heading:لون العنوان,text:لون الوصف,primary:لون السعر" data-sizes="fs_card_title:حجم العنوان:14:40,fs_body:حجم الوصف:10:26"
               style={{
                 background: 'var(--bg-card)',
                 border: '1px solid var(--border)',
@@ -154,13 +168,21 @@ export default function TicketsSection({ eventId }: { eventId: number }) {
                 {/* Top Section - Icon & Title */}
                 <div className="mb-6">
                   <div className="text-4xl mb-3">{getDurationIcon(ticket.duration_type)}</div>
-                  <h3 className="text-2xl font-bold mb-2" style={{ color: 'var(--heading)' }}>{ticket.name_ar}</h3>
-                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{getDurationText(ticket.duration_type, ticket.custom_days)}</p>
+                  <h3 className="text-2xl font-bold mb-2" style={{ color: 'var(--heading)', fontSize: 'var(--fs-card-title, 17px)' }}
+                    data-edit="text" data-label="اسم التذكرة" data-text={`ticket_${ticket.id}_name`} data-color="heading" data-size="fs_card_title" data-min="12" data-max="40">
+                    <RichTextInline html={editableText?.[`ticket_${ticket.id}_name`]} fallback={ticket.name_ar} />
+                  </h3>
+                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}
+                    data-edit="text" data-label="مدة التذكرة" data-text={`ticket_${ticket.id}_duration`} data-color="text" data-size="fs_body" data-min="10" data-max="26">
+                    <RichTextInline html={editableText?.[`ticket_${ticket.id}_duration`]} fallback={getDurationText(ticket.duration_type, ticket.custom_days)} />
+                  </p>
                 </div>
 
                 {/* Description */}
                 {ticket.description && (
-                  <p className="text-sm text-[var(--text-muted)] mb-6 leading-relaxed">{ticket.description}</p>
+                  <p className="text-sm text-[var(--text-muted)] mb-6 leading-relaxed" data-edit="text" data-label="وصف التذكرة" data-text={`ticket_${ticket.id}_desc`} data-color="text" data-size="fs_body" data-min="10" data-max="26">
+                    <RichTextInline html={editableText?.[`ticket_${ticket.id}_desc`]} fallback={ticket.description} />
+                  </p>
                 )}
 
                 {/* Features - rich display with icon + title + desc */}
@@ -193,9 +215,11 @@ export default function TicketsSection({ eventId }: { eventId: number }) {
                         }}>
                           <TicketIcon iconKey={feat.icon} size={16} color="var(--feature-icon-color, #10b981)" />
                         </div>
-                        {/* Text */}
+                                                {/* Text */}
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ color: '#000000', fontWeight: 600, fontSize: '0.85rem', lineHeight: 1.3 }}>{feat.title}</div>
+                                                    <div className="font-semibold" style={{ color: 'var(--heading)', fontWeight: 600, fontSize: '0.85rem', lineHeight: 1.3 }} data-edit="text" data-label="ميزة تذكرة" data-text={`feat_${ticket.id}_${i}`} data-color="heading" data-size="fs_body" data-min="10" data-max="24">
+                            <RichTextInline html={editableText?.[`feat_${ticket.id}_${i}`]} fallback={feat.title} />
+                          </div>
                           {feat.desc && (
                             <div style={{ color: 'var(--text-muted)', fontSize: '0.76rem', marginTop: '0.2rem', lineHeight: 1.4 }}>{feat.desc}</div>
                           )}
@@ -213,7 +237,9 @@ export default function TicketsSection({ eventId }: { eventId: number }) {
                     border: '1px solid var(--price-section-border, rgba(108,99,255,0.2))',
                   }}
                 >
-                  <div className="text-xs text-[var(--text-muted)] mb-1" style={{ fontWeight: 500 }}>السعر</div>
+                                    <div className="text-xs text-[var(--text-muted)] mb-1" style={{ fontWeight: 500 }} data-edit="text" data-label="نص السعر" data-text="tickets_price_label" data-color="text" data-size="fs_small" data-min="8" data-max="18">
+                    <RichTextInline html={editableText?.tickets_price_label} fallback={'السعر'} />
+                  </div>
                   <div className="text-3xl font-black" style={{ color: 'var(--heading)' }}>
                     {ticket.formattedPrice}
                   </div>
@@ -230,9 +256,9 @@ export default function TicketsSection({ eventId }: { eventId: number }) {
 
         {/* Info Footer */}
         <div className="mt-16 p-6 rounded-lg" style={{ background: 'var(--panel)', border: '1px solid var(--panel-border)' }}>
-          <div className="text-center">
-            <p className="text-sm text-[var(--text-muted)]">
-              {config.info_text}
+                    <div className="text-center">
+            <p className="text-sm text-[var(--text-muted)]" data-edit="text" data-label="نص المساعدة في التذاكر" data-text="tickets_info" data-color="text" data-size="fs_body" data-min="10" data-max="24">
+              <RichTextInline html={editableText?.tickets_info} fallback={config.info_text} />
             </p>
           </div>
         </div>

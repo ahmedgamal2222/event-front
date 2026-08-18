@@ -35,6 +35,7 @@ export interface TicketInstructions {
   // Success title
   startup_success_title?: string;
   general_success_title?: string;
+  custom_messages?: Array<{ id?: string | number; text: string }>;
 }
 
 const DEFAULT: TicketInstructions = {
@@ -134,7 +135,7 @@ export default function RegistrationSuccessMessage({
             marginBottom: '0.75rem',
           }}>
             <div style={{ color: '#10b981', fontWeight: 600, marginBottom: '0.4rem' }}>📧 {c.general_confirm_title}</div>
-            <div style={{ color: '#cbd5e1', fontSize: '0.88rem', color: 'var(--text)' }}>
+            <div style={{ color: 'var(--text)', fontSize: '0.88rem' }}>
               {c.general_confirm_desc!.replace('{eventName}', eventName)}
             </div>
           </div>

@@ -32,6 +32,72 @@ export interface ThemeColors {
   navbar_bg_dark?: string;  // خلفية الناف بار في الوضع الليلي
   navbar_bg_light?: string; // خلفية الناف بار في الوضع النهاري
   navbar_blur?: string;     // 'on' | 'off'
+
+  // ── ألوان الوضع النهاري (تتطبق فقط عند data-theme="light") ──────────────
+  bg_light?: string;              // خلفية صفحة الحدث (نهاري)
+  bg_card_light?: string;         // خلفية البطاقات (نهاري)
+  text_light?: string;            // لون النص العام (نهاري)
+  text_muted_light?: string;      // النص الخافت (نهاري)
+  heading_light?: string;         // لون العناوين (نهاري)
+  border_light?: string;          // لون الحدود (نهاري)
+  panel_light?: string;           // خلفية الحقول/الألواح (نهاري)
+  footer_bg_light?: string;       // خلفية الفوتر (نهاري)
+  event_nav_bg_light?: string;    // خلفية شريط التنقل العلوي (نهاري)
+     option_bg_light?: string;       // خلفية خيارات الـ select (نهاري)
+
+   // ── الخط العام + محاذاة العناوين (تحكم مباشر من داخل المعاينة) ──
+   font_family?: string;   // 'cairo' | 'tajawal' | 'inter' | 'amiri' | 'system' | 'mono' (أو سلسلة CSS)
+   text_align?: string;     // 'center' | 'left' | 'right' — محاذاة العناوين الرئيسية
+
+  // ─── أحجام الخطوط (بالبكسل) ──────────────────────────────────────────────
+  fs_hero?: number;        // العنوان الرئيسي الضخم (Hero)
+  fs_hero_sub?: number;    // العنوان الفرعي في الـ Hero
+  fs_section?: number;     // عناوين الأقسام
+  fs_card_title?: number;  // عناوين البطاقات
+  fs_body?: number;        // النص العام للصفحة
+  fs_small?: number;       // النصوص الصغيرة
+  fs_nav?: number;         // روابط شريط التنقل
+
+  // ─── خلفيات الأقسام ──────────────────────────────────────────────────────
+  section_hero_bg?: string;
+  section_stats_bg?: string;
+  section_about_bg?: string;
+  section_agenda_bg?: string;
+  section_speakers_bg?: string;
+  section_video_bg?: string;
+  section_venue_bg?: string;
+  section_faq_bg?: string;
+  section_sponsors_bg?: string;
+  section_register_bg?: string;
+  section_tickets_bg?: string;
+  section_tickets_bg_light?: string; // خلفية قسم التذاكر في الوضع النهاري
+
+  // ─── الشعار (الأبعاد والمظهر) ────────────────────────────────────────────
+  logo_navbar_height?: number; // ارتفاع الشعار في شريط التنقل (px)
+  logo_hero_height?: number;    // أقصى ارتفاع الشعار في الـ Hero (px)
+  logo_bg?: string;             // خلفية الشعار في الناف (ليلي)
+  logo_padding?: number;        // الحشوة حول الشعار (px)
+  logo_radius?: number;         // استدارة زوايا الشعار (px)
+
+  // ─── خلفية الـ Hero (صورة / فيديو / يوتيوب / رابط خارجي) ─────────────────
+  hero_bg_type?: 'none' | 'image' | 'video' | 'youtube'; // نوع خلفية الـ Hero
+  hero_bg_image?: string;    // رابط صورة الخلفية (مرفوعة من الجهاز أو رابط خارجي)
+  hero_bg_video?: string;    // رابط فيديو الخلفية (ملف مباشر mp4/webm...)
+  hero_bg_youtube?: string;  // رابط يوتيوب كامل أو معرّف الفيديو فقط
+  hero_bg_overlay?: string;  // لون التغطية الشفافة فوق الخلفية لضمان وضوح النص
+  hero_bg_pos?: string;      // موضع الصورة/الفيديو في الخلفية e.g. 'center' | 'top' | 'bottom'
+  hero_align?: 'center' | 'right' | 'left'; // محاذاة محتوى الـ Hero
+  hero_y?: 'center' | 'top' | 'bottom';     // تموضع المحتوى عمودياً داخل الـ Hero
+
+  // ─── أزرار الصفحة ──────────────────────────────────────────────────────────
+  btn_primary_bg?: string;      // خلفية الزر الرئيسي (بداية التدرج)
+  btn_primary_bg2?: string;     // خلفية الزر الرئيسي (نهاية التدرج)
+  btn_primary_color?: string;   // لون نص الزر الرئيسي
+  btn_outline_color?: string;   // لون نص/حدود الزر الثانوي
+  btn_radius?: number;          // استدارة زوايا الأزرار (px)
+
+  // ─── اتجاه الصفحة (RTL / LTR) ──────────────────────────────────────────────
+  page_direction?: 'rtl' | 'ltr';
 }
 
 export interface SiteConfig {
@@ -50,6 +116,9 @@ export interface SiteConfig {
   archive_link_position?: 'navbar' | 'footer' | 'both' | 'none';
   ticket_instructions?: TicketInstructions;
   show_theme_toggle?: boolean; // إظهار زر تبديل الثيم في الناف بار
+  default_theme?: 'dark' | 'light'; // الوضع الافتراضي للزوار الجدد
+  editable_text?: Record<string, string>; // نصوص معدّلة مباشرة من معاينة المُحرر
+  page_direction?: 'rtl' | 'ltr';        // اتجاه الصفحة (يُعدَّل من المعاينة المباشرة)
 }
 
 export interface ExtraField {

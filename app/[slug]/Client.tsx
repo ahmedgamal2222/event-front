@@ -13,26 +13,13 @@ import { ThemeToggle, ThemeToggleAuto, IconX, IconInstagram, IconLinkedIn, IconT
 const DEFAULT_EVENT_SLUG = ''; // No hardcoded fallback — slug MUST come from URL params
 
 // ─── Event Navigation Bar ──────────────────────────────────────────────────────
-function EventNavBar({ eventId, primaryColor, archiveLabel, showArchive, showThemeToggle }: { eventId: number; primaryColor: string; archiveLabel?: string; showArchive?: boolean; showThemeToggle?: boolean }) {
+function EventNavBar({ eventId, primaryColor, archiveLabel, showArchive, showThemeToggle, themeMode, onThemeToggle, editableText }: { eventId: number; primaryColor: string; archiveLabel?: string; showArchive?: boolean; showThemeToggle?: boolean; themeMode: 'dark' | 'light'; onThemeToggle: () => void; editableText: Record<string, string> }) {
   const [nav, setNav] = useState<{ prev: any; current: any; next: any } | null>(null);
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  const label = archiveLabel || '\uD83D\uDDC2 \u062C\u0645\u064A\u0639 \u0627\u0644\u0646\u0633\u062E';
+  const label = editableText.archive_label || archiveLabel || '\uD83D\uDDC2 \u062C\u0645\u064A\u0639 \u0627\u0644\u0646\u0633\u062E';
+  const prevLabel = editableText.nav_prev_label || 'الحدث السابق';
+  const nextLabel = editableText.nav_next_label || 'الحدث التالي';
   const showArc = showArchive !== false;
   const showTheme = showThemeToggle !== false;
-
-  useEffect(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('event_theme') : null;
-    const t = saved === 'light' ? 'light' : 'dark';
-    setTheme(t as 'dark' | 'light');
-    document.documentElement.setAttribute('data-theme', t);
-  }, []);
-
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('event_theme', next);
-  };
 
   useEffect(() => {
     if (!eventId) return;
@@ -58,7 +45,10 @@ function EventNavBar({ eventId, primaryColor, archiveLabel, showArchive, showThe
               onMouseLeave={e => (e.currentTarget.style.color = 'var(--event-nav-text)')}>
               <IconArrowRight size={16} />
               <div>
-                <div style={{ fontSize: '0.68rem', color: 'var(--event-nav-text)' }} className="nav-subtext">الحدث السابق</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--event-nav-text)' }} className="nav-subtext"
+                  data-edit="text" data-label="ملصق الحدث السابق" data-text="nav_prev_label" data-color="text" data-size="fs_small" data-min="8" data-max="20">
+                  <RichInline html={editableText.nav_prev_label} fallback={prevLabel} />
+                </div>
                 <div style={{ fontWeight: 600 }}>{nav!.prev.name_ar || nav!.prev.name} {nav!.prev.edition_number ? `(${nav!.prev.edition_number})` : fmt(nav!.prev.start_date)}</div>
               </div>
             </Link>
@@ -68,21 +58,27 @@ function EventNavBar({ eventId, primaryColor, archiveLabel, showArchive, showThe
               style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.78rem', color: 'var(--event-nav-text)', textDecoration: 'none', padding: '0.25rem 0.75rem', border: '1px solid var(--event-nav-border)', borderRadius: '2rem', transition: 'all 0.15s' }}
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--event-nav-text-hover)'; (e.currentTarget as HTMLElement).style.color = 'var(--event-nav-text-hover)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--event-nav-border)'; (e.currentTarget as HTMLElement).style.color = 'var(--event-nav-text)'; }}>
-              <IconArchive size={13} /> {label}
+              <IconArchive size={13} />
+              <span data-edit="text" data-label="ملصق الأرشيف" data-text="archive_label" data-color="text" data-size="fs_small" data-min="8" data-max="20">
+                <RichInline html={editableText.archive_label} fallback={label} />
+              </span>
             </Link>
           )}
         </div>
 
         {/* الجهة اليسرى: زر الثيم + الحدث التالي */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          {showTheme && <ThemeToggle isDark={theme === 'dark'} onToggle={toggleTheme} size={42} />}
+          {showTheme && <ThemeToggle isDark={themeMode === 'dark'} onToggle={onThemeToggle} size={42} />}
           {showArc && hasNext && (
             <Link href={`/${nav!.next.slug}`}
               style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', color: 'var(--event-nav-text)', fontSize: '0.82rem', transition: 'color 0.15s', textAlign: 'left' }}
               onMouseEnter={e => (e.currentTarget.style.color = 'var(--event-nav-text-hover)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'var(--event-nav-text)')}>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '0.68rem', color: 'var(--event-nav-text)' }} className="nav-subtext">الحدث التالي</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--event-nav-text)' }} className="nav-subtext"
+                  data-edit="text" data-label="ملصق الحدث التالي" data-text="nav_next_label" data-color="text" data-size="fs_small" data-min="8" data-max="20">
+                  <RichInline html={editableText.nav_next_label} fallback={nextLabel} />
+                </div>
                 <div style={{ fontWeight: 600 }}>{nav!.next.name_ar || nav!.next.name} {nav!.next.edition_number ? `(${nav!.next.edition_number})` : fmt(nav!.next.start_date)}</div>
               </div>
               <IconArrowLeft size={16} />
@@ -104,6 +100,123 @@ const SESSION_STYLES: Record<string, { bg: string; label: string }> = {
   break:       { bg: '#6b7280', label: 'استراحة' },
   competition: { bg: '#ef4444', label: 'مسابقة' },
 };
+
+// حقل لون صغير داخل لوحة التعديل المباشر
+function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const safe = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value) ? value : (value?.startsWith('var(') ? '#6C63FF' : value || '#6C63FF');
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.06)', borderRadius: '0.45rem', padding: '0.25rem 0.6rem 0.25rem 0.35rem' }}>
+      <span style={{ position: 'relative', width: 26, height: 26, borderRadius: '0.35rem', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.18)', flexShrink: 0, background: safe === '#6C63FF' && value?.startsWith('var(') ? 'conic-gradient(#6C63FF, #4f46e5, #6C63FF)' : safe }}>
+        <input type="color" value={safe === '#6C63FF' && value?.startsWith('var(') ? '#6C63FF' : safe} onChange={e => onChange(e.target.value)}
+          style={{ opacity: 0, position: 'absolute', inset: 0, width: '100%', height: '100%', cursor: 'pointer', border: 'none', padding: 0 }} />
+      </span>
+      <span style={{ color: '#94a3b8', fontSize: '0.72rem', whiteSpace: 'nowrap' }}>{label}</span>
+      <input type="text" value={value} onChange={e => onChange(e.target.value)} dir="ltr" placeholder="مثل #6C63FF أو rgba(...)"
+        style={{ width: 110, background: 'transparent', border: 'none', color: 'white', outline: 'none', fontSize: '0.72rem', fontFamily: 'monospace' }} />
+    </div>
+  );
+}
+
+// ── عرض نص قد يحتوي وسوم <span> ملونة (تلوين كل كلمة على حدة) ──
+// إذا كان النص يحتوي HTML (من محرر التلوين المباشر) يُعرض بأمان، وإلا يُعرض كنص عادي.
+function RichInline({ html, fallback }: { html?: string; fallback?: React.ReactNode }) {
+  if (!html || !String(html).trim()) return <>{fallback}</>;
+  if (/<[a-z][^>]*>/i.test(String(html))) {
+    return <span dangerouslySetInnerHTML={{ __html: String(html) }} />;
+  }
+  return <>{String(html)}</>;
+}
+
+// تحويل وسوم <font color> (ناتجة عن execCommand) إلى <span style="color:..."> للحفظ الموحد
+const normalizeRichHtml = (html: string) =>
+  html
+    .replace(/<font\s+color="([^"]+)"[^>]*>(.*?)<\/font>/gi, '<span style="color:$1">$2</span>')
+    .replace(/<font\s+color='([^']+)'[^>]*>(.*?)<\/font>/gi, '<span style="color:$1">$2</span>')
+    .replace(/\u00a0/g, ' ');
+
+// حقل تحرير نصي غني — يتيح تلوين كل كلمة (أو جزء) على حدة داخل لوحة التعديل المباشر
+function InlineRichText({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (ref.current && ref.current.innerHTML !== (value || '')) {
+      ref.current.innerHTML = value || '';
+    }
+  }, [value]);
+  const emit = () => { if (ref.current) onChange(normalizeRichHtml(ref.current.innerHTML)); };
+  const applyColor = (color: string) => {
+    if (!ref.current) return;
+    ref.current.focus();
+    try {
+      document.execCommand('styleWithCSS', false, true);
+      document.execCommand('foreColor', false, color);
+    } catch { /* بعض المتصفحات ترفض بدون تحديد */ }
+    emit();
+  };
+  const clearFormatting = () => {
+    if (!ref.current) return;
+    ref.current.focus();
+    try { document.execCommand('removeFormat', false); } catch {}
+    emit();
+  };
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+      <div
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        onInput={emit}
+        onBlur={emit}
+        data-placeholder={placeholder || 'اكتب النص...'}
+        className="rich-inline-editor"
+        style={{
+          background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(108,99,255,0.35)',
+          borderRadius: '0.45rem', padding: '0.45rem 0.7rem', color: 'white', outline: 'none',
+          minWidth: 230, minHeight: '1.7em', fontSize: '0.82rem', lineHeight: 1.5,
+        }}
+      />
+      <ColorField label="🎨 تلوين المحدد" value="#f59e0b" onChange={applyColor} />
+      <button
+        onClick={clearFormatting}
+        title="إزالة التلوين عن الكلمة/النص المحدد"
+        style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.2)', color: '#fca5a5', borderRadius: '0.4rem', padding: '0.3rem 0.55rem', cursor: 'pointer', fontSize: '0.72rem' }}
+      >🧹 إزالة تلوين المحدد</button>
+    </div>
+  );
+}
+
+// القيمة الأصلية للنص القابل للتعديل (تُعرض كـ placeholder في حقل التعديل المباشر)
+function editTextPlaceholder(
+  key: string, siteCfg: SiteConfig, eventName: string, eventTagline: string,
+  description: string, location: string, ed: { day: number; month: string; year: number }, cfg: FormConfig,
+): string {
+  const aboutCard = key?.startsWith('about_card_')
+    ? siteCfg.about_cards[Number(key.split('_')[2])]?.title || ''
+    : '';
+  const map: Record<string, string> = {
+    hero_abbr: siteCfg.hero_abbr,
+    hero_btn_primary: siteCfg.hero_btn_primary,
+    hero_btn_secondary: siteCfg.hero_btn_secondary,
+    hero_badge: `${location} · ${ed.month} ${ed.year}`,
+    event_name: eventName,
+    event_tagline: eventTagline,
+    description,
+    navbar_btn: 'سجّل الآن',
+    navbar_brand: eventName,
+    about_badge: siteCfg.about_badge,
+    about_title: siteCfg.about_title,
+    agenda_badge: 'البرنامج',
+    agenda_title: 'أيام مكثّفة',
+    speakers_badge: 'المتحدثون',
+    speakers_title: 'قيادات ملهمة',
+    sponsors_badge: 'الشركاء والرعاة',
+    sponsors_title: 'شركاء القمة',
+    register_badge: 'التسجيل',
+    register_title: cfg.form_title || 'انضم إلى القمة',
+    faq_badge: 'الأسئلة الشائعة',
+    faq_title: 'أجوبة على أسئلتك',
+  };
+  return aboutCard || map[key] || '';
+}
 
 function Countdown({ targetDate }: { targetDate: string }) {
   const [time, setTime] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -144,7 +257,7 @@ function Countdown({ targetDate }: { targetDate: string }) {
   );
 }
 
-function StatCounter({ value, label }: { value: number; label: string }) {
+function StatCounter({ value, label, labelKey }: { value: number; label: string; labelKey: number }) {
   const [display, setDisplay] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
   const observed = useRef(false);
@@ -169,7 +282,10 @@ function StatCounter({ value, label }: { value: number; label: string }) {
   return (
     <div ref={ref} className="text-center">
       <div className="text-4xl font-black gradient-text">{display}+</div>
-      <div className="text-[var(--text-muted)] text-sm mt-1">{label}</div>
+      <div className="text-[var(--text-muted)] text-sm mt-1"
+        data-edit="text" data-label="تسمية إحصائية" data-text={`stat_${labelKey}_label`} data-color="text" data-size="fs_body" data-min="10" data-max="30">
+        <RichInline html={label.indexOf('<') >= 0 ? label : ''} fallback={label} />
+      </div>
     </div>
   );
 }
@@ -640,6 +756,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       archive_link_label: typeof raw.archive_link_label === 'string' ? raw.archive_link_label : '🗂 النسخ السابقة',
       archive_link_position: ['navbar', 'footer', 'both', 'none'].includes(raw.archive_link_position) ? raw.archive_link_position : 'both',
       show_theme_toggle: raw.show_theme_toggle !== undefined ? !!raw.show_theme_toggle : false,
+      default_theme: raw.default_theme === 'light' || raw.default_theme === 'dark' ? raw.default_theme : 'dark',
       ticket_instructions: { ...fallback.ticket_instructions, ...(raw.ticket_instructions || {}) },
     };
   };
@@ -653,13 +770,176 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
   const [venueGallery, setVenueGallery] = useState<VenueMedia[]>([]);
   const [activeGalleryIndex, setActiveGalleryIndex] = useState(0);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  // ── Live preview from admin panel (theme_preview + theme_mode query params) ──
+  const [previewMode, setPreviewMode] = useState<'light' | 'dark' | null>(null);
+  const [previewTheme, setPreviewTheme] = useState<Record<string, string | number> | null>(null);
+  const [previewText, setPreviewText] = useState<Record<string, string> | null>(null);
+  const [previewDir, setPreviewDir] = useState<'rtl' | 'ltr' | null>(null);
+  const [editMode, setEditMode] = useState(false);
 
-  // Initialize theme from localStorage
+  // ── Direct editor inside preview (click element → edit) ──
+  const [editColors, setEditColors] = useState<Record<string, string | number>>({});
+  const [editText, setEditText] = useState<Record<string, string>>({});
+  const [editDir, setEditDir] = useState<'rtl' | 'ltr'>('rtl');
+  const [editTarget, setEditTarget] = useState<null | {
+    kind: 'text' | 'section-bg' | 'button' | 'navbar' | 'logo' | 'body-bg' | 'hero' | 'card';
+    label: string;
+    colorKey?: string;   // مفتاح لون النص/الزر (mode-aware)
+    bgKey?: string;      // مفتاح لون الخلفية خلف العنصر
+    sizeKey?: string;    // مفتاح حجم الخط (px)
+    min?: number;
+    max?: number;
+    textKey?: string;    // مفتاح نص قابل للتعديل
+        options?: string[];  // خيارات إضافية (مثل transparent)
+    // حقول إضافية متعددة لعناصر مثل البطاقات:
+    // تُقرأ من data-colors="key:label|key:label" و data-sizes="key:label:min:max|..."
+    colorFields?: { key: string; label: string }[];
+    sizeFields?: { key: string; label: string; min: number; max: number }[];
+  }>(null);
+
+  // ── تحكم مباشر في الناف بار أثناء التعديل (لمسائل عرض/إخفاء معاينة أولية) ──
+  const [navLogoVisible, setNavLogoVisible] = useState(true);
+  const [navBrandVisible, setNavBrandVisible] = useState(true);
+  const [saveToast, setSaveToast] = useState('');
+
+  // خريطة مفاتيح الخطوط → قيم CSS (تُطبّق على --font-family مباشرة، وتُعاد كتابتها مرةً واحدة)
+  const FONT_FAMILY_CSS: Record<string, string> = {
+    cairo: `'Cairo', 'Segoe UI', system-ui, sans-serif`,
+    tajawal: `'Tajawal', 'Cairo', 'Segoe UI', sans-serif`,
+    inter: `'Inter', 'Segoe UI', system-ui, sans-serif`,
+    amiri: `'Amiri', 'Cairo', serif`,
+    system: `system-ui, -apple-system, sans-serif`,
+    mono: `ui-monospace, SFMono-Regular, Menlo, monospace`,
+  };
+  const fontFamilyCss = (key?: string) => (key ? (FONT_FAMILY_CSS[key] ?? key) : undefined);
+
+  // Read the preview params once (used by the admin panel's real live preview iframe)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const tm = params.get('theme_mode');
+    const tp = params.get('theme_preview');
+    const tt = params.get('theme_text');
+    const td = params.get('theme_dir');
+    const ed = params.get('edit');
+    if (tm === 'light' || tm === 'dark') setPreviewMode(tm);
+    if (tp) {
+      try { setPreviewTheme(JSON.parse(decodeURIComponent(tp))); } catch {}
+    }
+    if (tt) {
+      try { setPreviewText(JSON.parse(decodeURIComponent(tt))); } catch {}
+    }
+    if (td === 'rtl' || td === 'ltr') setPreviewDir(td);
+    setEditMode(ed === '1');
+  }, []);
+
+  // Initialize theme: admin preview mode has priority, then saved preference, then default_theme
   useEffect(() => {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('event_theme') : null;
-    const t = saved === 'light' ? 'light' : 'dark';
+    const t = previewMode || (saved === 'light' ? 'light' : saved === 'dark' ? 'dark' : (siteCfg.default_theme || 'dark'));
     setTheme(t);
-  }, []);
+    document.documentElement.setAttribute('data-theme', t);
+  }, [previewMode, siteCfg.default_theme]);
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('event_theme', next);
+  };
+
+  // ── Direct editor inside the preview: click a text / background / button ──
+  const parseFields = (raw: string | undefined, kind: 'color' | 'size') => {
+    if (!raw) return undefined;
+    return raw.split('|').map(seg => {
+      const parts = seg.split(':');
+      if (kind === 'color') return { key: parts[0], label: parts[1] || 'لون' };
+      return { key: parts[0], label: parts[1] || 'حجم', min: Number(parts[2]) || 8, max: Number(parts[3]) || 160 };
+    }).filter((f: any) => f && f.key) as any;
+  };
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    if (!editMode) return;
+    const el = (e.target as HTMLElement).closest('[data-edit]') as HTMLElement | null;
+    if (!el) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const d = el.dataset;
+    const modeKey = (base: string) => (theme === 'light' ? base + '_light' : base);
+    setEditTarget({
+      kind: (d.edit || 'text') as any,
+      label: d.label || 'عنصر',
+      colorKey: d.color ? (d.modeaware === '1' ? modeKey(d.color) : d.color) : undefined,
+      bgKey: d.bg ? (d.bgmodeaware === '1' ? modeKey(d.bg) : d.bg) : undefined,
+      sizeKey: d.size || undefined,
+      min: d.min ? Number(d.min) : undefined,
+      max: d.max ? Number(d.max) : undefined,
+      textKey: d.text || undefined,
+      options: d.options ? d.options.split(',') : undefined,
+      colorFields: parseFields(d.colors, 'color'),
+      sizeFields: parseFields(d.sizes, 'size'),
+    });
+    // ضبط قيمة النص الحالية في المحرر إذا لم تكن مخزنة بعد (حتى لا يفتح الحقل فارغاً)
+    if (d.text) {
+      setEditText(prev => {
+        if (prev[d.text!] !== undefined && prev[d.text!] !== '') return prev;
+        return { ...prev, [d.text!]: d.default !== undefined ? d.default : (el.innerText || '') };
+      });
+    }
+    // تمييز العنصر المحدد بحدود برتقالية
+    document.querySelectorAll('[data-edit]').forEach(el2 => el2.setAttribute('data-edit-selected', '0'));
+    el.setAttribute('data-edit-selected', '1');
+  };
+
+  // تطبيق لون النص على الوضع الحالي + الوضع المقابل تلقائياً
+  // (يحل مشكلة "اللون دائماً أسود" — اللون المختار يظهر في dark والـ light معاً)
+  const applyColorAllModes = (baseKey: string, value: string) => {
+    setEditColors(prev => {
+      const next = { ...prev, [baseKey]: value };
+      if (!baseKey.endsWith('_light')) next[baseKey + '_light'] = value;
+      else next[baseKey.replace(/_light$/, '')] = value;
+      return next;
+    });
+  };
+
+  // Send live edits back to the admin panel (parent window)
+  const applyEdits = () => {
+    if (typeof window !== 'undefined' && window.parent && window.parent !== window) {
+      window.parent.postMessage({
+        source: 'event-theme-editor',
+        colors: editColors,
+        text: editText,
+        direction: editDir,
+        mode: theme,
+      }, '*');
+    }
+  };
+
+    // أرسل كل تعديل مباشر فور تغيّره (نص/لون/حجم/اتجاه) للوحة التحكم
+  useEffect(() => {
+    applyEdits();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editColors, editText, editDir]);
+
+  // زر "حفظ التعديلات" المباشرة من داخل المعاينة → يرسل إشارة إلى الوالد (لوحة الأدمن)
+  // فيدخّنه على حفظ theme_colors + editable_text + page_direction في سجل الفعالية.
+  const saveDirectEdits = () => {
+    if (typeof window !== 'undefined' && window.parent && window.parent !== window) {
+      window.parent.postMessage({
+        source: 'event-theme-editor',
+        saveDirect: true,
+        colors: editColors,
+        text: editText,
+        direction: editDir,
+        mode: theme,
+      }, '*');
+      setSaveToast('⏳ جارٍ حفظ التعديلات على الخادم...');
+    } else {
+      setSaveToast('⚠️ احفظ من داخل لوحة الأدمن (المعاينة غير مدمجة كـ iframe)');
+    }
+    setTimeout(() => setSaveToast(''), 4000);
+  };
+
 
   useEffect(() => {
     // Reset state when slug changes to avoid showing stale data
@@ -787,8 +1067,37 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
   const primaryColor = event?.primary_color || '#6C63FF';
 
   // Build CSS variable overrides from theme_colors stored in site_config
-  const themeColors = (siteCfg as any).theme_colors || {};
+  // (previewTheme from ?theme_preview= + live edits merge on top for the admin preview)
+  const themeColors: Record<string, string | number> = {
+    ...((siteCfg as any).theme_colors || {}),
+    ...(previewTheme || {}),
+    ...editColors,
+  };
+  const editableText: Record<string, string> = {
+    ...((siteCfg as any).editable_text || {}),
+    ...(previewText || {}),
+    ...editText,
+  };
+  const pageDir: 'rtl' | 'ltr' = previewDir || editDir || ((themeColors as any).page_direction === 'ltr' ? 'ltr' : 'rtl');
+
+  // ── خلفية الـ Hero: صورة / فيديو / يوتيوب / رابط خارجي ──
+  const heroBgType = ((themeColors as any).hero_bg_type as string) || 'none';
+  const heroBgImage = ((themeColors as any).hero_bg_image as string) || '';
+  const heroBgVideo = ((themeColors as any).hero_bg_video as string) || '';
+  const heroBgYt = ((themeColors as any).hero_bg_youtube as string) || '';
+  const heroOverlay = ((themeColors as any).hero_bg_overlay as string) || 'rgba(13,11,26,0.55)';
+  const heroBgPos = ((themeColors as any).hero_bg_pos as string) || 'center';
+  const heroAlign = ((themeColors as any).hero_align as string) || 'center';
+  const heroY = ((themeColors as any).hero_y as string) || 'center';
+  const ytEmbedUrl = (src: string) => {
+    const m = (src || '').match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{6,})/);
+    const id = m ? m[1] : (src || '').trim();
+    return id ? `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}&rel=0&playsinline=1` : '';
+  };
+  const heroFlexJustify = heroY === 'top' ? 'flex-start' : heroY === 'bottom' ? 'flex-end' : 'center';
+  const heroFlexAlign = heroAlign === 'center' ? 'center' : heroAlign === 'right' ? 'flex-end' : 'flex-start';
   const themeVarsStyle = Object.keys(themeColors).length > 0 ? {
+    // ── الوضع الليلي (الافتراضي) ──
     '--primary':      themeColors.primary      || primaryColor,
     '--primary-dark': themeColors.primary_dark || primaryColor,
     '--accent':       themeColors.accent       || '#f59e0b',
@@ -797,20 +1106,56 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
     '--text':         themeColors.text         || '#e2e8f0',
     '--text-muted':   themeColors.text_muted   || '#94a3b8',
     '--heading':      themeColors.heading      || '#ffffff',
-    // Dark mode navbar (applied globally; light mode nav overrides via CSS vars in light block)
     '--navbar-bg':     themeColors.navbar_bg_dark  || 'rgba(19,16,42,0.75)',
     '--navbar-blur':   themeColors.navbar_blur === 'off' ? 'none' : 'blur(12px)',
     '--navbar-border': themeColors.navbar_border   || 'rgba(108,99,255,0.2)',
+    // ── الوضع النهاري — تُطبق تلقائياً عند data-theme="light" عبر CSS ──
+    '--bg-light':          themeColors.bg_light          || '#ffffff',
+    '--bg-card-light':     themeColors.bg_card_light     || '#ffffff',
+    '--text-light':        themeColors.text_light        || '#0f172a',
+    '--text-muted-light':  themeColors.text_muted_light  || '#475569',
+    '--heading-light':     themeColors.heading_light     || '#0f172a',
+    '--border-light':      themeColors.border_light      || 'rgba(108,99,255,0.16)',
+    '--panel-light':       themeColors.panel_light       || '#ffffff',
+    '--footer-bg-light':   themeColors.footer_bg_light   || '#f8fafc',
+    '--event-nav-bg-light': themeColors.event_nav_bg_light || '#ffffff',
+    '--option-bg-light':   themeColors.option_bg_light   || '#ffffff',
+    '--section-tickets-bg-light': themeColors.section_tickets_bg_light || undefined as any,
+    // ── الأحجام (الخطوط) ──
+    '--fs-hero':      (themeColors.fs_hero      || 72) + 'px',
+    '--fs-hero-sub':  (themeColors.fs_hero_sub  || 30) + 'px',
+    '--fs-section':   (themeColors.fs_section   || 32) + 'px',
+    '--fs-card-title':(themeColors.fs_card_title || 17) + 'px',
+    '--fs-body':      (themeColors.fs_body      || 16) + 'px',
+    '--fs-small':     (themeColors.fs_small     || 13) + 'px',
+    '--fs-nav':       (themeColors.fs_nav       || 14) + 'px',
+    // ── خلفيات الأقسام ──
+    '--section-hero-bg':      themeColors.section_hero_bg      || 'transparent',
+    '--section-stats-bg':     themeColors.section_stats_bg     || 'transparent',
+    '--section-about-bg':     themeColors.section_about_bg     || 'transparent',
+    '--section-agenda-bg':    themeColors.section_agenda_bg    || 'rgba(108,99,255,0.03)',
+    '--section-speakers-bg':  themeColors.section_speakers_bg  || 'transparent',
+    '--section-video-bg':     themeColors.section_video_bg     || 'rgba(108,99,255,0.04)',
+    '--section-venue-bg':     themeColors.section_venue_bg     || 'rgba(0,0,0,0.3)',
+    '--section-faq-bg':       themeColors.section_faq_bg       || 'rgba(108,99,255,0.03)',
+    '--section-sponsors-bg':  themeColors.section_sponsors_bg  || 'rgba(108,99,255,0.03)',
+    '--section-register-bg':  themeColors.section_register_bg  || 'transparent',
+    '--section-tickets-bg':   themeColors.section_tickets_bg   || 'var(--bg-dark)',
+    // ── الأزرار ──
+    '--btn-primary-bg':    themeColors.btn_primary_bg     || 'var(--primary)',
+    '--btn-primary-bg2':   themeColors.btn_primary_bg2    || 'var(--primary-dark)',
+    '--btn-primary-color': themeColors.btn_primary_color  || '#ffffff',
+    '--btn-outline-color': themeColors.btn_outline_color  || 'var(--primary)',
+        '--btn-radius':        ((themeColors.btn_radius as number) || 8) + 'px',
+    // ── Font family + heading alignment (أي خط / موضع العنوان) ──
+    '--font-family': fontFamilyCss((themeColors as any).font_family),
+    '--title-align': (themeColors as any).text_align || undefined,
   } as React.CSSProperties : undefined;
 
-  // Light-mode navbar vars — injected into :root so CSS data-theme="light" block picks them up
+  // Light-mode navbar color — injected on :root so the CSS data-theme="light" block picks it up
   const navbarBgLight = themeColors.navbar_bg_light || 'rgba(255,255,255,0.98)';
-
-  // Inject light-mode navbar color as inline style on body if customized
-  const navbarLightBg = themeColors.navbar_bg_light;
-  if (typeof document !== 'undefined' && navbarLightBg) {
-    // Set as CSS custom property on :root for light mode override
-    document.documentElement.style.setProperty('--navbar-bg-light-custom', navbarLightBg);
+  if (typeof document !== 'undefined') {
+       document.documentElement.style.setProperty('--navbar-bg-light-custom', String(navbarBgLight));
   }
 
   const formatDateAr = (d: string) => {
@@ -848,7 +1193,13 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
   );
 
   return (
-    <div className="event-page min-h-screen" style={{ background: 'var(--bg-dark)', ...(themeVarsStyle || {}) }}>
+    <div
+      className="event-page min-h-screen"
+      style={{ background: 'var(--bg-dark)', ...(themeVarsStyle || {}) }}
+      data-editing={editMode ? '1' : '0'}
+      dir={pageDir}
+      onClickCapture={handleEditClick}
+    >
       {/* Pixel Tracking */}
       <PixelInjector eventId={event?.id || 1} />
       {/* ── Navbar ───────────────────────────────────────────────────────────── */}
@@ -859,31 +1210,45 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
               <img 
                 src={siteCfg.logo_url} 
                 alt="logo" 
-                className="h-14 object-contain" 
-                style={{
-                  background: theme === 'dark' ? 'rgba(255, 255, 255, 0.95)' : 'transparent',
-                  padding: theme === 'dark' ? '10px 14px' : '0',
-                  borderRadius: theme === 'dark' ? '12px' : '0',
-                  boxShadow: theme === 'dark' ? '0 4px 16px rgba(108, 99, 255, 0.25)' : 'none',
+                className="object-contain" 
+                data-edit="logo" data-label="شعار النافبار" data-size="logo_navbar_height" data-min="24" data-max="140"
+                                style={{
+                  ...(editMode && !navLogoVisible ? { opacity: 0.4, pointerEvents: 'none' } : {}),
+                  height: 'var(--logo-navbar-height, 56px)',
+                  width: 'auto',
+                  maxWidth: 220,
+                  background: theme === 'dark' && themeColors.logo_bg ? themeColors.logo_bg as string : (theme === 'dark' ? 'rgba(255, 255, 255, 0.95)' : 'transparent'),
+                                    padding: theme === 'dark' ? `${Number(themeColors.logo_padding || 8)}px ${Number(themeColors.logo_padding || 8) + 4}px` : '0',
+                  borderRadius: theme === 'dark' ? `${themeColors.logo_radius || 12}px` : '0',
+                  boxShadow: theme === 'dark' ? '0 4px 16px rgba(0, 0, 0, 0.2)' : 'none',
                   transition: 'all 0.3s ease'
                 }}
               />
             )}
-            <a href="#" className="font-black text-xl text-white" style={{ letterSpacing: '-0.02em' }}>
-              <span className="text-[var(--primary)]">{event?.name?.split(' ')[0] || 'S3'}</span> {event?.name?.split(' ').slice(1).join(' ') || 'Summit'}
+                        <a href="#" className="font-black text-xl text-[var(--heading)]" style={{ letterSpacing: '-0.02em' }}
+               data-edit="text" data-label="اسم العلامة في النافبار" data-text="navbar_brand" data-color="heading" data-size="fs_nav" data-min="12" data-max="40">
+              {editableText.navbar_brand
+                ? <RichInline html={editableText.navbar_brand} />
+                : (<><span className="text-[var(--primary)]">{event?.name?.split(' ')[0] || 'S3'}</span> {event?.name?.split(' ').slice(1).join(' ') || 'Summit'}</>)}
             </a>
           </div>
           <div className="hidden md:flex items-center gap-6">
-            {navLinks.map(l => (
+            {navLinks.map((l, i) => (
               l.href.startsWith('/') && l.href !== '#'
-                ? <Link key={l.href} href={l.href} className="text-sm text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors">{l.label}</Link>
-                : <a key={l.href} href={l.href} className="text-sm text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors">{l.label}</a>
+                ? <Link key={l.href} href={l.href} className="text-sm text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors"
+                    data-edit="text" data-label="رابط في النافبار" data-text={`nav_label_${i}`} data-color="text" data-size="fs_nav" data-min="10" data-max="28">
+                    <RichInline html={editableText[`nav_label_${i}`]} fallback={l.label} />
+                  </Link>
+                : <a key={l.href} href={l.href} className="text-sm text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors"
+                    data-edit="text" data-label="رابط في النافبار" data-text={`nav_label_${i}`} data-color="text" data-size="fs_nav" data-min="10" data-max="28">
+                    <RichInline html={editableText[`nav_label_${i}`]} fallback={l.label} />
+                  </a>
             ))}
           </div>
           <div className="flex items-center gap-3">
-            {false && <ThemeToggleAuto size={42} />}
-            <button onClick={() => openModal()} className="btn-primary text-sm py-2 px-4">
-              سجّل الآن
+            {siteCfg.show_theme_toggle !== false && <ThemeToggle isDark={theme === 'dark'} onToggle={toggleTheme} size={38} />}
+            <button onClick={() => openModal()} className="btn-primary text-sm py-2 px-4" data-edit="button" data-label="زر سجّل الآن (النافبار)" data-text="navbar_btn" data-color="btn_primary_color" data-bg="btn_primary_bg">
+              <RichInline html={editableText.navbar_btn} fallback={'سجّل الآن'} />
             </button>
           </div>
         </div>
@@ -896,39 +1261,91 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
           primaryColor={primaryColor}
           archiveLabel={siteCfg.archive_link_label}
           showArchive={true}
-          showThemeToggle={false}
+          showThemeToggle={siteCfg.show_theme_toggle !== false}
+          themeMode={theme}
+          onThemeToggle={toggleTheme}
+          editableText={editableText}
         />
       )}
 
       {/* ── Hero ─────────────────────────────────────────────────────────────── */}
-      <section className="relative pt-32 pb-20 px-6 overflow-hidden">
-        {/* Background glow */}
+      <section
+        className="hero-section relative pt-32 pb-20 px-6 overflow-hidden"
+        data-edit="hero"
+        data-label="قسم الـ Hero (الخلفية)"
+        data-bg="section_hero_bg"
+        data-options="transparent"
+        style={{ background: 'var(--section-hero-bg, transparent)' }}
+      >
+        {/* خلفية الوسائط: صورة / فيديو / يوتيوب — يضبطها الأدمن */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {heroBgType === 'image' && heroBgImage && (
+            <img src={heroBgImage} alt="" className="w-full h-full object-cover" style={{ objectPosition: heroBgPos }} />
+          )}
+          {heroBgType === 'video' && heroBgVideo && (
+            <video src={heroBgVideo} autoPlay muted loop playsInline className="w-full h-full object-cover" style={{ objectPosition: heroBgPos }} />
+          )}
+          {heroBgType === 'youtube' && ytEmbedUrl(heroBgYt) && (
+            <iframe
+              src={ytEmbedUrl(heroBgYt)}
+              title="Hero background"
+              className="w-full h-full"
+              style={{ pointerEvents: 'none', border: 'none', transform: 'scale(1.15)' }}
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+            />
+          )}
+          {(heroBgType === 'image' || heroBgType === 'video' || heroBgType === 'youtube') && (
+            <div className="absolute inset-0" style={{ background: heroOverlay }} />
+          )}
+          {/* توهج أساسي */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full opacity-20 blur-3xl"
                style={{ background: `radial-gradient(circle, ${primaryColor}, transparent)` }} />
         </div>
 
-        <div className="max-w-4xl mx-auto text-center relative">
+        <div
+          className="max-w-4xl mx-auto relative"
+          style={{
+            textAlign: heroAlign as any,
+            display: 'flex', flexDirection: 'column',
+            justifyContent: heroFlexJustify, alignItems: heroFlexAlign,
+            minHeight: '52vh',
+          }}
+        >
           <div className="inline-block mb-4 px-4 py-1.5 rounded-full text-sm font-semibold"
-               style={{ background: 'rgba(108,99,255,0.15)', border: `1px solid ${primaryColor}40`, color: primaryColor }}>
-            {location} · {ed.month} {ed.year}
+               style={{ background: 'rgba(108,99,255,0.15)', border: `1px solid ${primaryColor}40`, color: primaryColor, fontSize: 'var(--fs-small, 13px)' }}
+               data-edit="text" data-label="شريط الموقع والتاريخ" data-text="hero_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
+            <RichInline html={editableText.hero_badge} fallback={`${location} · ${ed.month} ${ed.year}`} />
           </div>
 
           {event?.logo && (
             <div className="mb-6 flex justify-center">
-              <img src={event.logo} alt="شعار الحدث" style={{ maxHeight: 100, objectFit: 'contain' }} />
+              <img src={event.logo} alt="شعار الحدث"
+                data-edit="logo" data-label="شعار الـ Hero" data-size="logo_hero_height" data-min="40" data-max="300"
+                style={{ maxHeight: `var(--logo-hero-height, 100px)`, height: 'auto', maxWidth: '90%', objectFit: 'contain' }} />
             </div>
           )}
 
-          <h1 className="text-5xl md:text-7xl font-black mb-4" style={{ letterSpacing: '-0.03em', color: 'white' }}>
-            <span className="text-[var(--primary)]">{siteCfg.hero_abbr}</span>
+          <h1 className="hero-title font-black mb-4" style={{ letterSpacing: '-0.03em', color: 'var(--heading)', fontSize: 'var(--fs-hero, 72px)', lineHeight: 1.1 }}
+              data-edit="text" data-label="الاختصار الكبير (S3)" data-text="hero_abbr" data-color="primary" data-size="fs_hero" data-min="24" data-max="140">
+            <span className="text-[var(--primary)]"><RichInline html={editableText.hero_abbr} fallback={siteCfg.hero_abbr} /></span>
           </h1>
-          <h2 className="text-2xl md:text-3xl font-bold mb-2 text-white">{eventName}</h2>
-          <p className="text-lg text-[var(--text-muted)] mb-2">{eventTagline}</p>
-          <p className="text-[var(--text-muted)] max-w-xl mx-auto mb-8">{description}</p>
+          <h2 className="hero-subtitle font-bold mb-2" style={{ color: 'var(--heading)', fontSize: 'var(--fs-hero-sub, 30px)' }}
+              data-edit="text" data-label="اسم الحدث" data-text="event_name" data-color="heading" data-size="fs_hero_sub" data-min="14" data-max="60">
+            <RichInline html={editableText.event_name} fallback={eventName} />
+          </h2>
+          <p className="text-lg text-[var(--text-muted)] mb-2" style={{ fontSize: 'var(--fs-body, 16px)' }}
+             data-edit="text" data-label="الشعار النصي" data-text="event_tagline" data-color="text" data-size="fs_body" data-min="10" data-max="30">
+            <RichInline html={editableText.event_tagline} fallback={eventTagline} />
+          </p>
+          <p className="text-[var(--text-muted)] max-w-xl mx-auto mb-8" style={{ fontSize: 'var(--fs-body, 16px)' }}
+             data-edit="text" data-label="وصف الحدث" data-text="description" data-color="text" data-size="fs_body" data-min="10" data-max="30">
+            <RichInline html={editableText.description} fallback={description} />
+          </p>
 
           {/* Date display */}
-          <div className="flex items-center justify-center gap-4 mb-8">
+          <div className="flex items-center justify-center gap-4 mb-8"
+            data-edit="text" data-label="تواريخ الحدث (اللون والحجم)" data-color="heading" data-size="fs_body" data-min="10" data-max="60">
             <div className="text-center">
               <div className="text-4xl font-black text-white">{sd.day}</div>
               <div className="text-sm text-[var(--text-muted)]">{sd.month}</div>
@@ -943,19 +1360,31 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
           <Countdown targetDate={startDate + 'T09:00:00'} />
 
           <div className="flex flex-wrap gap-3 justify-center">
-            <button onClick={() => openModal('startup')} className="btn-primary">{siteCfg.hero_btn_primary}</button>
-            {siteCfg.hero_btn_secondary && <button onClick={() => openModal('general')} className="btn-outline">{siteCfg.hero_btn_secondary}</button>}
+            <button onClick={() => openModal('startup')} className="btn-primary"
+              data-edit="button" data-label="زر التسجيل الرئيسي" data-text="hero_btn_primary" data-color="btn_primary_color" data-bg="btn_primary_bg" data-size="fs_body" data-min="10" data-max="30">
+              <RichInline html={editableText.hero_btn_primary} fallback={siteCfg.hero_btn_primary} />
+            </button>
+            {siteCfg.hero_btn_secondary && (
+              <button onClick={() => openModal('general')} className="btn-outline"
+                data-edit="button" data-label="زر الحضور العام" data-text="hero_btn_secondary" data-color="btn_outline_color" data-size="fs_body" data-min="10" data-max="30">
+                <RichInline html={editableText.hero_btn_secondary} fallback={siteCfg.hero_btn_secondary} />
+              </button>
+            )}
           </div>
         </div>
       </section>
 
       {/* ── Intro Video ───────────────────────────────────────────────────────── */}
       {event?.show_intro_video && event?.intro_video_url && (
-        <section className="py-16 px-6" style={{ background: 'rgba(108,99,255,0.04)' }}>
+        <section className="py-16 px-6" style={{ background: 'var(--section-video-bg, rgba(108,99,255,0.04))' }}>
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-8">
-              <div className="section-badge">مقدمة بالفيديو</div>
-              <h2 className="section-title">تعرف على الحدث</h2>
+              <div className="section-badge" data-edit="text" data-label="شارة قسم الفيديو" data-text="video_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
+                <RichInline html={editableText.video_badge} fallback={'مقدمة بالفيديو'} />
+              </div>
+              <h2 className="section-title" data-edit="text" data-label="عنوان قسم الفيديو" data-text="video_title" data-color="heading" data-size="fs_section" data-min="14" data-max="60">
+                <RichInline html={editableText.video_title} fallback={'تعرف على الحدث'} />
+              </h2>
             </div>
             <div
               className="relative rounded-2xl overflow-hidden"
@@ -996,29 +1425,44 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       )}
 
       {/* ── Stats ─────────────────────────────────────────────────────────────── */}
-      <section className="py-16 px-6">
+      <section className="stats-section py-16 px-6" data-edit="section-bg" data-label="خلفية قسم الإحصائيات" data-bg="section_stats_bg" data-options="transparent">
         <div className="max-w-4xl mx-auto">
-          <div className="card grid grid-cols-2 md:grid-cols-4 gap-8 py-8">
-            {(siteCfg.stats || []).map(s => (
-              <StatCounter key={s.label} value={s.fallback} label={s.label} />
+          <div className="card grid grid-cols-2 md:grid-cols-4 gap-8 py-8"
+            data-edit="card" data-label="أرقام قسم الإحصائيات (الخلفية ولون/حجم النصوص)"
+            data-bg="bg_card" data-bgmodeaware="1"
+            data-colors="heading:لون الأرقام,text:لون التسميات" data-sizes="fs_card_title:حجم الأرقام:16:80,fs_body:حجم التسميات:10:30">
+            {(siteCfg.stats || []).map((s, i) => (
+              <StatCounter key={s.label} value={s.fallback} label={String(editableText[`stat_${i}_label`] || s.label)} labelKey={i} />
             ))}
           </div>
         </div>
       </section>
 
       {/* ── About ─────────────────────────────────────────────────────────────── */}
-      <section id="about" className="py-20 px-6">
+      <section id="about" className="py-20 px-6" data-edit="section-bg" data-label="خلفية قسم عن الفعالية" data-bg="section_about_bg" data-options="transparent">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <div className="section-badge">{siteCfg.about_badge}</div>
-            <h2 className="section-title">{siteCfg.about_title}</h2>
+            <div className="section-badge" data-edit="text" data-label="شارة قسم عن الفعالية" data-text="about_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
+              <RichInline html={editableText.about_badge} fallback={siteCfg.about_badge} />
+            </div>
+            <h2 className="section-title" style={{ fontSize: 'var(--fs-section, 32px)' }}
+                data-edit="text" data-label="عنوان قسم عن الفعالية" data-text="about_title" data-color="heading" data-size="fs_section" data-min="14" data-max="60">
+              <RichInline html={editableText.about_title} fallback={siteCfg.about_title} />
+            </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {(siteCfg.about_cards || []).map(({ emoji, icon, title, desc }) => (
-              <div key={title} className="card hover:border-[var(--primary)] transition-all group">
+            {(siteCfg.about_cards || []).map(({ emoji, icon, title, desc }, i) => (
+              <div key={title} className="card hover:border-[var(--primary)] transition-all group"
+                data-edit="card" data-label={`بطاقة: ${title} (لون/حجم النصوص وخلفية البطاقة)`}
+                data-bg="bg_card" data-bgmodeaware="1"
+                data-colors="heading:لون العنوان,text:لون الوصف" data-sizes="fs_card_title:حجم العنوان:12:40,fs_body:حجم الوصف:10:30">
                 <div className="mb-4" style={{ color: 'var(--primary)' }}><AboutIcon name={icon} emoji={emoji} size={40} /></div>
-                <h3 className="text-lg font-bold mb-2 group-hover:text-[var(--primary)] transition-colors text-white">{title}</h3>
-                <p className="text-[var(--text-muted)] text-sm leading-relaxed">{desc}</p>
+                <h3 className="text-lg font-bold mb-2 group-hover:text-[var(--primary)] transition-colors text-white" style={{ fontSize: 'var(--fs-card-title, 17px)' }}>
+                  <RichInline html={editableText[`about_card_${i}_title`]} fallback={title} />
+                </h3>
+                <p className="text-[var(--text-muted)] text-sm leading-relaxed" data-edit="text" data-label={`وصف: ${title}`} data-text={`about_card_${i}_desc`} data-color="text" data-size="fs_body" data-min="10" data-max="30">
+                  <RichInline html={editableText[`about_card_${i}_desc`]} fallback={desc} />
+                </p>
               </div>
             ))}
           </div>
@@ -1027,11 +1471,17 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
 
       {/* ── Agenda ────────────────────────────────────────────────────────────── */}
       {agenda.length > 0 && (
-      <section id="agenda" className="py-20 px-6" style={{ background: 'rgba(108,99,255,0.03)' }}>
+      <section id="agenda" className="py-20 px-6" style={{ background: 'var(--section-agenda-bg, rgba(108,99,255,0.03))' }}
+        data-edit="section-bg" data-label="خلفية قسم البرنامج" data-bg="section_agenda_bg" data-options="transparent">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
-            <div className="section-badge">البرنامج</div>
-            <h2 className="section-title">أيام مكثّفة</h2>
+            <div className="section-badge" data-edit="text" data-label="شارة قسم البرنامج" data-text="agenda_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
+              <RichInline html={editableText.agenda_badge} fallback={'البرنامج'} />
+            </div>
+            <h2 className="section-title" style={{ fontSize: 'var(--fs-section, 32px)' }}
+                data-edit="text" data-label="عنوان قسم البرنامج" data-text="agenda_title" data-color="heading" data-size="fs_section" data-min="14" data-max="60">
+              <RichInline html={editableText.agenda_title} fallback={'أيام مكثّفة'} />
+            </h2>
           </div>
 
           {/* Day tabs */}
@@ -1054,11 +1504,18 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
                 {agenda[activeDay]?.sessions.map(session => {
                   const style = SESSION_STYLES[session.session_type] || SESSION_STYLES.talk;
                   return (
-                    <div key={session.id} className="card flex gap-4 items-start hover:border-opacity-60 transition-all" style={{ borderColor: style.bg + '40' }}>
+                    <div key={session.id} className="card flex gap-4 items-start hover:border-opacity-60 transition-all" style={{ borderColor: style.bg + '40' }}
+                      data-edit="card" data-label="بطاقة جلسة (لون/حجم النصوص وخلفية البطاقة)"
+                      data-bg="bg_card" data-bgmodeaware="1"
+                      data-colors="heading:لون العنوان,text:لون الوصف,primary:لون اسم المتحدث" data-sizes="fs_card_title:حجم العنوان:12:40,fs_body:حجم الوصف:10:30">
                       <div className="text-[var(--text-muted)] text-sm font-mono w-12 flex-shrink-0 pt-0.5">{session.time_start}</div>
                       <div className="flex-1 min-w-0">
-                         <h4 className="font-semibold text-white">{session.title_ar}</h4>
-                         {session.description_ar && <p className="text-[var(--text-muted)] text-sm mt-1">{session.description_ar}</p>}
+                         <h4 className="font-semibold text-white" data-edit="text" data-label="عنوان الجلسة" data-text={`session_${session.id}_title`} data-color="heading" data-size="fs_card_title" data-min="12" data-max="40">
+                           <RichInline html={editableText[`session_${session.id}_title`]} fallback={session.title_ar} />
+                         </h4>
+                         {session.description_ar && <p className="text-[var(--text-muted)] text-sm mt-1" data-edit="text" data-label="وصف الجلسة" data-text={`session_${session.id}_desc`} data-color="text" data-size="fs_body" data-min="10" data-max="30">
+                           <RichInline html={editableText[`session_${session.id}_desc`]} fallback={session.description_ar} />
+                         </p>}
                         {session.speaker_name && (
                           <div className="flex items-center gap-2 mt-2">
                             {session.speaker_photo ? (
@@ -1067,7 +1524,9 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
                               <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs text-white font-bold"
                                    style={{ background: primaryColor }}>{session.speaker_name[0]}</div>
                             )}
-                            <span className="text-xs text-[var(--text-muted)]">{session.speaker_name}</span>
+                            <span className="text-xs text-[var(--text-muted)]" data-edit="text" data-label="اسم المتحدث في الجلسة" data-text={`session_${session.id}_speaker`} data-color="text" data-size="fs_small" data-min="8" data-max="20">
+                              <RichInline html={editableText[`session_${session.id}_speaker`]} fallback={session.speaker_name} />
+                            </span>
                           </div>
                         )}
                       </div>
@@ -1087,19 +1546,28 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
 
       {/* ── Speakers ─────────────────────────────────────────────────────────── */}
       {speakers.length > 0 && (
-      <section id="speakers" className="py-20 px-6">
+      <section id="speakers" className="py-20 px-6" data-edit="section-bg" data-label="خلفية قسم المتحدثين" data-bg="section_speakers_bg" data-options="transparent">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <div className="section-badge">المتحدثون</div>
-            <h2 className="section-title">قيادات ملهمة</h2>
-            <p className="text-[var(--text-muted)] mt-2">نخبة من رواد الأعمال والمستثمرين والخبراء · اضغط لقراءة السيرة الذاتية</p>
+            <div className="section-badge" data-edit="text" data-label="شارة قسم المتحدثين" data-text="speakers_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
+              <RichInline html={editableText.speakers_badge} fallback={'المتحدثون'} />
+            </div>
+            <h2 className="section-title" style={{ fontSize: 'var(--fs-section, 32px)' }}
+                data-edit="text" data-label="عنوان قسم المتحدثين" data-text="speakers_title" data-color="heading" data-size="fs_section" data-min="14" data-max="60">
+              <RichInline html={editableText.speakers_title} fallback={'قيادات ملهمة'} />
+            </h2>
+            <p className="text-[var(--text-muted)] mt-2" data-edit="text" data-label="وصف قسم المتحدثين" data-text="speakers_sub" data-color="text" data-size="fs_body" data-min="10" data-max="30">
+              <RichInline html={editableText.speakers_sub} fallback={'نخبة من رواد الأعمال والمستثمرين والخبراء · اضغط لقراءة السيرة الذاتية'} />
+            </p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {speakers.map(speaker => (
               <div key={speaker.id}
                 className="card text-center hover:border-[var(--primary)] transition-all group cursor-pointer"
                 onClick={() => !speaker.is_surprise && setSelectedSpeaker(speaker)}
-              >
+                data-edit="card" data-label={`بطاقة متحدث: ${speaker.name_ar || speaker.name} (خلفية + لون/حجم النصوص)`}
+                data-bg="bg_card" data-bgmodeaware="1"
+                data-colors="heading:لون الاسم,text:لون المنصب,primary:لون الشركة" data-sizes="fs_card_title:حجم الاسم:12:40,fs_body:حجم النص:10:30">
                 {speaker.photo_url ? (
                   <img src={speaker.photo_url} alt={speaker.name_ar}
                     className="w-20 h-20 rounded-full mx-auto mb-4 object-cover border-2 group-hover:border-[var(--primary)] transition-all"
@@ -1110,9 +1578,15 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
                     {speaker.is_surprise ? '?' : (speaker.name_ar?.split(' ').map((w: string) => w[0]).slice(0,2).join('') || speaker.name[0])}
                   </div>
                 )}
-                <h3 className="font-bold text-sm text-white">{speaker.name_ar || speaker.name}</h3>
-                <p className="text-xs text-[var(--text-muted)] mt-0.5">{speaker.title_ar}</p>
-                <p className="text-xs mt-1 font-semibold" className="text-[var(--primary)]">{speaker.company}</p>
+                <h3 className="font-bold text-sm text-white" data-edit="text" data-label="اسم المتحدث" data-text={`speaker_${speaker.id}_name`} data-color="heading" data-size="fs_card_title" data-min="12" data-max="40">
+                  <RichInline html={editableText[`speaker_${speaker.id}_name`]} fallback={speaker.name_ar || speaker.name} />
+                </h3>
+                <p className="text-xs text-[var(--text-muted)] mt-0.5" data-edit="text" data-label="منصب المتحدث" data-text={`speaker_${speaker.id}_title`} data-color="text" data-size="fs_body" data-min="8" data-max="22">
+                  <RichInline html={editableText[`speaker_${speaker.id}_title`]} fallback={speaker.title_ar} />
+                </p>
+                <p className="text-xs mt-1 font-semibold text-[var(--primary)]" data-edit="text" data-label="شركة المتحدث" data-text={`speaker_${speaker.id}_company`} data-color="primary" data-size="fs_body" data-min="8" data-max="22">
+                  <RichInline html={editableText[`speaker_${speaker.id}_company`]} fallback={speaker.company} />
+                </p>
                 {speaker.is_featured === 1 && (
                   <span className="tag mt-2 text-xs" style={{ background: '#f59e0b20', color: '#f59e0b' }}>✦ مميز</span>
                 )}
@@ -1126,12 +1600,18 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       </section>
       )}
       {venueGallery.length > 0 && (
-        <section id="venue" className="py-20 px-6" style={{ background: 'var(--band)' }}>
+        <section id="venue" className="py-20 px-6" style={{ background: 'var(--section-venue-bg, var(--band))' }}>
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
-              <div className="section-badge">مكان الحدث</div>
-              <h2 className="section-title">قاعة المؤتمر</h2>
-              <p className="text-[var(--text-muted)] mt-2">استعرض مكان انعقاد القمة</p>
+              <div className="section-badge" data-edit="text" data-label="شارة قسم المكان" data-text="venue_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
+                <RichInline html={editableText.venue_badge} fallback={'مكان الحدث'} />
+              </div>
+              <h2 className="section-title" data-edit="text" data-label="عنوان قسم المكان" data-text="venue_title" data-color="heading" data-size="fs_section" data-min="14" data-max="60">
+                <RichInline html={editableText.venue_title} fallback={'قاعة المؤتمر'} />
+              </h2>
+              <p className="text-[var(--text-muted)] mt-2" data-edit="text" data-label="وصف قسم المكان" data-text="venue_sub" data-color="text" data-size="fs_body" data-min="10" data-max="30">
+                <RichInline html={editableText.venue_sub} fallback={'استعرض مكان انعقاد القمة'} />
+              </p>
             </div>
             {/* Main viewer */}
             <div className="relative rounded-2xl overflow-hidden mb-4" style={{ aspectRatio: '16/9', background: '#0d0b1a' }}>
@@ -1200,14 +1680,20 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       )}
 
       {/* ── Tickets ───────────────────────────────────────────────────────────── */}
-      {event && <TicketsSection eventId={event.id} />}
+      {event && <TicketsSection eventId={event.id} editableText={editableText} />}
 
       {/* ── Sponsors ──────────────────────────────────────────────────────────── */}
       {sponsors.length > 0 && (
-        <section id="sponsors" className="py-16 px-6" style={{ background: 'rgba(108,99,255,0.03)' }}>
+        <section id="sponsors" className="py-16 px-6" style={{ background: 'var(--section-sponsors-bg, rgba(108,99,255,0.03))' }}
+          data-edit="section-bg" data-label="خلفية قسم الشركاء" data-bg="section_sponsors_bg" data-options="transparent">
           <div className="max-w-5xl mx-auto text-center">
-            <div className="section-badge">الشركاء والرعاة</div>
-            <h2 className="section-title mb-10">شركاء القمة</h2>
+            <div className="section-badge" data-edit="text" data-label="شارة قسم الشركاء" data-text="sponsors_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
+              <RichInline html={editableText.sponsors_badge} fallback={'الشركاء والرعاة'} />
+            </div>
+            <h2 className="section-title mb-10" style={{ fontSize: 'var(--fs-section, 32px)' }}
+                data-edit="text" data-label="عنوان قسم الشركاء" data-text="sponsors_title" data-color="heading" data-size="fs_section" data-min="14" data-max="60">
+              <RichInline html={editableText.sponsors_title} fallback={'شركاء القمة'} />
+            </h2>
             <div className="flex flex-wrap gap-6 justify-center items-stretch">
               {sponsors.map(sp => {
                 const tierColors: Record<string, string> = {
@@ -1231,11 +1717,14 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
                       <div style={{ width: 52, height: 52, borderRadius: '50%', background: `${tierColor}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>🏅</div>
                     )}
                     {/* Name */}
-                    <span className="font-bold text-sm text-center text-white">{sp.name}</span>
+                    <span className="font-bold text-sm text-center text-white" data-edit="text" data-label="اسم الشريك" data-text={`sponsor_${sp.id}_name`} data-color="heading" data-size="fs_card_title" data-min="10" data-max="30">
+                      <RichInline html={editableText[`sponsor_${sp.id}_name`]} fallback={sp.name} />
+                    </span>
                     {/* Tier badge */}
                     {sp.tier && (
-                      <span style={{ fontSize: '0.68rem', padding: '0.15rem 0.6rem', borderRadius: 20, background: `${tierColor}18`, color: tierColor, border: `1px solid ${tierColor}35`, fontWeight: 700 }}>
-                        {tierAr[sp.tier] || sp.tier}
+                      <span style={{ fontSize: '0.68rem', padding: '0.15rem 0.6rem', borderRadius: 20, background: `${tierColor}18`, color: tierColor, border: `1px solid ${tierColor}35`, fontWeight: 700 }}
+                        data-edit="text" data-label="رتبة الشريك" data-text={`sponsor_${sp.id}_tier`} data-color="primary" data-size="fs_small" data-min="8" data-max="18">
+                        <RichInline html={editableText[`sponsor_${sp.id}_tier`]} fallback={tierAr[sp.tier] || sp.tier} />
                       </span>
                     )}
                     {/* Website */}
@@ -1256,12 +1745,19 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       )}
 
       {/* ── Register ─────────────────────────────────────────────────────────── */}
-      <section id="register" className="py-20 px-6">
+      <section id="register" className="py-20 px-6" data-edit="section-bg" data-label="خلفية قسم التسجيل" data-bg="section_register_bg" data-options="transparent">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
-            <div className="section-badge">التسجيل</div>
-            <h2 className="section-title">{cfg.form_title || 'انضم إلى القمة'}</h2>
-            <p className="text-[var(--text-muted)] mt-2">{cfg.form_subtitle || 'سجّل الآن وكن جزءاً من أكبر تجمع لريادة الأعمال'}</p>
+            <div className="section-badge" data-edit="text" data-label="شارة قسم التسجيل" data-text="register_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
+              <RichInline html={editableText.register_badge} fallback={'التسجيل'} />
+            </div>
+            <h2 className="section-title" style={{ fontSize: 'var(--fs-section, 32px)' }}
+                data-edit="text" data-label="عنوان قسم التسجيل" data-text="register_title" data-color="heading" data-size="fs_section" data-min="14" data-max="60">
+              <RichInline html={editableText.register_title} fallback={cfg.form_title || 'انضم إلى القمة'} />
+            </h2>
+            <p className="text-[var(--text-muted)] mt-2" data-edit="text" data-label="وصف قسم التسجيل" data-text="register_subtitle" data-color="text" data-size="fs_body" data-min="10" data-max="30">
+              <RichInline html={editableText.register_subtitle} fallback={cfg.form_subtitle || 'سجّل الآن وكن جزءاً من أكبر تجمع لريادة الأعمال'} />
+            </p>
           </div>
           <div className="card" style={{ background: 'var(--bg-card)' }}>
             {event ? <RegistrationForm event={event} onClose={() => {}} cfg={cfg} initialTab={regInitialTab} /> : (
@@ -1273,21 +1769,31 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
 
       {/* ── FAQ ────────────────────────────────────────────────────────────────── */}
       {faqs.length > 0 && (
-        <section id="faq" className="py-20 px-6" style={{ background: 'rgba(108,99,255,0.03)' }}>
+        <section id="faq" className="py-20 px-6" style={{ background: 'var(--section-faq-bg, rgba(108,99,255,0.03))' }}
+          data-edit="section-bg" data-label="خلفية قسم الأسئلة" data-bg="section_faq_bg" data-options="transparent">
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-10">
-              <div className="section-badge">الأسئلة الشائعة</div>
-              <h2 className="section-title">أجوبة على أسئلتك</h2>
+              <div className="section-badge" data-edit="text" data-label="شارة قسم الأسئلة" data-text="faq_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
+                <RichInline html={editableText.faq_badge} fallback={'الأسئلة الشائعة'} />
+              </div>
+              <h2 className="section-title" style={{ fontSize: 'var(--fs-section, 32px)' }}
+                  data-edit="text" data-label="عنوان قسم الأسئلة" data-text="faq_title" data-color="heading" data-size="fs_section" data-min="14" data-max="60">
+                <RichInline html={editableText.faq_title} fallback={'أجوبة على أسئلتك'} />
+              </h2>
             </div>
             <div className="space-y-3">
               {faqs.map(faq => (
                 <div key={faq.id} className="card cursor-pointer" onClick={() => setOpenFaq(openFaq === faq.id ? null : faq.id)}>
                   <div className="flex justify-between items-center">
-                    <span className="font-semibold text-white">{faq.question_ar}</span>
+                    <span className="font-semibold text-white" data-edit="text" data-label="السؤال" data-text={`faq_${faq.id}_q`} data-color="heading" data-size="fs_card_title" data-min="12" data-max="30">
+                      <RichInline html={editableText[`faq_${faq.id}_q`]} fallback={faq.question_ar} />
+                    </span>
                     <span className="text-[var(--primary)] text-xl transition-transform" style={{ transform: openFaq === faq.id ? 'rotate(45deg)' : 'rotate(0)' }}>+</span>
                   </div>
                   {openFaq === faq.id && (
-                    <p className="text-[var(--text-muted)] text-sm mt-3 leading-relaxed">{faq.answer_ar}</p>
+                    <p className="text-[var(--text-muted)] text-sm mt-3 leading-relaxed" data-edit="text" data-label="الإجابة" data-text={`faq_${faq.id}_a`} data-color="text" data-size="fs_body" data-min="10" data-max="26">
+                      <RichInline html={editableText[`faq_${faq.id}_a`]} fallback={faq.answer_ar} />
+                    </p>
                   )}
                 </div>
               ))}
@@ -1301,23 +1807,36 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
           <div className="font-black text-xl mb-2 text-white"><span className="text-[var(--primary)]">S3</span> Summit</div>
-          <p className="text-[var(--text-muted)] text-sm">{eventName}</p>
+          <p className="text-[var(--text-muted)] text-sm" data-edit="text" data-label="اسم الحدث في الفوتر" data-text="event_name" data-color="text" data-size="fs_body" data-min="10" data-max="26">
+            <RichInline html={editableText.event_name} fallback={eventName} />
+          </p>
           <p className="text-[var(--text-muted)] text-sm">{sd.day}–{ed.day} {ed.month} {ed.year}</p>
         </div>
         <div>
-          <h4 className="font-semibold mb-3 text-white">روابط سريعة</h4>
+          <h4 className="font-semibold mb-3 text-white" data-edit="text" data-label="عنوان روابط سريعة" data-text="footer_links_title" data-color="heading" data-size="fs_card_title" data-min="12" data-max="30">
+            <RichInline html={editableText.footer_links_title} fallback={'روابط سريعة'} />
+          </h4>
           <div className="flex flex-col gap-2">
-            {navLinks.filter(l => !l.href.startsWith('/')).map(l => <a key={l.href} href={l.href} className="text-sm text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors">{l.label}</a>)}
+            {navLinks.filter(l => !l.href.startsWith('/')).map(l => {
+              const navIdx = navLinks.findIndex(nl => nl.href === l.href);
+              return <a key={l.href} href={l.href} className="text-sm text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors"
+                data-edit="text" data-label="رابط سريع" data-text={`nav_label_${navIdx}`} data-color="text" data-size="fs_nav" data-min="10" data-max="24">
+                <RichInline html={editableText[`nav_label_${navIdx}`]} fallback={l.label} />
+              </a>;
+            })}
             {/* رابط الأرشيف — حسب إعدادات الأدمن */}
             {siteCfg.archive_link_enabled !== false && (siteCfg.archive_link_position === 'footer' || siteCfg.archive_link_position === 'both' || siteCfg.archive_link_position === undefined) && (
-              <Link href="/archive" className="text-sm text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors">
-                {siteCfg.archive_link_label || '🗂 أرشيف الأحداث'}
+              <Link href="/archive" className="text-sm text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors"
+                data-edit="text" data-label="رابط الأرشيف في الفوتر" data-text="archive_label" data-color="text" data-size="fs_nav" data-min="10" data-max="24">
+                <RichInline html={editableText.archive_label} fallback={siteCfg.archive_link_label || '🗂 أرشيف الأحداث'} />
               </Link>
             )}
           </div>
         </div>
         <div>
-          <h4 className="font-semibold mb-3 text-white">تواصل معنا</h4>
+          <h4 className="font-semibold mb-3 text-white" data-edit="text" data-label="عنوان تواصل معنا" data-text="footer_contact_title" data-color="heading" data-size="fs_card_title" data-min="12" data-max="30">
+            <RichInline html={editableText.footer_contact_title} fallback={'تواصل معنا'} />
+          </h4>
           {event?.email && <a href={`mailto:${event.email}`} className="block text-sm text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors mb-1">{event.email}</a>}
           <div className="flex gap-3 mt-3 flex-wrap" style={{ alignItems: 'center' }}>
             {event?.twitter && <a href={event.twitter.startsWith('http') ? event.twitter : `https://twitter.com/${event.twitter}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors" title="X (Twitter)"><IconX size={18} /></a>}
@@ -1386,7 +1905,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
               )}
               <div>
                 <h3 className="text-xl font-bold text-white mb-1">{selectedSpeaker.name_ar || selectedSpeaker.name}</h3>
-                <p className="text-sm font-semibold" className="text-[var(--primary)]">{selectedSpeaker.title_ar}</p>
+                <p className="text-sm font-semibold text-[var(--primary)]">{selectedSpeaker.title_ar}</p>
                 <p className="text-sm text-[var(--text-muted)]">{selectedSpeaker.company}</p>
                 {selectedSpeaker.is_featured === 1 && (
                   <span className="tag text-xs mt-2 inline-block" style={{ background: '#f59e0b20', color: '#f59e0b' }}>✦ متحدث مميز</span>
@@ -1495,6 +2014,198 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
           </div>
           <p className="text-[var(--text-muted)]" style={{ fontSize: '0.75rem', margin: '0.75rem 0 0' }}>© {new Date().getFullYear()} {event?.name_ar || 'S3 Summit'}. جميع الحقوق محفوظة.</p>
         </footer>
+      )}
+
+      {/* ── شريط وضع التعديل المباشر ── */}
+      {editMode && (
+        <div className="theme-edit-banner">
+                    <span>✏️ وضع التعديل المباشر — اضغط على أي عنصر (نص / زر / شعار / خلفية) لتغييره</span>
+          <button
+            onClick={saveDirectEdits}
+            style={{ background: 'rgba(234,178,48,0.9)', color: '#111', border: '1px solid rgba(234,178,48,0.6)', borderRadius: '999px', padding: '0.25rem 0.8rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.72rem', marginRight: 6, boxShadow: '0 2px 8px rgba(0,0,0,0.35)' }}
+          >💾 حفظ التعديلات</button>
+          <button
+            onClick={() => { setEditMode(false); setEditTarget(null); }}
+            style={{ background: 'rgba(108,99,255,0.35)', color: 'white', border: 'none', borderRadius: '999px', padding: '0.25rem 0.7rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.72rem' }}
+          >✕ إيقاف</button>
+          {saveToast && (
+            <div style={{ position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)', background: 'rgba(15,23,42,0.95)', border: '1px solid rgba(108,99,255,0.4)', color: '#fcd34d', borderRadius: '0.6rem', padding: '0.5rem 1rem', fontSize: '0.8rem', zIndex: 10000, backdropFilter: 'blur(8px)' }}>
+              {saveToast}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── لوحة التعديل المباشر للعنصر المحدد ── */}
+      {editMode && editTarget && (
+        <div
+          style={{
+            position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 9999,
+            background: 'rgba(19,16,42,0.97)', borderTop: '1.5px solid rgba(108,99,255,0.55)',
+            padding: '0.7rem 1rem', boxShadow: '0 -10px 40px rgba(0,0,0,0.55)', backdropFilter: 'blur(10px)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <span style={{ color: '#a5b4fc', fontWeight: 800, fontSize: '0.82rem', minWidth: 150, whiteSpace: 'nowrap' }}>
+              ✏️ {editTarget.label}
+            </span>
+
+                        {/* النص (محرر غني — تلوين كل كلمة على حدة) */}
+            {editTarget.textKey && (
+              <InlineRichText
+                value={editText[editTarget.textKey] ?? ''}
+                onChange={v => setEditText(prev => ({ ...prev, [editTarget.textKey!]: v }))}
+                placeholder={editTextPlaceholder(editTarget.textKey, siteCfg, eventName, eventTagline, description, location, ed, cfg)}
+              />
+            )}
+
+            {/* لون النص/الزر الرئيسي (يُطبّق على كلا الوضعين الليلي والنهاري) */}
+            {editTarget.colorKey && (
+              <ColorField
+                label={editTarget.kind === 'button' ? 'لون الزر' : 'لون النص'}
+                value={String(editColors[editTarget.colorKey] ?? themeColors[editTarget.colorKey] ?? '')}
+                onChange={v => applyColorAllModes(editTarget.colorKey!, v)}
+              />
+            )}
+
+            {/* حقول ألوان إضافية (تستخدمها البطاقات/السكاشن لتلوين كل نوع نص بشكل منفصل) */}
+            {editTarget.colorFields?.map(f => (
+              <ColorField
+                key={f.key}
+                label={f.label}
+                value={String(editColors[f.key] ?? themeColors[f.key] ?? '')}
+                onChange={v => applyColorAllModes(f.key, v)}
+              />
+            ))}
+
+                                    {/* لون الخلفية خلف العنصر */}
+            {editTarget.bgKey && (
+              <ColorField
+                label="لون الخلفية"
+                value={String(editColors[editTarget.bgKey] ?? themeColors[editTarget.bgKey] ?? '')}
+                onChange={v => setEditColors(prev => ({ ...prev, [editTarget.bgKey!]: v }))}
+              />
+            )}
+            {editTarget.bgKey && editTarget.options?.includes('transparent') && (
+              <button onClick={() => setEditColors(prev => ({ ...prev, [editTarget.bgKey!]: 'transparent' }))}
+                style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.2)', color: '#94a3b8', borderRadius: '0.4rem', padding: '0.35rem 0.6rem', cursor: 'pointer', fontSize: '0.72rem' }}>
+                🚫 شفاف
+              </button>
+            )}
+
+                        {/* الحجم الرئيسي */}
+            {editTarget.sizeKey && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <label style={{ color: '#94a3b8', fontSize: '0.72rem' }}>الحجم</label>
+                <input
+                  type="range" min={editTarget.min ?? 8} max={editTarget.max ?? 160}
+                  value={Number(editColors[editTarget.sizeKey] ?? themeColors[editTarget.sizeKey] ?? 16)}
+                  onChange={e => setEditColors(prev => ({ ...prev, [editTarget.sizeKey!]: Number(e.target.value) }))}
+                  style={{ width: 110, accentColor: '#6C63FF' }}
+                />
+                <input
+                  type="number" min={editTarget.min ?? 8} max={editTarget.max ?? 160}
+                  value={Number(editColors[editTarget.sizeKey] ?? themeColors[editTarget.sizeKey] ?? 16)}
+                  onChange={e => setEditColors(prev => ({ ...prev, [editTarget.sizeKey!]: Number(e.target.value) }))}
+                  style={{ width: 58, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(108,99,255,0.35)', borderRadius: '0.4rem', padding: '0.3rem 0.4rem', color: 'white', fontSize: '0.78rem', direction: 'ltr' }}
+                />
+                <span style={{ color: '#64748b', fontSize: '0.7rem' }}>px</span>
+              </div>
+            )}
+
+            {/* حقول حجم إضافية (البطاقات/السكاشن تتيح تعديل حجم كل نوع نص بشكل منفصل) */}
+            {editTarget.sizeFields?.map(f => (
+              <div key={f.key} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                <label style={{ color: '#94a3b8', fontSize: '0.72rem' }}>{f.label}</label>
+                <input
+                  type="range" min={f.min} max={f.max}
+                  value={Number(editColors[f.key] ?? themeColors[f.key] ?? 16)}
+                  onChange={e => setEditColors(prev => ({ ...prev, [f.key]: Number(e.target.value) }))}
+                  style={{ width: 110, accentColor: '#6C63FF' }}
+                />
+                <input
+                  type="number" min={f.min} max={f.max}
+                  value={Number(editColors[f.key] ?? themeColors[f.key] ?? 16)}
+                   onChange={e => setEditColors(prev => ({ ...prev, [f.key]: Number(e.target.value) }))}
+                   style={{ width: 58, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(108,99,255,0.35)', borderRadius: '0.4rem', padding: '0.3rem 0.4rem', color: 'white', fontSize: '0.78rem', direction: 'ltr' }}
+                 />
+                 <span style={{ color: '#64748b', fontSize: '0.7rem' }}>px</span>
+               </div>
+             ))}
+
+                        {/* الخط العام — أي خط (يطبق على كل الصفحة) */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+              <label style={{ color: '#94a3b8', fontSize: '0.72rem' }}>الخط:</label>
+              <select
+                value={String(editColors.font_family as string || (themeColors as any).font_family || 'cairo')}
+                onChange={e => setEditColors(prev => ({ ...prev, font_family: e.target.value }))}
+                style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(108,99,255,0.35)', borderRadius: '0.4rem', padding: '0.3rem 0.5rem', color: 'white', fontSize: '0.78rem' }}
+              >
+                <option value='cairo'>Cairo (افتراضي)</option>
+                <option value='tajawal'>Tajawal</option>
+                <option value='inter'>Inter</option>
+                <option value='amiri'>Amiri</option>
+                <option value='system'>نظام</option>
+                <option value='mono'>أحرف ثابتة</option>
+              </select>
+            </div>
+            {/* محاذاة العناوين — تغيير موضع العنوان */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+              <label style={{ color: '#94a3b8', fontSize: '0.72rem' }}>محاذاة العناوين:</label>
+              <select
+                value={String(editColors.text_align as string || (themeColors as any).text_align || 'center')}
+                onChange={e => setEditColors(prev => ({ ...prev, text_align: e.target.value }))}
+                style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(108,99,255,0.35)', borderRadius: '0.4rem', padding: '0.3rem 0.5rem', color: 'white', fontSize: '0.78rem' }}
+              >
+                <option value='center'>وسط</option>
+                <option value='right'>يمين</option>
+                <option value='left'>يسار</option>
+              </select>
+            </div>
+            {/* اتجاه الصفحة */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.06)', padding: 3, borderRadius: '0.45rem' }}>
+              <button onClick={() => setEditDir('rtl')}
+                style={{ padding: '0.3rem 0.7rem', borderRadius: '0.35rem', cursor: 'pointer', border: 'none', fontWeight: 700, fontSize: '0.75rem', background: editDir === 'rtl' ? '#6C63FF' : 'transparent', color: editDir === 'rtl' ? 'white' : '#94a3b8' }}>
+                ⇄ RTL
+              </button>
+              <button onClick={() => setEditDir('ltr')}
+                style={{ padding: '0.3rem 0.7rem', borderRadius: '0.35rem', cursor: 'pointer', border: 'none', fontWeight: 700, fontSize: '0.75rem', background: editDir === 'ltr' ? '#6C63FF' : 'transparent', color: editDir === 'ltr' ? 'white' : '#94a3b8' }}>
+                LTR ⇄
+              </button>
+            </div>
+            {/* محاذاة الـ Hero + التموضع العمودي */}
+            {editTarget.kind === 'hero' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <label style={{ color: '#94a3b8', fontSize: '0.72rem' }}>محاذاة:</label>
+                <select
+                  value={String(editColors.hero_align ?? themeColors.hero_align ?? 'center')}
+                  onChange={e => setEditColors(prev => ({ ...prev, hero_align: e.target.value }))}
+                  style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(108,99,255,0.35)', borderRadius: '0.4rem', padding: '0.3rem 0.5rem', color: 'white', fontSize: '0.75rem' }}
+                >
+                  <option value="center">وسط</option>
+                  <option value="right">يمين</option>
+                  <option value="left">يسار</option>
+                </select>
+                <label style={{ color: '#94a3b8', fontSize: '0.72rem' }}>عمودياً:</label>
+                <select
+                  value={String(editColors.hero_y ?? themeColors.hero_y ?? 'center')}
+                  onChange={e => setEditColors(prev => ({ ...prev, hero_y: e.target.value }))}
+                  style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(108,99,255,0.35)', borderRadius: '0.4rem', padding: '0.3rem 0.5rem', color: 'white', fontSize: '0.75rem' }}
+                >
+                  <option value="center">وسط</option>
+                  <option value="top">أعلى</option>
+                  <option value="bottom">أسفل</option>
+                </select>
+                <span style={{ color: '#f59e0b', fontSize: '0.7rem' }}>💡 خلفية فيديو/صورة/يوتيوب من تبويب «خلفية الـ Hero»</span>
+              </div>
+            )}
+
+            <button
+              onClick={() => setEditTarget(null)}
+              style={{ marginLeft: 'auto', background: 'rgba(239,68,68,0.25)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.4)', borderRadius: '0.4rem', padding: '0.35rem 0.8rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.78rem' }}
+            >✕</button>
+          </div>
+        </div>
       )}
     </div>
   );

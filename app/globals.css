@@ -25,6 +25,33 @@
     --event-nav-text-hover: #ffffff;
     --price-section-bg: rgba(108, 99, 255, 0.1);
     --price-section-border: rgba(108, 99, 255, 0.2);
+
+    /* ── Typography (controllable via event theme) ── */
+    --fs-hero: 72px;
+    --fs-hero-sub: 30px;
+    --fs-section: 32px;
+    --fs-card-title: 17px;
+    --fs-body: 16px;
+    --fs-small: 13px;
+            --fs-nav: 14px;
+
+    /* ── Font & heading alignment (controllable via event theme) ── */
+    --font-family: 'Cairo', 'Segoe UI', system-ui, sans-serif;
+    --title-align: center;
+
+    /* ── Section backgrounds (controllable via event theme) ── */
+    --section-hero-bg: transparent;
+    --section-stats-bg: transparent;
+    --section-about-bg: transparent;
+    --section-agenda-bg: rgba(108, 99, 255, 0.03);
+    --section-speakers-bg: transparent;
+    --section-video-bg: rgba(108, 99, 255, 0.04);
+    --section-venue-bg: rgba(0, 0, 0, 0.3);
+    --section-faq-bg: rgba(108, 99, 255, 0.03);
+    --section-sponsors-bg: rgba(108, 99, 255, 0.03);
+    --section-register-bg: transparent;
+    --section-tickets-bg: var(--bg-dark);
+    --section-tickets-bg-light: var(--bg-light, #ffffff);
   }
 
   /* ── Light Mode ─────────────────────────────────────────────── */
@@ -65,8 +92,8 @@
      ═══════════════════════════════════════════════════════════════ */
 
   /* ── Global Light Mode Base ───────────────────────────────── */
-  html[data-theme="light"] {
-    font-family: 'Cairo', 'Segoe UI', system-ui, sans-serif;
+              html[data-theme=light] {
+    font-family: var(--font-family);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -176,8 +203,8 @@
 
   /* ── Event Page Light Mode ─────────────────────────────────── */
   html[data-theme="light"] .event-page {
-    background-color: #ffffff !important;
-    color: #0f172a;
+    background-color: var(--bg-light, #ffffff) !important;
+    color: var(--text-light, #0f172a);
   }
 
   html[data-theme="light"] .event-page .text-white,
@@ -186,20 +213,20 @@
   html[data-theme="light"] .event-page h2:not([class*="gradient"]),
   html[data-theme="light"] .event-page h3:not([class*="gradient"]),
   html[data-theme="light"] .event-page h4:not([class*="gradient"]) {
-    color: #0f172a !important;
+    color: var(--heading-light, #0f172a) !important;
   }
 
   html[data-theme="light"] .event-page .text-slate-300,
   html[data-theme="light"] .event-page .text-slate-400,
   html[data-theme="light"] .event-page .text-gray-300,
   html[data-theme="light"] .event-page .text-gray-400 {
-    color: #475569 !important;
+    color: var(--text-muted-light, #475569) !important;
   }
 
   html[data-theme="light"] .event-page .card,
   html[data-theme="light"] .event-page [class*="card"] {
-    background: #ffffff !important;
-    border-color: rgba(108, 99, 255, 0.12) !important;
+    background: var(--bg-card-light, #ffffff) !important;
+    border-color: var(--border-light, rgba(108, 99, 255, 0.12)) !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.02) !important;
   }
 
@@ -207,9 +234,9 @@
   html[data-theme="light"] .event-page input.input-field,
   html[data-theme="light"] .event-page textarea.input-field,
   html[data-theme="light"] .event-page select.input-field {
-    background: #ffffff !important;
-    border: 1.5px solid rgba(108, 99, 255, 0.18) !important;
-    color: #0f172a !important;
+    background: var(--bg-card-light, #ffffff) !important;
+    border: 1.5px solid var(--border-light, rgba(108, 99, 255, 0.18)) !important;
+    color: var(--text-light, #0f172a) !important;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
   }
 
@@ -224,7 +251,7 @@
 
   html[data-theme="light"] .event-page form label,
   html[data-theme="light"] .event-page label.block {
-    color: #334155 !important;
+    color: var(--text-muted-light, #334155) !important;
   }
 
   html[data-theme="light"] .event-page .btn-primary,
@@ -237,13 +264,13 @@
   }
 
   html[data-theme="light"] .event-page .event-nav-bar {
-    background: #ffffff !important;
-    border-bottom-color: rgba(108, 99, 255, 0.12) !important;
+    background: var(--event-nav-bg-light, #ffffff) !important;
+    border-bottom-color: var(--border-light, rgba(108, 99, 255, 0.12)) !important;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
   }
 
   html[data-theme="light"] .event-page .event-nav-bar a {
-    color: #475569 !important;
+    color: var(--text-muted-light, #475569) !important;
   }
 
   html[data-theme="light"] .event-page .event-nav-bar a:hover {
@@ -252,17 +279,17 @@
 
   /* ── Footer in Light Mode ─────────────────────────────────── */
   html[data-theme="light"] footer {
-    background: #f8fafc !important;
-    border-top-color: rgba(108, 99, 255, 0.12) !important;
+    background: var(--footer-bg-light, #f8fafc) !important;
+    border-top-color: var(--border-light, rgba(108, 99, 255, 0.12)) !important;
   }
 
   html[data-theme="light"] footer .text-white,
   html[data-theme="light"] footer h4 {
-    color: #0f172a !important;
+    color: var(--heading-light, #0f172a) !important;
   }
 
   html[data-theme="light"] footer a {
-    color: #475569 !important;
+    color: var(--text-muted-light, #475569) !important;
   }
 
   html[data-theme="light"] footer a:hover {
@@ -271,50 +298,50 @@
 
   /* ── Event page light mode: tickets section ── */
   html[data-theme="light"] .event-page .tickets-section {
-    background: #ffffff !important;
+    background: var(--section-tickets-bg-light, var(--bg-light, #ffffff)) !important;
   }
   html[data-theme="light"] .event-page .tickets-section .section-title {
-    color: #0f172a !important;
+    color: var(--heading-light, #0f172a) !important;
   }
   html[data-theme="light"] .event-page .tickets-section h2 {
-    color: #0f172a !important;
+    color: var(--heading-light, #0f172a) !important;
   }
   html[data-theme="light"] .event-page .tickets-section h3 {
-    color: #0f172a !important;
+    color: var(--heading-light, #0f172a) !important;
   }
   html[data-theme="light"] .event-page .tickets-section p,
   html[data-theme="light"] .event-page .tickets-section span,
   html[data-theme="light"] .event-page .tickets-section div {
-    color: #334155;
+    color: var(--text-light, #334155);
   }
   html[data-theme="light"] .event-page .tickets-section .card {
-    background: #ffffff !important;
-    border-color: rgba(108, 99, 255, 0.14) !important;
+    background: var(--bg-card-light, #ffffff) !important;
+    border-color: var(--border-light, rgba(108, 99, 255, 0.14)) !important;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06) !important;
   }
   html[data-theme="light"] .event-page .tickets-section .card h3 {
-    color: #0f172a !important;
+    color: var(--heading-light, #0f172a) !important;
   }
   html[data-theme="light"] .event-page .tickets-section .card .text-\[var\(--text-muted\)\] {
-    color: #475569 !important;
+    color: var(--text-muted-light, #475569) !important;
     font-weight: 500;
   }
   html[data-theme="light"] .event-page .tickets-section .card [style*="var(--text-muted)"] {
-    color: #475569 !important;
+    color: var(--text-muted-light, #475569) !important;
   }
   html[data-theme="light"] .event-page .tickets-section .text-3xl.font-black {
-    color: #0f172a !important;
+    color: var(--heading-light, #0f172a) !important;
   }
   html[data-theme="light"] .event-page .tickets-section .btn-primary,
   html[data-theme="light"] .event-page .tickets-section .btn-outline {
     color: #ffffff !important;
   }
   html[data-theme="light"] .event-page .tickets-section .btn-outline {
-    color: #6C63FF !important;
-    border-color: #6C63FF !important;
+    color: var(--btn-outline-color, var(--primary, #6C63FF)) !important;
+    border-color: var(--btn-outline-color, var(--primary, #6C63FF)) !important;
   }
   html[data-theme="light"] .event-page .tickets-section .btn-outline:hover {
-    background: #6C63FF !important;
+    background: var(--primary, #6C63FF) !important;
     color: #ffffff !important;
   }
   html[data-theme="light"] .event-page .tickets-section .opacity-70,
@@ -327,19 +354,19 @@
 
   /* ── Event page light mode: stats section ── */
   html[data-theme="light"] .event-page .card.grid {
-    background: #ffffff !important;
-    border-color: rgba(108, 99, 255, 0.14) !important;
+    background: var(--bg-card-light, #ffffff) !important;
+    border-color: var(--border-light, rgba(108, 99, 255, 0.14)) !important;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06) !important;
   }
   html[data-theme="light"] .event-page .gradient-text {
-    background: linear-gradient(135deg, #6C63FF, #4f46e5) !important;
+    background: linear-gradient(135deg, var(--primary, #6C63FF), var(--primary-dark, #4f46e5)) !important;
     -webkit-background-clip: text !important;
     background-clip: text !important;
     -webkit-text-fill-color: transparent !important;
-    color: #6C63FF !important;
+    color: var(--primary, #6C63FF) !important;
   }
   html[data-theme="light"] .event-page .text-\[var\(--text-muted\)\] {
-    color: #475569 !important;
+    color: var(--text-muted-light, #475569) !important;
     font-weight: 500;
   }
   html[data-theme="light"] .event-page .opacity-70,
@@ -349,10 +376,10 @@
 
   html { scroll-behavior: smooth; }
 
-  body {
+    body {
     background-color: var(--bg-dark);
     color: var(--text);
-    font-family: 'Cairo', 'Segoe UI', sans-serif;
+    font-family: var(--font-family);
     direction: rtl;
     transition: background-color 0.3s ease, color 0.3s ease;
   }
@@ -373,10 +400,10 @@
     background-clip: text;
   }
   .btn-primary {
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    color: white;
+    background: linear-gradient(135deg, var(--btn-primary-bg, var(--primary)), var(--btn-primary-bg2, var(--primary-dark)));
+    color: var(--btn-primary-color, #ffffff);
     padding: 0.75rem 2rem;
-    border-radius: 0.5rem;
+    border-radius: var(--btn-radius, 0.5rem);
     font-weight: 600;
     transition: opacity 0.2s, transform 0.2s;
     display: inline-block;
@@ -385,12 +412,12 @@
   }
   .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
   .btn-outline {
-    background: transparent;
-    color: var(--text);
+    background: var(--btn-outline-bg, transparent);
+    color: var(--btn-outline-color, var(--text));
     padding: 0.75rem 2rem;
-    border-radius: 0.5rem;
+    border-radius: var(--btn-radius, 0.5rem);
     font-weight: 600;
-    border: 2px solid var(--border);
+    border: 2px solid var(--btn-outline-border, var(--border));
     transition: all 0.2s;
     display: inline-block;
     cursor: pointer;
@@ -574,114 +601,114 @@ html[data-theme="light"] .event-page h3,
 html[data-theme="light"] .event-page h4,
 html[data-theme="light"] .event-page h5,
 html[data-theme="light"] .event-page h6 {
-  color: #0f172a !important;
+  color: var(--heading-light, #0f172a) !important;
 }
 html[data-theme="light"] .event-page .section-title {
-  color: #0f172a !important;
+  color: var(--heading-light, #0f172a) !important;
 }
 html[data-theme="light"] .event-page .section-badge {
-  color: #6C63FF !important;
+  color: var(--primary, #6C63FF) !important;
 }
 html[data-theme="light"] .event-page .text-white {
-  color: #0f172a !important;
+  color: var(--heading-light, #0f172a) !important;
 }
 html[data-theme="light"] .event-page .text-\[var\(--text-muted\)\] {
-  color: #334155 !important;
+  color: var(--text-muted-light, #334155) !important;
   font-weight: 500;
 }
 html[data-theme="light"] .event-page [style*="var(--text-muted)"] {
-  color: #334155 !important;
+  color: var(--text-muted-light, #334155) !important;
 }
 html[data-theme="light"] .event-page .card {
-  background: #ffffff !important;
-  border-color: rgba(108, 99, 255, 0.14) !important;
+  background: var(--bg-card-light, #ffffff) !important;
+  border-color: var(--border-light, rgba(108, 99, 255, 0.14)) !important;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06) !important;
 }
 html[data-theme="light"] .event-page .card h3,
 html[data-theme="light"] .event-page .card h4,
 html[data-theme="light"] .event-page .card .font-semibold,
 html[data-theme="light"] .event-page .card .font-bold {
-  color: #0f172a !important;
+  color: var(--heading-light, #0f172a) !important;
 }
 html[data-theme="light"] .event-page .tag {
-  background: rgba(108, 99, 255, 0.1) !important;
-  color: #6C63FF !important;
+  background: color-mix(in srgb, var(--primary, #6C63FF) 12%, transparent) !important;
+  color: var(--primary, #6C63FF) !important;
 }
 html[data-theme="light"] .event-page footer {
-  background: #f8fafc !important;
-  border-top-color: rgba(108, 99, 255, 0.12) !important;
+  background: var(--footer-bg-light, #f8fafc) !important;
+  border-top-color: var(--border-light, rgba(108, 99, 255, 0.12)) !important;
 }
 html[data-theme="light"] .event-page footer h4,
 html[data-theme="light"] .event-page footer .font-black {
-  color: #0f172a !important;
+  color: var(--heading-light, #0f172a) !important;
 }
 html[data-theme="light"] .event-page footer a {
-  color: #475569 !important;
+  color: var(--text-muted-light, #475569) !important;
 }
 html[data-theme="light"] .event-page footer a:hover {
-  color: #6C63FF !important;
+  color: var(--primary, #6C63FF) !important;
 }
 html[data-theme="light"] .event-page .event-nav-bar {
-  background: #ffffff !important;
-  border-bottom-color: rgba(108, 99, 255, 0.12) !important;
+  background: var(--event-nav-bg-light, #ffffff) !important;
+  border-bottom-color: var(--border-light, rgba(108, 99, 255, 0.12)) !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
 }
 html[data-theme="light"] .event-page .event-nav-bar a,
 html[data-theme="light"] .event-page .event-nav-bar div {
-  color: #475569 !important;
+  color: var(--text-muted-light, #475569) !important;
 }
 html[data-theme="light"] .event-page .event-nav-bar a:hover {
-  color: #6C63FF !important;
+  color: var(--primary, #6C63FF) !important;
 }
 html[data-theme="light"] .event-page .countdown-card {
-  background: #ffffff !important;
-  border-color: rgba(108, 99, 255, 0.18) !important;
-  color: #0f172a !important;
+  background: var(--bg-card-light, #ffffff) !important;
+  border-color: var(--border-light, rgba(108, 99, 255, 0.18)) !important;
+  color: var(--text-light, #0f172a) !important;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06) !important;
 }
 html[data-theme="light"] .event-page .countdown-card .text-\[var\(--text-muted\)\] {
-  color: #64748b !important;
+  color: var(--text-muted-light, #64748b) !important;
 }
 html[data-theme="light"] .event-page input.input-field,
 html[data-theme="light"] .event-page textarea.input-field,
 html[data-theme="light"] .event-page select.input-field {
-  color: #0f172a !important;
-  background: #ffffff !important;
-  border: 1.5px solid rgba(108, 99, 255, 0.22) !important;
+  color: var(--text-light, #0f172a) !important;
+  background: var(--bg-card-light, #ffffff) !important;
+  border: 1.5px solid var(--border-light, rgba(108, 99, 255, 0.22)) !important;
 }
 html[data-theme="light"] .event-page .input-field::placeholder {
-  color: #94a3b8 !important;
+  color: var(--text-muted-light, #94a3b8) !important;
 }
 html[data-theme="light"] .event-page .btn-primary,
 html[data-theme="light"] .event-page .btn-primary * {
   color: #ffffff !important;
 }
 html[data-theme="light"] .event-page .btn-outline {
-  color: #6C63FF !important;
-  border-color: #6C63FF !important;
+  color: var(--btn-outline-color, var(--primary, #6C63FF)) !important;
+  border-color: var(--btn-outline-color, var(--primary, #6C63FF)) !important;
 }
 html[data-theme="light"] .event-page .btn-outline:hover {
-  background: #6C63FF !important;
+  background: var(--primary, #6C63FF) !important;
   color: #ffffff !important;
 }
 html[data-theme="light"] .event-page .form-tab-switcher {
-  background: rgba(108, 99, 255, 0.06) !important;
-  border: 1px solid rgba(108, 99, 255, 0.16) !important;
+  background: color-mix(in srgb, var(--primary, #6C63FF) 8%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--primary, #6C63FF) 18%, transparent) !important;
 }
 html[data-theme="light"] .event-page .form-tab-switcher button {
-  color: #4b5563 !important;
+  color: var(--text-muted-light, #4b5563) !important;
 }
 html[data-theme="light"] .event-page .form-tab-switcher button.active {
-  color: #6C63FF !important;
+  color: var(--primary, #6C63FF) !important;
 }
 html[data-theme="light"] .event-page form label {
-  color: #374151 !important;
+  color: var(--text-muted-light, #374151) !important;
 }
 html[data-theme="light"] .event-page form .block.text-sm {
-  color: #374151 !important;
+  color: var(--text-muted-light, #374151) !important;
 }
 html[data-theme="light"] .event-page .space-y-3 > div {
-  color: #334155;
+  color: var(--text-light, #334155);
 }
 html[data-theme="light"] .event-page .opacity-70,
 html[data-theme="light"] .event-page .opacity-75 {
@@ -691,23 +718,23 @@ html[data-theme="light"] .event-page .opacity-90 {
   opacity: 0.9 !important;
 }
 html[data-theme="light"] .event-page a {
-  color: #6C63FF;
+  color: var(--primary, #6C63FF);
 }
 html[data-theme="light"] .event-page a:hover {
-  color: #4f46e5;
+  color: var(--primary-dark, #4f46e5);
 }
 html[data-theme="light"] .event-page .glass {
-  background: rgba(255, 255, 255, 0.95) !important;
+  background: var(--navbar-bg-light-custom, var(--bg-card-light, rgba(255, 255, 255, 0.95))) !important;
   backdrop-filter: blur(12px) !important;
-  border-color: rgba(108, 99, 255, 0.12) !important;
+  border-color: var(--border-light, rgba(108, 99, 255, 0.12)) !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.02) !important;
 }
 html[data-theme="light"] .event-page .glass .text-white,
 html[data-theme="light"] .event-page .glass .section-title {
-  color: #0f172a !important;
+  color: var(--heading-light, #0f172a) !important;
 }
 html[data-theme="light"] .event-page .glass a:hover {
-  color: #6C63FF !important;
+  color: var(--primary, #6C63FF) !important;
 }
 html[data-theme="light"] .event-page .glass .btn-primary,
 html[data-theme="light"] .event-page .glass .btn-primary * {
@@ -719,22 +746,22 @@ html[data-theme="light"] .event-page .card h3,
 html[data-theme="light"] .event-page .card h4,
 html[data-theme="light"] .event-page .card .font-semibold,
 html[data-theme="light"] .event-page .card .font-bold {
-  color: #0f172a !important;
+  color: var(--heading-light, #0f172a) !important;
 }
 html[data-theme="light"] .event-page .card .text-\[var\(--text-muted\)\] {
-  color: #475569 !important;
+  color: var(--text-muted-light, #475569) !important;
   font-weight: 500;
 }
 html[data-theme="light"] .event-page .card [style*="var(--text-muted)"] {
-  color: #475569 !important;
+  color: var(--text-muted-light, #475569) !important;
 }
 html[data-theme="light"] .event-page .text-3xl.font-black,
 html[data-theme="light"] .event-page .text-4xl.font-black,
 html[data-theme="light"] .event-page .text-5xl.font-black {
-  color: #0f172a !important;
+  color: var(--heading-light, #0f172a) !important;
 }
 html[data-theme="light"] .event-page .text-xs.text-\[var\(--text-muted\)\] {
-  color: #475569 !important;
+  color: var(--text-muted-light, #475569) !important;
 }
 html[data-theme="light"] .event-page .opacity-70,
 html[data-theme="light"] .event-page .opacity-75 {
@@ -754,6 +781,59 @@ html[data-theme="light"] .keep-white * {
 /* Keep gradient text colorful (never flip to solid dark) */
 html[data-theme="light"] .gradient-text {
   color: transparent;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Direct element editor — وضع التعديل المباشر داخل المعاينة الحية
+   عند تنشيطه من لوحة الثيم، تظهر حدود متقطعة حول أي عنصر قابل للتعديل
+   ════════════════════════════════════════════════════════════════════════ */
+.event-page[data-editing="1"] [data-edit] {
+  outline: 1.5px dashed rgba(108, 99, 255, 0);
+  outline-offset: 3px;
+  cursor: pointer;
+  transition: outline-color 0.15s ease;
+}
+.event-page[data-editing="1"] [data-edit]:hover {
+  outline-color: #6c63ff;
+}
+.event-page[data-editing="1"] [data-edit][data-edit-selected="1"] {
+  outline-color: #f59e0b;
+}
+
+/* محرر النصوص الغني داخل لوحة التعديل المباشر — placeholder + توحيد لون الخط */
+.rich-inline-editor:empty::before {
+  content: attr(data-placeholder);
+  color: #94a3b8;
+  pointer-events: none;
+}
+.rich-inline-editor {
+  font-family: var(--font-family);
+}
+/* أنماط span ملونة تُنتجها أداة التلوين (document.execCommand foreColor) */
+.rich-inline-editor span[style*="color"] { font-weight: inherit; }
+
+/* Banner وضع التعديل المباشر */
+.theme-edit-banner {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  max-width: 90%;
+  width: max-content;
+  min-width: 260px;
+  background: rgba(19, 16, 42, 0.96);
+  border: 1px solid rgba(108, 99, 255, 0.55);
+  color: #e0e7ff;
+  padding: 0.45rem 1rem 0.45rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
 }
 
 /* ── Light mode: registration form deep fixes ────────────────────── */
@@ -794,3 +874,63 @@ html[data-theme="light"] form .text-sm {
 html[data-theme="light"] .text-red-400 {
   color: #dc2626;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Event Theme — Typography & Section backgrounds (theme-driven)
+   هذه القواعد تربط صفحة الحدث بمتغيرات الثيم القادمة من لوحة التحكم
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Base body font size for the whole event page */
+.event-page {
+  font-size: var(--fs-body, 16px);
+  line-height: 1.75;
+  font-family: var(--font-family);
+}
+
+/* Section headings scale + live alignment (تغيير موضع العنوان) */
+.event-page .section-title {
+  font-size: var(--fs-section, 2rem);
+  text-align: var(--title-align, center);
+}
+.event-page .section-badge {
+  font-size: var(--fs-small, 0.8rem);
+}
+
+/* Small / paragraph text */
+.event-page .text-xs,
+.event-page .text-sm {
+  font-size: var(--fs-small, 13px);
+}
+
+/* Navbar links */
+.event-page nav a {
+  font-size: var(--fs-nav, 14px);
+}
+
+/* Card titles */
+.event-page .card h3 {
+  font-size: var(--fs-card-title, 17px);
+}
+
+/* Hero title & subtitle (also inline in Client.tsx) */
+.event-page .hero-title {
+  font-size: var(--fs-hero, 72px);
+  text-align: var(--title-align, center);
+}
+.event-page .hero-subtitle {
+  font-size: var(--fs-hero-sub, 30px);
+  text-align: var(--title-align, center);
+}
+
+/* Section backgrounds — each section reads its theme variable */
+.event-page #about      { background: var(--section-about-bg, transparent); }
+.event-page #agenda     { background: var(--section-agenda-bg, rgba(108, 99, 255, 0.03)); }
+.event-page #speakers   { background: var(--section-speakers-bg, transparent); }
+.event-page #venue      { background: var(--section-venue-bg, rgba(0, 0, 0, 0.3)); }
+.event-page #faq        { background: var(--section-faq-bg, rgba(108, 99, 255, 0.03)); }
+.event-page #sponsors   { background: var(--section-sponsors-bg, rgba(108, 99, 255, 0.03)); }
+.event-page #register   { background: var(--section-register-bg, transparent); }
+.event-page .hero-section   { background: var(--section-hero-bg, transparent); }
+.event-page .stats-section  { background: var(--section-stats-bg, transparent); }
+.event-page .intro-video-section { background: var(--section-video-bg, rgba(108, 99, 255, 0.04)); }
+.event-page .tickets-section    { background: var(--section-tickets-bg, var(--bg-dark)); }

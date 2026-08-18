@@ -1,0 +1,89 @@
+// ── Admin – Universal Media Upload (images + videos + files) ──────────────
+export async function uploadMedia(file: File, token: string): Promise<{ url: string; filename: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`${API_BASE}/api/uploads/media`, {
+    method: 'POST',
+    body: formData,
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Upload failed');
+  return { url: data.url, filename: data.filename || data.key };
+}
+
+// ── Public – Payments ──────────────────────────────────────────────────────
+export const fetchPaymentSettingsPublic = (eventId: number) =>
+  apiFetch<any>(`/api/events/${eventId}/payments/settings-public`);
+
+export const initiatePayment = (eventId: number, body: any) =>
+  apiFetch<any>(`/api/events/${eventId}/payments/initiate`, {
+    method: 'POST', body: JSON.stringify(body)
+  });
+
+export const checkPaymentStatus = (eventId: number, orderRef: string) =>
+  apiFetch<any>(`/api/events/${eventId}/payments/check/${orderRef}`, undefined, true);
+
+// ── Public – Archive & Navigation ─────────────────────────────────────────
+export const fetchEventArchive = () =>
+  apiFetch<any>('/api/events/archive');
+
+export const fetchEventNavigation = (eventId: number) =>
+  apiFetch<any>(`/api/events/${eventId}/navigation`);
+
+export const fetchEventFullArchive = (eventId: number) =>
+  apiFetch<any>(`/api/events/${eventId}/full-archive`);
+
+// ── Admin – Event Visibility ───────────────────────────────────────────────
+export const updateEventVisibility = (id: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${id}/visibility`, {
+    method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token)
+  });
+
+// ── Admin – Payment Message Fields ────────────────────────────────────────
+export const fetchPaymentMessageFields = (eventId: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/payments/message-fields`, {
+    headers: getAuthHeaders(token)
+  });
+
+export const updatePaymentMessageFields = (eventId: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/payments/message-fields`, {
+    method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token)
+  });
+
+// ── Admin – Ticket Issuance ────────────────────────────────────────────────
+export const issueTicket = (eventId: number, registrationId: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/tickets-design/issue/${registrationId}`, {
+    method: 'POST', headers: getAuthHeaders(token)
+  });
+
+export const getTicketPreviewUrl = (eventId: number) =>
+  `${API_BASE}/api/events/${eventId}/tickets-design/preview`;
+
+// ── Public – Countries ─────────────────────────────────────────────────────
+export const fetchCountries = (eventId: number) =>
+  apiFetch<any>(`/api/events/${eventId}/countries`);
+
+// ── Admin – Countries ──────────────────────────────────────────────────────
+export const fetchCountriesAdmin = (eventId: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/countries/all`, { headers: getAuthHeaders(token) });
+
+export const createCountry = (eventId: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/countries`, { method: 'POST', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+
+export const updateCountry = (eventId: number, id: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/countries/${id}`, { method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token) });
+
+export const deleteCountry = (eventId: number, id: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/countries/${id}`, { method: 'DELETE', headers: getAuthHeaders(token) });
+
+// ── CRM System ─────────────────────────────────────────────────────────────────────────
+// Contacts
+export const fetchCRMContacts = (token: string, params?: { page?: number; search?: string; limit?: number }) => {
+  const p = new URLSearchParams();
+  if (params?.page) p.set('page', String(params.page));
+  if (params?.search) p.set('search', params.search);
+  if (params?.limit) p.set('limit', String(params.limit));
+  return apiFetch<any>(`/api/crm/contacts?${p}`, { headers: getAuthHeaders(token) });
+};
+export const fetchCRMContact = (id: number, token: string) =>

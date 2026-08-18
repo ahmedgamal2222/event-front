@@ -2000,6 +2000,7 @@ const DEFAULT_SITE_CFG: SiteConfig = {
   archive_link_label: '🗂 النسخ السابقة',
   archive_link_position: 'both',
   show_theme_toggle: true,
+  default_theme: 'dark',
   ticket_instructions: {
     startup_step1_title: 'طلبك قيد المراجعة',
     startup_step1_desc: 'يراجع الفريق طلبك ومعلومات مشروعك خلال 24-48 ساعة',
@@ -2058,6 +2059,9 @@ function normalizeSiteConfig(raw: any): SiteConfig {
     archive_link_label:    typeof raw.archive_link_label === 'string' ? raw.archive_link_label : '🗂 النسخ السابقة',
     archive_link_position: ['navbar','footer','both','none'].includes(raw.archive_link_position) ? raw.archive_link_position : 'both',
     show_theme_toggle:     raw.show_theme_toggle !== undefined ? !!raw.show_theme_toggle : true,
+    default_theme:         raw.default_theme === 'light' ? 'light' : 'dark',
+    editable_text:         raw.editable_text && typeof raw.editable_text === 'object' ? raw.editable_text : undefined,
+    page_direction:        raw.page_direction === 'ltr' ? 'ltr' : 'rtl',
     ticket_instructions:   raw.ticket_instructions || base.ticket_instructions,
   };
 }
@@ -2313,6 +2317,23 @@ function SiteConfigTab({ eventId, eventSlug, token, save, saving }: any) {
             </div>
           </div>
         </label>
+        <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <Field label="الوضع الذي يظهر للزوار الجدد (افتراضياً)">
+            <select value={(sc as any).default_theme === 'light' ? 'light' : 'dark'} onChange={e => set('default_theme' as any, e.target.value)} style={S.inp}>
+              <option value="dark">🌙 الوضع الليلي</option>
+              <option value="light">☀️ الوضع النهاري</option>
+            </select>
+            <div style={{ fontSize: '0.68rem', color: '#475569', marginTop: '0.25rem' }}>
+              يحدد الوضع النشط لمن يفتح الموقع لأول مرة (يمكن للزائر تبديله بنفسه لاحقاً).
+            </div>
+          </Field>
+          <div style={{ background: 'rgba(108,99,255,0.07)', borderRadius: 8, padding: '0.75rem', border: '1px solid rgba(108,99,255,0.18)', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6 }}>
+            <div style={{ fontSize: '0.78rem', color: '#a5b4fc', fontWeight: 600 }}>💡 ملاحظة</div>
+            <div style={{ fontSize: '0.72rem', color: '#94a3b8', lineHeight: 1.6 }}>
+              لتجربة فورية لزر التبديل: افتح «الثيم والألوان ← معاينة حية»، فعّل «✏️ التعديل المباشر» ثم اضغط على زر التبديل داخل المعاينة.
+            </div>
+          </div>
+        </div>
       </div>
 
       <div style={{ paddingBottom: 8 }}><SaveBtn loading={saving} onClick={saveAll} /></div>

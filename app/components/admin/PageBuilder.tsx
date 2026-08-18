@@ -199,7 +199,7 @@ function BlockEditor({ block, onChange, primaryColor, token }: { block: Block; o
       return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <div><label style={labelStyle}>النص</label>
-            <textarea rows={block.type === 'p' ? 4 : 2} style={{ ...inputStyle, resize: 'vertical', fontFamily: block.type === 'html' ? 'monospace' : 'inherit' }}
+            <textarea rows={block.type === 'p' ? 4 : 2} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
               value={block.content || ''} onChange={e => set('content', e.target.value)} /></div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <div style={{ flex: 1 }}><label style={labelStyle}>المحاذاة</label>

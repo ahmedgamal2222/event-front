@@ -12,6 +12,7 @@ const S = {
 interface Contact {
   id: number; full_name: string; email?: string; phone?: string; city?: string;
   org_name?: string; is_vip: number; source: string;
+  communication_channel?: string; // channel: phone/email/whatsapp/social_media/...
   reg_count?: number; tasks_count?: number; payment_count?: number; created_at: string;
 }
 
@@ -126,7 +127,7 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly, onI
   const [assigneeSearch, setAssigneeSearch] = useState('');
 
   const [showInteraction, setShowInteraction] = useState(false);
-  const [interaction, setInteraction] = useState({ channel: 'call', direction: 'outbound', subject: '', summary: '' });
+  const [interaction, setInteraction] = useState({ channel: 'call', direction: 'outbound', subject: '', summary: '', logged_by: '' });
 
   const [adminsList, setAdminsList] = useState<AdminUser[]>([]);
   const [countries, setCountries] = useState<Country[]>([]);
@@ -448,7 +449,7 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly, onI
     const d = await res.json();
     if (d.success) {
       setShowInteraction(false);
-      setInteraction({ channel: 'call', direction: 'outbound', subject: '', summary: '' });
+      setInteraction({ channel: 'call', direction: 'outbound', subject: '', summary: '', logged_by: '' });
       if (onInteractionSaved) onInteractionSaved();
       else openContact(selected.id);
     } else alert(d.error);
