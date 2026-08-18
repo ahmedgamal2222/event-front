@@ -67,11 +67,13 @@ export default function TicketsSection({ eventId, editableText }: { eventId: num
           fetchTicketsConfig(eventId),
         ]);
         
-        const ticketsData = Array.isArray(ticketsRes?.data) ? ticketsRes.data : [];
+                                const ticketsData = Array.isArray(ticketsRes?.data) ? ticketsRes.data : [];
         const configData = configRes?.data || null;
         
         setTickets(ticketsData);
         if (configData) setConfig(configData);
+        // Always exit loading state once data has been fetched (success or partial)
+        setLoading(false);
       } catch (err) {
         console.error('Error loading tickets section:', err);
         setError(err instanceof Error ? err.message : 'فشل تحميل البيانات');

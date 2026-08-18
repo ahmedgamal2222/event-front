@@ -1,0 +1,2 @@
+[app/[slug]/Client.tsx(1,2): error TS17008: JSX element 'section' has no corresponding closing tag.
+[app/[slug]/Client.tsx(1,443): error TS1005: '</' expected.
