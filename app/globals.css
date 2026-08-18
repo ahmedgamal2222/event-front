@@ -50,8 +50,34 @@
     --section-faq-bg: rgba(108, 99, 255, 0.03);
     --section-sponsors-bg: rgba(108, 99, 255, 0.03);
     --section-register-bg: transparent;
-    --section-tickets-bg: var(--bg-dark);
-    --section-tickets-bg-light: var(--bg-light, #ffffff);
+    /* ── أزرار + hover + تدرجات (controllable via event theme) ── */
+    --btn-primary-bg: var(--primary);
+    --btn-primary-bg2: var(--primary-dark);
+    --btn-primary-color: #ffffff;
+    --btn-outline-color: var(--primary);
+    --btn-radius: 8px;
+    --btn-gradient-angle: 135deg;
+    --btn-primary-hover: #5a4bf0;
+    --btn-outline-hover: var(--primary);
+    --link-hover: var(--primary);
+    --gradient-angle: 135deg;
+    --gradient-from: var(--primary);
+    --gradient-to: var(--accent);
+    --gradient-text-enabled: 1;
+    --gradient-text-color: var(--heading);
+
+    /* ── حشوات الأقسام (padding لكل سكشن بشكل مستقل) ── */
+    --sec-hero-pad-top: 8rem; --sec-hero-pad-bottom: 5rem; --sec-hero-pad-left: 1.5rem; --sec-hero-pad-right: 1.5rem;
+    --sec-stats-pad-top: 5rem; --sec-stats-pad-bottom: 5rem; --sec-stats-pad-left: 1.5rem; --sec-stats-pad-right: 1.5rem;
+    --sec-about-pad-top: 5rem; --sec-about-pad-bottom: 5rem; --sec-about-pad-left: 1.5rem; --sec-about-pad-right: 1.5rem;
+    --sec-agenda-pad-top: 5rem; --sec-agenda-pad-bottom: 5rem; --sec-agenda-pad-left: 1.5rem; --sec-agenda-pad-right: 1.5rem;
+    --sec-speakers-pad-top: 5rem; --sec-speakers-pad-bottom: 5rem; --sec-speakers-pad-left: 1.5rem; --sec-speakers-pad-right: 1.5rem;
+    --sec-video-pad-top: 5rem; --sec-video-pad-bottom: 5rem; --sec-video-pad-left: 1.5rem; --sec-video-pad-right: 1.5rem;
+    --sec-venue-pad-top: 5rem; --sec-venue-pad-bottom: 5rem; --sec-venue-pad-left: 1.5rem; --sec-venue-pad-right: 1.5rem;
+    --sec-faq-pad-top: 5rem; --sec-faq-pad-bottom: 5rem; --sec-faq-pad-left: 1.5rem; --sec-faq-pad-right: 1.5rem;
+    --sec-sponsors-pad-top: 4rem; --sec-sponsors-pad-bottom: 4rem; --sec-sponsors-pad-left: 1.5rem; --sec-sponsors-pad-right: 1.5rem;
+    --sec-register-pad-top: 5rem; --sec-register-pad-bottom: 5rem; --sec-register-pad-left: 1.5rem; --sec-register-pad-right: 1.5rem;
+    --sec-tickets-pad-top: 5rem; --sec-tickets-pad-bottom: 5rem; --sec-tickets-pad-left: 1.5rem; --sec-tickets-pad-right: 1.5rem;
   }
 
   /* ── Light Mode ─────────────────────────────────────────────── */
@@ -394,23 +420,25 @@
     border: 1px solid var(--navbar-border);
   }
   .gradient-text {
-    background: linear-gradient(135deg, var(--primary), var(--accent));
+    background: linear-gradient(var(--gradient-angle, 135deg), var(--gradient-from, var(--primary)), var(--gradient-to, var(--accent)));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    color: var(--gradient-from, var(--primary));
   }
   .btn-primary {
-    background: linear-gradient(135deg, var(--btn-primary-bg, var(--primary)), var(--btn-primary-bg2, var(--primary-dark)));
+    background: linear-gradient(var(--btn-gradient-angle, 135deg), var(--btn-primary-bg, var(--primary)), var(--btn-primary-bg2, var(--primary-dark)));
     color: var(--btn-primary-color, #ffffff);
     padding: 0.75rem 2rem;
     border-radius: var(--btn-radius, 0.5rem);
     font-weight: 600;
-    transition: opacity 0.2s, transform 0.2s;
+    transition: all 0.2s;
     display: inline-block;
     cursor: pointer;
     border: none;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
   }
-  .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-primary:hover { background: var(--btn-primary-hover, var(--btn-primary-bg2, var(--primary-dark))); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22); }
   .btn-outline {
     background: var(--btn-outline-bg, transparent);
     color: var(--btn-outline-color, var(--text));
@@ -422,7 +450,7 @@
     display: inline-block;
     cursor: pointer;
   }
-  .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+  .btn-outline:hover { border-color: var(--btn-outline-hover, var(--primary)); color: var(--btn-outline-hover, var(--primary)); background: var(--btn-outline-bg-hover, transparent); }
   .section-title { font-size: 2rem; font-weight: 700; color: var(--heading); }
   .section-badge {
     font-size: 0.8rem;
@@ -475,6 +503,44 @@
     to { opacity: 1; transform: translateY(0); }
   }
   .animate-fadeIn { animation: fadeIn 0.6s ease-out; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Unlayered overrides — win over Tailwind utilities
+   ═══════════════════════════════════════════════════════════════ */
+
+/* إيقاف تدرج النصوص (عناوين ثابتة بدون تدرج) — يتحكم بها الثيم */
+html[data-gradient-text="0"] .event-page .gradient-text,
+html[data-gradient-text="0"] .gradient-text {
+  background: none;
+  -webkit-background-clip: initial;
+  -webkit-text-fill-color: var(--gradient-text-color, var(--heading));
+  background-clip: initial;
+  color: var(--gradient-text-color, var(--heading)) !important;
+}
+
+/* لون التحويم للروابط في صفحة الحدث — يتحكم بها الثيم */
+.event-page a:not(.btn-primary):not(.btn-outline):hover {
+  color: var(--link-hover, var(--primary)) !important;
+}
+.event-page .btn-outline:hover {
+  border-color: var(--btn-outline-hover, var(--primary));
+  color: var(--btn-outline-hover, var(--primary));
+  background: var(--btn-outline-bg-hover, rgba(108, 99, 255, 0.08));
+}
+
+/* Note: light-mode gradient-text override uses the same new gradient vars */
+html[data-theme="light"] .event-page .gradient-text {
+  background: linear-gradient(var(--gradient-angle, 135deg), var(--gradient-from, var(--primary)), var(--gradient-to, var(--primary-dark))) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: var(--gradient-from, var(--primary)) !important;
+}
+html[data-theme="light"][data-gradient-text="0"] .event-page .gradient-text {
+  background: none !important;
+  -webkit-text-fill-color: var(--gradient-text-color, var(--heading)) !important;
+  color: var(--gradient-text-color, var(--heading)) !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════

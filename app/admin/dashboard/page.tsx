@@ -616,7 +616,7 @@ function AdminDashboardInner() {
           {activeTab === 'formconfig'    && <FormConfigTab key={eventId} eventId={eventId} eventSlug={eventSlug} token={token} save={save} saving={saving} />}
           {activeTab === 'siteconfig'    && <SiteConfigTab key={eventId} eventId={eventId} eventSlug={eventSlug} token={token} save={save} saving={saving} />}
           {activeTab === 'theme'         && <AdminThemeBuilder key={eventId} eventId={eventId} eventSlug={eventSlug} token={token} save={save} saving={saving} />}
-          {activeTab === 'tickets'       && <AdminTickets key={eventId} eventId={eventId} token={token} />}
+          {activeTab === 'tickets'       && <AdminTickets key={eventId} eventId={eventId} token={token} eventSlug={eventSlug} />}
           {activeTab === 'support'       && <AdminSupport key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'pixels'        && <AdminPixels key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'email'          && <AdminEmailSettings key={eventId} eventId={eventId} token={token} />}

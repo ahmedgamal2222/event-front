@@ -33,6 +33,29 @@ interface ThemeColors {
   hero_bg_type?: 'none' | 'image' | 'video' | 'youtube';
   hero_bg_image?: string; hero_bg_video?: string; hero_bg_youtube?: string;
   hero_bg_overlay?: string; hero_bg_pos?: string; hero_align?: 'center'|'right'|'left'; hero_y?: 'center'|'top'|'bottom';
+  // ─── الأزرار والتدرجات ───
+  btn_primary_bg?: string; btn_primary_bg2?: string; btn_primary_color?: string;
+  btn_outline_color?: string; btn_radius?: number;
+  btn_primary_hover?: string; btn_outline_hover?: string; link_hover?: string;
+  btn_gradient_angle?: number;
+  gradient_text_from?: string; gradient_text_to?: string; gradient_text_enabled?: string;
+  // ─── تموضع الأقسام (حشوة padding علوية/سفلية/يمنى/يسرى لكل سكشن) ───
+  section_hero_pad_top?: number; section_hero_pad_bottom?: number; section_hero_pad_left?: number; section_hero_pad_right?: number;
+  section_stats_pad_top?: number; section_stats_pad_bottom?: number; section_stats_pad_left?: number; section_stats_pad_right?: number;
+  section_about_pad_top?: number; section_about_pad_bottom?: number; section_about_pad_left?: number; section_about_pad_right?: number;
+  section_agenda_pad_top?: number; section_agenda_pad_bottom?: number; section_agenda_pad_left?: number; section_agenda_pad_right?: number;
+  section_speakers_pad_top?: number; section_speakers_pad_bottom?: number; section_speakers_pad_left?: number; section_speakers_pad_right?: number;
+  section_video_pad_top?: number; section_video_pad_bottom?: number; section_video_pad_left?: number; section_video_pad_right?: number;
+  section_venue_pad_top?: number; section_venue_pad_bottom?: number; section_venue_pad_left?: number; section_venue_pad_right?: number;
+  section_faq_pad_top?: number; section_faq_pad_bottom?: number; section_faq_pad_left?: number; section_faq_pad_right?: number;
+  section_sponsors_pad_top?: number; section_sponsors_pad_bottom?: number; section_sponsors_pad_left?: number; section_sponsors_pad_right?: number;
+  section_register_pad_top?: number; section_register_pad_bottom?: number; section_register_pad_left?: number; section_register_pad_right?: number;
+  section_tickets_pad_top?: number; section_tickets_pad_bottom?: number; section_tickets_pad_left?: number; section_tickets_pad_right?: number;
+  // ─── لون نهاية التدرج لكل سكشن (اختياري) ───
+  section_hero_bg2?: string; section_stats_bg2?: string; section_about_bg2?: string;
+  section_agenda_bg2?: string; section_speakers_bg2?: string; section_video_bg2?: string;
+  section_venue_bg2?: string; section_faq_bg2?: string; section_sponsors_bg2?: string;
+  section_register_bg2?: string; section_tickets_bg2?: string;
 }
 
 const BASE_THEME: ThemeColors = {
@@ -53,6 +76,24 @@ const BASE_THEME: ThemeColors = {
   // ── خلفية الـ Hero ──
   hero_bg_type: 'none', hero_bg_overlay: 'rgba(13,11,26,0.55)', hero_bg_pos: 'center',
   hero_align: 'center', hero_y: 'center',
+  // ── الأزرار والتدرجات (افتراضات) ──
+  btn_primary_bg: '#6C63FF', btn_primary_bg2: '#4f46e5', btn_primary_color: '#ffffff',
+  btn_outline_color: '#6C63FF', btn_radius: 8,
+  btn_primary_hover: '#5a4bf0', btn_outline_hover: '#6C63FF', link_hover: '#6C63FF',
+  btn_gradient_angle: 135,
+  gradient_text_from: '#6C63FF', gradient_text_to: '#f59e0b', gradient_text_enabled: '1',
+  // ── تموضع الأقسام (حشوات افتراضية) ──
+  section_hero_pad_top: 128, section_hero_pad_bottom: 80, section_hero_pad_left: 24, section_hero_pad_right: 24,
+  section_stats_pad_top: 80, section_stats_pad_bottom: 80, section_stats_pad_left: 24, section_stats_pad_right: 24,
+  section_about_pad_top: 80, section_about_pad_bottom: 80, section_about_pad_left: 24, section_about_pad_right: 24,
+  section_agenda_pad_top: 80, section_agenda_pad_bottom: 80, section_agenda_pad_left: 24, section_agenda_pad_right: 24,
+  section_speakers_pad_top: 80, section_speakers_pad_bottom: 80, section_speakers_pad_left: 24, section_speakers_pad_right: 24,
+  section_video_pad_top: 80, section_video_pad_bottom: 80, section_video_pad_left: 24, section_video_pad_right: 24,
+  section_venue_pad_top: 80, section_venue_pad_bottom: 80, section_venue_pad_left: 24, section_venue_pad_right: 24,
+  section_faq_pad_top: 80, section_faq_pad_bottom: 80, section_faq_pad_left: 24, section_faq_pad_right: 24,
+  section_sponsors_pad_top: 64, section_sponsors_pad_bottom: 64, section_sponsors_pad_left: 24, section_sponsors_pad_right: 24,
+  section_register_pad_top: 80, section_register_pad_bottom: 80, section_register_pad_left: 24, section_register_pad_right: 24,
+  section_tickets_pad_top: 80, section_tickets_pad_bottom: 80, section_tickets_pad_left: 24, section_tickets_pad_right: 24,
 };
 const PRESETS: { name: string; emoji: string; colors: ThemeColors }[] = [
   { name: 'البنفسجي', emoji: '🟣', colors: { primary:'#6C63FF', primary_dark:'#4f46e5', accent:'#f59e0b', bg_dark:'#0d0b1a', bg_card:'#13102a', text:'#e2e8f0', text_muted:'#94a3b8', heading:'#ffffff', navbar_bg_dark:'rgba(13,11,26,0.88)', navbar_bg_light:'rgba(255,255,255,0.98)', navbar_blur:'on', navbar_border:'rgba(108,99,255,0.25)', heading_light:'#0f172a', text_light:'#0f172a', text_muted_light:'#475569', bg_light:'#f5f6fc' } },
@@ -61,6 +102,22 @@ const PRESETS: { name: string; emoji: string; colors: ThemeColors }[] = [
   { name: 'الذهبي', emoji: '🟡', colors: { primary:'#d97706', primary_dark:'#b45309', accent:'#6C63FF', bg_dark:'#0f0c02', bg_card:'#1c1703', text:'#fef3c7', text_muted:'#fcd34d', heading:'#fffbeb', navbar_bg_dark:'rgba(15,12,2,0.9)', navbar_bg_light:'#fffbeb', navbar_blur:'off', navbar_border:'rgba(217,119,6,0.3)', heading_light:'#451a03', text_light:'#1f2937', text_muted_light:'#57534e', bg_light:'#fff9eb' } },
   { name: 'الوردي', emoji: '🩷', colors: { primary:'#ec4899', primary_dark:'#db2777', accent:'#8b5cf6', bg_dark:'#160a12', bg_card:'#1f0e1b', text:'#fce7f3', text_muted:'#f9a8d4', heading:'#fdf2f8', navbar_bg_dark:'rgba(22,10,18,0.9)', navbar_bg_light:'#fdf2f8', navbar_blur:'on', navbar_border:'rgba(236,72,153,0.25)', heading_light:'#831843', text_light:'#1f2937', text_muted_light:'#6b7280', bg_light:'#fdf4fa' } },
   { name: 'الرمادي', emoji: '⚫', colors: { primary:'#6b7280', primary_dark:'#4b5563', accent:'#3b82f6', bg_dark:'#111827', bg_card:'#1f2937', text:'#f9fafb', text_muted:'#9ca3af', heading:'#ffffff', navbar_bg_dark:'rgba(17,24,39,0.95)', navbar_bg_light:'#f9fafb', navbar_blur:'off', navbar_border:'rgba(107,114,128,0.25)', heading_light:'#111827', text_light:'#1f2937', text_muted_light:'#4b5563', bg_light:'#f9fafb' } },
+  // ── لوحة الألوان المعتمدة للعلامة التجارية: Deep Teal + Emerald + Accent Gold + White ──
+  { name: 'التيل العميق (تركواز)', emoji: '🏷️', colors: {
+    primary:'#14b8a6', primary_dark:'#0f766e', accent:'#D4AF37',
+    bg_dark:'#052e33', bg_card:'#0b4248', text:'#e6f7f5', text_muted:'#7fb8b1', heading:'#ffffff',
+    navbar_bg_dark:'rgba(5,46,51,0.92)', navbar_bg_light:'rgba(255,255,255,0.98)', navbar_blur:'on',
+    navbar_border:'rgba(20,184,166,0.35)', heading_light:'#052e33', text_light:'#0f172a',
+    text_muted_light:'#475569', bg_light:'#f0fbfa', bg_card_light:'#ffffff', border_light:'rgba(20,184,166,0.25)', panel_light:'#ffffff', footer_bg_light:'#e6f7f5', event_nav_bg_light:'#ffffff', option_bg_light:'#ffffff',
+    btn_primary_bg:'#0f766e', btn_primary_bg2:'#0d9488', btn_primary_hover:'#0f766e',
+    btn_outline_color:'#0f766e', btn_outline_hover:'#0f766e', link_hover:'#0f766e',
+    gradient_text_from:'#2dd4bf', gradient_text_to:'#D4AF37', gradient_text_enabled:'0',
+    section_tickets_bg:'#04282d', section_tickets_bg_light:'#ffffff',
+    section_agenda_bg:'rgba(20,184,166,0.06)', section_video_bg:'rgba(20,184,166,0.05)',
+    section_faq_bg:'rgba(20,184,166,0.05)', section_sponsors_bg:'rgba(212,175,55,0.06)',
+  } },
+  { name: 'الزمردي الفاخر', emoji: '💎', colors: { primary:'#10b981', primary_dark:'#047857', accent:'#D4AF37', bg_dark:'#04140e', bg_card:'#0a2419', text:'#d1fae5', text_muted:'#6ee7b7', heading:'#ffffff', navbar_bg_dark:'rgba(4,20,14,0.92)', navbar_bg_light:'rgba(255,255,255,0.98)', navbar_blur:'on', navbar_border:'rgba(16,185,129,0.35)', heading_light:'#022c22', text_light:'#0f172a', text_muted_light:'#475569', bg_light:'#f0fdf9', btn_primary_hover:'#047857', btn_outline_hover:'#047857', link_hover:'#047857', gradient_text_enabled:'0' } },
+  { name: 'الأسود الذهبي', emoji: '🖤', colors: { primary:'#D4AF37', primary_dark:'#b8962e', accent:'#e5e7eb', bg_dark:'#0b0b0d', bg_card:'#17171b', text:'#f5efe0', text_muted:'#9ca3af', heading:'#ffffff', navbar_bg_dark:'rgba(11,11,13,0.92)', navbar_bg_light:'#ffffff', navbar_blur:'off', navbar_border:'rgba(212,175,55,0.4)', heading_light:'#111111', text_light:'#111827', text_muted_light:'#4b5563', bg_light:'#fbfaf6', gradient_text_enabled:'0' } },
 ];
 
 const DARK_FIELDS: { key: keyof ThemeColors; label: string }[] = [
@@ -74,6 +131,10 @@ const DARK_FIELDS: { key: keyof ThemeColors; label: string }[] = [
   { key: 'text_muted', label: 'النص الخافت' },
   { key: 'navbar_bg_dark', label: 'خلفية الناف (ليلي)' },
   { key: 'navbar_border', label: 'حدود الناف بار' },
+  // ── ألوان التحويم (hover) ──
+  { key: 'btn_primary_hover', label: 'الزر الرئيسي عند التحويم' },
+  { key: 'btn_outline_hover', label: 'الزر الثانوي عند التحويم' },
+  { key: 'link_hover', label: 'الروابط عند التحويم' },
 ];
 
 const LIGHT_FIELDS: { key: keyof ThemeColors; label: string }[] = [
@@ -122,6 +183,37 @@ const LOGO_FIELDS: { key: keyof ThemeColors; label: string; min: number; max: nu
   { key: 'logo_radius', label: 'استدارة زوايا الشعار (px)', min: 0, max: 40 },
 ];
 
+// ── حقول الأزرار والتدرجات (Gradient) ──
+const BUTTON_FIELDS: { key: keyof ThemeColors; label: string }[] = [
+  { key: 'btn_primary_bg', label: 'خلفية الزر الرئيسي (بداية التدرج)' },
+  { key: 'btn_primary_bg2', label: 'خلفية الزر الرئيسي (نهاية التدرج)' },
+  { key: 'btn_primary_color', label: 'لون نص الزر الرئيسي' },
+  { key: 'btn_outline_color', label: 'نص/حدود الزر الثانوي' },
+  { key: 'btn_primary_hover', label: 'الزر الرئيسي عند التحويم' },
+  { key: 'btn_outline_hover', label: 'الزر الثانوي عند التحويم' },
+  { key: 'link_hover', label: 'الروابط عند التحويم' },
+];
+
+const GRADIENT_FIELDS: { key: keyof ThemeColors; label: string }[] = [
+  { key: 'gradient_text_from', label: 'تدرج العناوين (من)' },
+  { key: 'gradient_text_to', label: 'تدرج العناوين (إلى)' },
+];
+
+// بيانات كل سكشن — تُستخدم في تبويب «تخصيص الأقسام» (خلفية + تدرج + حشوات)
+const SECTIONS_META: { key: string; label: string; bgKey: keyof ThemeColors; bg2Key: keyof ThemeColors; defPadTop: number; defPadBottom: number }[] = [
+  { key: 'hero', label: 'الـ Hero', bgKey: 'section_hero_bg', bg2Key: 'section_hero_bg2', defPadTop: 128, defPadBottom: 80 },
+  { key: 'stats', label: 'الإحصائيات', bgKey: 'section_stats_bg', bg2Key: 'section_stats_bg2', defPadTop: 80, defPadBottom: 80 },
+  { key: 'about', label: 'عن الفعالية', bgKey: 'section_about_bg', bg2Key: 'section_about_bg2', defPadTop: 80, defPadBottom: 80 },
+  { key: 'agenda', label: 'البرنامج', bgKey: 'section_agenda_bg', bg2Key: 'section_agenda_bg2', defPadTop: 80, defPadBottom: 80 },
+  { key: 'speakers', label: 'المتحدثون', bgKey: 'section_speakers_bg', bg2Key: 'section_speakers_bg2', defPadTop: 80, defPadBottom: 80 },
+  { key: 'video', label: 'الفيديو التعريفي', bgKey: 'section_video_bg', bg2Key: 'section_video_bg2', defPadTop: 80, defPadBottom: 80 },
+  { key: 'venue', label: 'مكان الحدث', bgKey: 'section_venue_bg', bg2Key: 'section_venue_bg2', defPadTop: 80, defPadBottom: 80 },
+  { key: 'faq', label: 'الأسئلة الشائعة', bgKey: 'section_faq_bg', bg2Key: 'section_faq_bg2', defPadTop: 80, defPadBottom: 80 },
+  { key: 'sponsors', label: 'الشركاء والرعاة', bgKey: 'section_sponsors_bg', bg2Key: 'section_sponsors_bg2', defPadTop: 64, defPadBottom: 64 },
+  { key: 'register', label: 'التسجيل', bgKey: 'section_register_bg', bg2Key: 'section_register_bg2', defPadTop: 80, defPadBottom: 80 },
+  { key: 'tickets', label: 'التذاكر', bgKey: 'section_tickets_bg', bg2Key: 'section_tickets_bg2', defPadTop: 80, defPadBottom: 80 },
+];
+
 function ColorPicker({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.04)', borderRadius: '0.6rem', padding: '0.65rem 0.85rem' }}>
@@ -161,7 +253,8 @@ interface Props { eventId: number; eventSlug: string; token: string; currentPrim
 export default function AdminThemeBuilder({ eventId, eventSlug, token, currentPrimaryColor, save, saving }: Props) {
   const [colors, setColors] = useState<ThemeColors>({ ...BASE_THEME, primary: currentPrimaryColor || BASE_THEME.primary || '#6C63FF' });
   const [loaded, setLoaded] = useState(false);
-  const [tab, setTab] = useState<'dark' | 'light' | 'sections' | 'fonts' | 'logo' | 'hero' | 'preview'>('dark');
+  const [tab, setTab] = useState<'dark' | 'light' | 'sections' | 'gradient' | 'fonts' | 'logo' | 'hero' | 'preview'>('dark');
+  const [secSel, setSecSel] = useState('hero');
   const [previewMode, setPreviewMode] = useState<'dark' | 'light'>('dark');
   const [previewSrc, setPreviewSrc] = useState('');
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -266,7 +359,8 @@ export default function AdminThemeBuilder({ eventId, eventSlug, token, currentPr
   const TABS: { key: typeof tab; label: string }[] = [
     { key: 'dark',    label: '🌙 الوضع الليلي' },
     { key: 'light',   label: '☀️ الوضع النهاري' },
-    { key: 'sections',label: '🧱 خلفيات الأقسام' },
+    { key: 'sections',label: '🧱 القسام (سكشن سكشن)' },
+    { key: 'gradient', label: '🎨 الأزرار والتدرجات' },
     { key: 'fonts',   label: '✍️ حجم الخطوط' },
     { key: 'logo',    label: '🖼️ الشعار' },
     { key: 'hero',    label: '🎬 خلفية الـ Hero' },
@@ -327,13 +421,11 @@ const activeFields = tab === 'dark' ? DARK_FIELDS : tab === 'light' ? LIGHT_FIEL
         </div>
       </div>
 
-      {/* ── Colors / Sections tabs ── */}
-      {(tab === 'dark' || tab === 'light' || tab === 'sections') && (
+      {/* ── Colors tabs (dark / light) ── */}
+      {(tab === 'dark' || tab === 'light') && (
         <div style={S.card}>
           <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 12, fontSize: '0.95rem' }}>
-            {tab === 'dark' && '🌙 ألوان الوضع الليلي'}
-            {tab === 'light' && '☀️ ألوان الوضع النهاري'}
-            {tab === 'sections' && '🧱 خلفيات أقسام الصفحة (تطبق على الوضعين ما لم تُحدد بشكل مختلف)'}
+            {tab === 'dark' ? '🌙 ألوان الوضع الليلي' : '☀️ ألوان الوضع النهاري'}
           </h3>
           {tab === 'light' && (
             <p style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: 12 }}>
@@ -344,6 +436,101 @@ const activeFields = tab === 'dark' ? DARK_FIELDS : tab === 'light' ? LIGHT_FIEL
             {activeFields.map(({ key, label }) => (
               <ColorPicker key={key as string} label={label} value={(colors[key] as string) || ''} onChange={v => setValue(key, v)} />
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Sections tab — كل سكشن على حدة (خلفية + تدرج + حشوات precise) ── */}
+      {tab === 'sections' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={S.card}>
+            <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 4, fontSize: '0.95rem' }}>🧱 تخصيص الأقسام (سكشن سكشن)</h3>
+            <p style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: 12 }}>
+              اختر القسم ثم عدّل خلفيته (لون أو تدرّج) وحرّكه باتجاهاته الأربعة بدقة بالبكسل (الحشوة padding العلوية / السفلية / اليمنى / اليسرى).
+            </p>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+              {SECTIONS_META.map(s => (
+                <button key={s.key} onClick={() => setSecSel(s.key)} style={{
+                  padding: '0.35rem 0.75rem', borderRadius: '0.45rem', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, border: 'none',
+                  background: secSel === s.key ? '#6C63FF' : 'rgba(255,255,255,0.07)', color: secSel === s.key ? 'white' : '#94a3b8',
+                }}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+            {(() => {
+              const s = SECTIONS_META.find(x => x.key === secSel) || SECTIONS_META[0];
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, background: 'rgba(255,255,255,0.03)', borderRadius: '0.7rem', padding: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
+                    <ColorPicker label={`خلفية قسم «${s.label}»`} value={(colors[s.bgKey] as string) || ''} onChange={v => setValue(s.bgKey, v)} />
+                    <ColorPicker label={`لون نهاية التدرج (اختياري — يتجاهل لو أُفرغ)`} value={(colors[s.bg2Key] as string) || ''} onChange={v => setValue(s.bg2Key, v)} />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
+                    <SizeControl label="الحشوة العلوية (px)" min={0} max={220} value={(colors[`section_${s.key}_pad_top` as keyof ThemeColors] as number) ?? s.defPadTop} onChange={v => setValue(`section_${s.key}_pad_top` as keyof ThemeColors, v)} />
+                    <SizeControl label="الحشوة السفلية (px)" min={0} max={220} value={(colors[`section_${s.key}_pad_bottom` as keyof ThemeColors] as number) ?? s.defPadBottom} onChange={v => setValue(`section_${s.key}_pad_bottom` as keyof ThemeColors, v)} />
+                    <SizeControl label="الحشوة اليمنى (px)" min={0} max={160} value={(colors[`section_${s.key}_pad_right` as keyof ThemeColors] as number) ?? 24} onChange={v => setValue(`section_${s.key}_pad_right` as keyof ThemeColors, v)} />
+                    <SizeControl label="الحشوة اليسرى (px)" min={0} max={160} value={(colors[`section_${s.key}_pad_left` as keyof ThemeColors] as number) ?? 24} onChange={v => setValue(`section_${s.key}_pad_left` as keyof ThemeColors, v)} />
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                    💡 يمكنك أيضاً الضغط على أي قسم داخل «👁️ المعاينة الحية» مع تفعيل «✏️ التعديل المباشر» وتعديل الحشوات والألوان والاتجاهات مباشرةً على الصفحة نفسها.
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+          <div style={S.card}>
+            <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 12, fontSize: '0.95rem' }}>جميع خلفيات الأقسام (نظرة عامة)</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
+              {SECTION_FIELDS.map(({ key, label }) => (
+                <ColorPicker key={key as string} label={label} value={(colors[key] as string) || ''} onChange={v => setValue(key, v)} />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Buttons & Gradients tab ── */}
+      {tab === 'gradient' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={S.card}>
+            <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 4, fontSize: '0.95rem' }}>🎨 الأزرار (تدرج + hover + استدارة)</h3>
+            <p style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: 12 }}>
+              تحكم كامل بتدرج خلفية الأزرار الرئيسية (من ← إلى + الزاوية) ولون كل زر عند التحويم (hover) ولون الروابط عند التحويم.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12 }}>
+              {BUTTON_FIELDS.map(({ key, label }) => (
+                <ColorPicker key={key as string} label={label} value={(colors[key] as string) || ''} onChange={v => setValue(key, v)} />
+              ))}
+            </div>
+            <SizeControl label="زاوية التدرج (deg)" min={0} max={360} value={(colors.btn_gradient_angle as number) ?? 135} onChange={v => setValue('btn_gradient_angle', v)} />
+            <div style={{ marginTop: 10 }}>
+              <SizeControl label="استدارة زوايا الأزرار (px)" min={0} max={40} value={(colors.btn_radius as number) ?? 8} onChange={v => setValue('btn_radius', v)} />
+            </div>
+          </div>
+          <div style={S.card}>
+            <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 4, fontSize: '0.95rem' }}>🌈 تدرج العناوين (Gradient Text)</h3>
+            <p style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: 12 }}>
+              الثيمات الجاهزة للعلامة التجارية «بدون تدرج نصوص». يمكنك تفعيل تدرج عناوين الصفحة أو إيقافه وتخصيص لونيه.
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
+              {(['1', '0'] as const).map(v => (
+                <button key={v} onClick={() => setValue('gradient_text_enabled', v)} style={{
+                  padding: '0.4rem 1rem', borderRadius: '0.45rem', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', border: 'none',
+                  background: String(colors.gradient_text_enabled ?? '1') === v ? '#6C63FF' : 'rgba(255,255,255,0.07)',
+                  color: String(colors.gradient_text_enabled ?? '1') === v ? 'white' : '#94a3b8',
+                }}>
+                  {v === '1' ? '✅ تدرج مفعّل' : '🚫 بدون تدرج (لون ثابت)'}
+                </button>
+              ))}
+            </div>
+            {String(colors.gradient_text_enabled ?? '1') === '1' && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10 }}>
+                {GRADIENT_FIELDS.map(({ key, label }) => (
+                  <ColorPicker key={key as string} label={label} value={(colors[key] as string) || ''} onChange={v => setValue(key, v)} />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -13,6 +13,7 @@ interface TicketsConfigData {
   feature_2: string;
   feature_3: string;
   info_text: string;
+  api_features_priority?: boolean; // عرض مزايا التذاكر من الـ API وتجاهل نصوص المعاينة المباشرة (افتراضي: مفعّل)
   global_features?: any[]; // supports string[] and TicketFeature[]
 }
 
@@ -36,6 +37,7 @@ function RichTextInline({ html, fallback }: { html?: string; fallback?: React.Re
 
 export default function TicketsSection({ eventId, editableText }: { eventId: number; editableText?: Record<string, string> }) {
   const [tickets, setTickets] = useState<TicketType[]>([]);
+  const [ticketsVersion, setTicketsVersion] = useState(0);
   const [config, setConfig] = useState<TicketsConfigData>({
     section_title: 'احصل على تذكرتك الآن',
     section_subtitle: 'خيارات متعددة لتناسب احتياجاتك',
@@ -44,6 +46,7 @@ export default function TicketsSection({ eventId, editableText }: { eventId: num
     feature_2: 'حقيبة الحدث والمواد',
     feature_3: 'شهادة حضور رسمية',
     info_text: '💡 هل تحتاج مساعدة؟ تواصل معنا عبر نموذج الدعم الفني',
+    api_features_priority: true,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,9 +55,15 @@ export default function TicketsSection({ eventId, editableText }: { eventId: num
     const load = async () => {
       try {
         setError(null);
-        if (tickets.length === 0) setLoading(true); // only show loading on first load
+        if (tickets.length === 0) setLoading(true);
+        
+        // Validate eventId before fetching
+        if (!eventId || isNaN(eventId)) {
+          throw new Error('Invalid event ID');
+        }
+        
         const [ticketsRes, configRes] = await Promise.all([
-          fetchTickets(eventId),
+          fetchTickets(eventId, true),
           fetchTicketsConfig(eventId),
         ]);
         
@@ -62,15 +71,43 @@ export default function TicketsSection({ eventId, editableText }: { eventId: num
         const configData = configRes?.data || null;
         
         setTickets(ticketsData);
-        if (configData) setConfig(configData); // only update if we got valid data
+        if (configData) setConfig(configData);
       } catch (err) {
         console.error('Error loading tickets section:', err);
         setError(err instanceof Error ? err.message : 'فشل تحميل البيانات');
-      } finally {
+        // Don't keep loading state on error
         setLoading(false);
       }
     };
     load();
+  }, [eventId, ticketsVersion]);
+
+  // Poll tickets every 3s for live updates from admin panel
+  useEffect(() => {
+    if (!eventId) return;
+    const timer = setInterval(async () => {
+      try {
+        const res = await fetchTickets(eventId, true);
+        if (Array.isArray(res?.data)) {
+          setTickets(res.data);
+          setTicketsVersion(v => v + 1);
+        }
+      } catch {}
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [eventId]);
+
+  // Listen for ticket refresh events from parent (e.g., when registration modal opens)
+  useEffect(() => {
+    if (!eventId) return;
+    const handler = (e: any) => {
+      if (Array.isArray(e.detail)) {
+        setTickets(e.detail);
+        setTicketsVersion(v => v + 1);
+      }
+    };
+    window.addEventListener('tickets-refresh', handler);
+    return () => window.removeEventListener('tickets-refresh', handler);
   }, [eventId]);
 
   // Memoize formatted tickets
@@ -120,8 +157,7 @@ export default function TicketsSection({ eventId, editableText }: { eventId: num
   };
 
   return (
-        <section className="py-20 px-6 tickets-section" style={{ background: 'var(--section-tickets-bg, var(--bg-dark))' }}
-            data-edit="section-bg" data-label="خلفية قسم التذاكر" data-bg="section_tickets_bg" data-bgmodeaware="1" data-options="transparent">
+        <section className="tickets-section" data-pad="tickets" data-edit="section-bg" data-label="خلفية قسم التذاكر" data-bg="section_tickets_bg" data-bgmodeaware="1" data-options="transparent" style={{ background: 'var(--section-tickets-bg, var(--bg-dark))', paddingTop: 'var(--sec-tickets-pad-top, 5rem)', paddingBottom: 'var(--sec-tickets-pad-bottom, 5rem)', paddingLeft: 'var(--sec-tickets-pad-left, 1.5rem)', paddingRight: 'var(--sec-tickets-pad-right, 1.5rem)' }}>
       <div className="max-w-6xl mx-auto">
         {/* Section Header */}
                 <div className="text-center mb-16">
@@ -218,7 +254,9 @@ export default function TicketsSection({ eventId, editableText }: { eventId: num
                                                 {/* Text */}
                         <div style={{ flex: 1, minWidth: 0 }}>
                                                     <div className="font-semibold" style={{ color: 'var(--heading)', fontWeight: 600, fontSize: '0.85rem', lineHeight: 1.3 }} data-edit="text" data-label="ميزة تذكرة" data-text={`feat_${ticket.id}_${i}`} data-color="heading" data-size="fs_body" data-min="10" data-max="24">
-                            <RichTextInline html={editableText?.[`feat_${ticket.id}_${i}`]} fallback={feat.title} />
+                            {/* عند تفعيل «مزايا من الـ API» تُعرض ميزة التذكرة القادمة من الـ API دائماً
+                                ويُتجاهَل أي نص قديم محفوظ من «الثيم والألوان ← التعديل المباشر» */}
+                            <RichTextInline html={config.api_features_priority === false ? editableText?.[`feat_${ticket.id}_${i}`] : undefined} fallback={feat.title} />
                           </div>
                           {feat.desc && (
                             <div style={{ color: 'var(--text-muted)', fontSize: '0.76rem', marginTop: '0.2rem', lineHeight: 1.4 }}>{feat.desc}</div>

@@ -96,6 +96,35 @@ export interface ThemeColors {
   btn_outline_color?: string;   // لون نص/حدود الزر الثانوي
   btn_radius?: number;          // استدارة زوايا الأزرار (px)
 
+  // ─── ألوان التحويم (hover) في جميع العناصر ─────────────────────────────────
+  btn_primary_hover?: string;   // خلفية الزر الرئيسي عند التحويم
+  btn_outline_hover?: string;   // خلفية الزر الثانوي عند التحويم
+  link_hover?: string;          // لون الروابط عند التحويم
+
+  // ─── التدرجات (Gradient) ───────────────────────────────────────────────────
+  btn_gradient_angle?: number;  // زاوية تدرج خلفية الأزرار (deg)
+  gradient_text_from?: string;  // بداية تدرج العناوين المتدرجة
+  gradient_text_to?: string;    // نهاية تدرج العناوين المتدرجة
+  gradient_text_enabled?: string; // '1' تفعيل تدرج النصوص | '0' إيقافه
+
+  // ─── تموضع الأقسام (حشوة padding لكل سكشن بشكل مستقل) ─────────────────────
+  section_hero_pad_top?: number; section_hero_pad_bottom?: number; section_hero_pad_left?: number; section_hero_pad_right?: number;
+  section_stats_pad_top?: number; section_stats_pad_bottom?: number; section_stats_pad_left?: number; section_stats_pad_right?: number;
+  section_about_pad_top?: number; section_about_pad_bottom?: number; section_about_pad_left?: number; section_about_pad_right?: number;
+  section_agenda_pad_top?: number; section_agenda_pad_bottom?: number; section_agenda_pad_left?: number; section_agenda_pad_right?: number;
+  section_speakers_pad_top?: number; section_speakers_pad_bottom?: number; section_speakers_pad_left?: number; section_speakers_pad_right?: number;
+  section_video_pad_top?: number; section_video_pad_bottom?: number; section_video_pad_left?: number; section_video_pad_right?: number;
+  section_venue_pad_top?: number; section_venue_pad_bottom?: number; section_venue_pad_left?: number; section_venue_pad_right?: number;
+  section_faq_pad_top?: number; section_faq_pad_bottom?: number; section_faq_pad_left?: number; section_faq_pad_right?: number;
+  section_sponsors_pad_top?: number; section_sponsors_pad_bottom?: number; section_sponsors_pad_left?: number; section_sponsors_pad_right?: number;
+  section_register_pad_top?: number; section_register_pad_bottom?: number; section_register_pad_left?: number; section_register_pad_right?: number;
+  section_tickets_pad_top?: number; section_tickets_pad_bottom?: number; section_tickets_pad_left?: number; section_tickets_pad_right?: number;
+  // ─── لون نهاية التدرج لكل سكشن (اختياري — لجعل خلفية القسم تدرجية) ─────────
+  section_hero_bg2?: string; section_stats_bg2?: string; section_about_bg2?: string;
+  section_agenda_bg2?: string; section_speakers_bg2?: string; section_video_bg2?: string;
+  section_venue_bg2?: string; section_faq_bg2?: string; section_sponsors_bg2?: string;
+  section_register_bg2?: string; section_tickets_bg2?: string;
+
   // ─── اتجاه الصفحة (RTL / LTR) ──────────────────────────────────────────────
   page_direction?: 'rtl' | 'ltr';
 }

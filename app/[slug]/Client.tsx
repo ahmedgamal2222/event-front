@@ -353,9 +353,17 @@ function CountrySelect({ eventId, value, onChange, cityValue, onCityChange, requ
 function TicketSelector({ eventId, onSelect, primaryColor }: { eventId: number; onSelect: (ticketId: number, amount: number) => void; primaryColor: string }) {
   const [tickets, setTickets] = useState<any[]>([]);
   useEffect(() => {
-    import('../../lib/api').then(({ fetchTickets }) => {
-      fetchTickets(eventId).then(r => setTickets(r.data || [])).catch(() => {});
-    });
+    let mounted = true;
+    const load = async () => {
+      try {
+        const { fetchTickets } = await import('../../lib/api');
+        const r = await fetchTickets(eventId, true);
+        if (mounted) setTickets(r.data || []);
+      } catch {}
+    };
+    load();
+    const timer = setInterval(load, 5000);
+    return () => { mounted = false; clearInterval(timer); };
   }, [eventId]);
   if (!tickets.length) return <p className="text-[var(--text-muted)]" style={{ fontSize: '0.85rem' }}>لا توجد تذاكر متاحة حالياً</p>;
   return (
@@ -763,7 +771,20 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
   const [activeDay, setActiveDay] = useState(0);
   const [showRegModal, setShowRegModal] = useState(false);
   const [regInitialTab, setRegInitialTab] = useState<string | undefined>(undefined);
-  const openModal = (tab?: string) => { setRegInitialTab(tab); setShowRegModal(true); };
+  const openModal = (tab?: string) => {
+    // Force refresh tickets from server when registration modal opens
+    if (event?.id) {
+      import('../../lib/api').then(({ fetchTickets }) => {
+        fetchTickets(event.id, true).then(r => {
+          if (Array.isArray(r?.data)) {
+            // Trigger a re-render of TicketsSection by dispatching a custom event
+            window.dispatchEvent(new CustomEvent('tickets-refresh', { detail: r.data }));
+          }
+        }).catch(() => {});
+      });
+    }
+    setRegInitialTab(tab); setShowRegModal(true);
+  };
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedSpeaker, setSelectedSpeaker] = useState<any | null>(null);
@@ -782,7 +803,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
   const [editText, setEditText] = useState<Record<string, string>>({});
   const [editDir, setEditDir] = useState<'rtl' | 'ltr'>('rtl');
   const [editTarget, setEditTarget] = useState<null | {
-    kind: 'text' | 'section-bg' | 'button' | 'navbar' | 'logo' | 'body-bg' | 'hero' | 'card';
+    kind: 'text' | 'section-bg' | 'button' | 'navbar' | 'logo' | 'body-bg' | 'hero' | 'card' | 'section';
     label: string;
     colorKey?: string;   // مفتاح لون النص/الزر (mode-aware)
     bgKey?: string;      // مفتاح لون الخلفية خلف العنصر
@@ -795,6 +816,10 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
     // تُقرأ من data-colors="key:label|key:label" و data-sizes="key:label:min:max|..."
     colorFields?: { key: string; label: string }[];
     sizeFields?: { key: string; label: string; min: number; max: number }[];
+    // ── تموضع دقيق: حشوات padding الجهات الأربع (مفتاح القسم/العنصر) ──
+    padKey?: string;
+    // ── عناصر متداخلة داخل القسم (مثل بطاقات المتحدثين) — خيار الدخول إليها ──
+    inner?: { el: HTMLElement; label: string }[];
   }>(null);
 
   // ── تحكم مباشر في الناف بار أثناء التعديل (لمسائل عرض/إخفاء معاينة أولية) ──
@@ -864,9 +889,18 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
     if (!el) return;
     e.preventDefault();
     e.stopPropagation();
+    selectElement(el);
+  };
+
+  // بناء بيانات التعديل من أي عنصر (نص / زر / قسم / بطاقة) + جمع العناصر المتداخلة بداخله
+  const buildTargetFromElement = (el: HTMLElement) => {
     const d = el.dataset;
     const modeKey = (base: string) => (theme === 'light' ? base + '_light' : base);
-    setEditTarget({
+    const inner = Array.from(el.querySelectorAll<HTMLElement>('[data-edit]'))
+      .filter(c => c !== el)
+      .slice(0, 40)
+      .map(c => ({ el: c, label: c.dataset.label || 'عنصر داخلي' }));
+    return {
       kind: (d.edit || 'text') as any,
       label: d.label || 'عنصر',
       colorKey: d.color ? (d.modeaware === '1' ? modeKey(d.color) : d.color) : undefined,
@@ -878,7 +912,14 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       options: d.options ? d.options.split(',') : undefined,
       colorFields: parseFields(d.colors, 'color'),
       sizeFields: parseFields(d.sizes, 'size'),
-    });
+      padKey: d.pad || undefined,
+      inner: inner.length > 0 ? inner : undefined,
+    };
+  };
+
+  // اختيار عنصر + تحديث معاينة الألوان/النصوص المحفوظة فوراً
+  const selectElement = (el: HTMLElement, shouldScroll = false) => {
+    const d = el.dataset;
     // ضبط قيمة النص الحالية في المحرر إذا لم تكن مخزنة بعد (حتى لا يفتح الحقل فارغاً)
     if (d.text) {
       setEditText(prev => {
@@ -889,6 +930,8 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
     // تمييز العنصر المحدد بحدود برتقالية
     document.querySelectorAll('[data-edit]').forEach(el2 => el2.setAttribute('data-edit-selected', '0'));
     el.setAttribute('data-edit-selected', '1');
+    if (shouldScroll) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setEditTarget(buildTargetFromElement(el));
   };
 
   // تطبيق لون النص على الوضع الحالي + الوضع المقابل تلقائياً
@@ -1096,6 +1139,21 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
   };
   const heroFlexJustify = heroY === 'top' ? 'flex-start' : heroY === 'bottom' ? 'flex-end' : 'center';
   const heroFlexAlign = heroAlign === 'center' ? 'center' : heroAlign === 'right' ? 'flex-end' : 'flex-start';
+  // قسم خلفية: لون واحد أو تدرّج (عند وجود section_*_bg2)
+  const secBg = (bg: any, bg2: any) => bg2 ? `linear-gradient(135deg, ${bg || 'transparent'}, ${bg2})` : (bg || undefined);
+  // مفاتيح الأقسام + أي مفاتيح حشوات جديدة تُضاف لاحقاً (section_<key>_pad_<side>)
+  const secPadVars: Record<string, string> = {};
+  for (const k of Object.keys(themeColors)) {
+    const m = k.match(/^section_(.+)_pad_(top|bottom|left|right)$/);
+    const v = (themeColors as any)[k];
+    if (m && v !== undefined && v !== null && v !== '') {
+      secPadVars[`--sec-${m[1]}-pad-${m[2]}`] = Number(v) + 'px';
+    }
+  }
+  // تفعيل/إيقاف تدرج العناوين من الثيم
+  if (typeof document !== 'undefined') {
+    document.documentElement.setAttribute('data-gradient-text', String(themeColors.gradient_text_enabled ?? '1') === '0' ? '0' : '1');
+  }
   const themeVarsStyle = Object.keys(themeColors).length > 0 ? {
     // ── الوضع الليلي (الافتراضي) ──
     '--primary':      themeColors.primary      || primaryColor,
@@ -1129,24 +1187,34 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
     '--fs-body':      (themeColors.fs_body      || 16) + 'px',
     '--fs-small':     (themeColors.fs_small     || 13) + 'px',
     '--fs-nav':       (themeColors.fs_nav       || 14) + 'px',
-    // ── خلفيات الأقسام ──
-    '--section-hero-bg':      themeColors.section_hero_bg      || 'transparent',
-    '--section-stats-bg':     themeColors.section_stats_bg     || 'transparent',
-    '--section-about-bg':     themeColors.section_about_bg     || 'transparent',
-    '--section-agenda-bg':    themeColors.section_agenda_bg    || 'rgba(108,99,255,0.03)',
-    '--section-speakers-bg':  themeColors.section_speakers_bg  || 'transparent',
-    '--section-video-bg':     themeColors.section_video_bg     || 'rgba(108,99,255,0.04)',
-    '--section-venue-bg':     themeColors.section_venue_bg     || 'rgba(0,0,0,0.3)',
-    '--section-faq-bg':       themeColors.section_faq_bg       || 'rgba(108,99,255,0.03)',
-    '--section-sponsors-bg':  themeColors.section_sponsors_bg  || 'rgba(108,99,255,0.03)',
-    '--section-register-bg':  themeColors.section_register_bg  || 'transparent',
-    '--section-tickets-bg':   themeColors.section_tickets_bg   || 'var(--bg-dark)',
-    // ── الأزرار ──
+    // ── خلفيات الأقسام (لون أو تدرّج عند وجود *_bg2) ──
+    '--section-hero-bg':      secBg(themeColors.section_hero_bg, themeColors.section_hero_bg2) || 'transparent',
+    '--section-stats-bg':     secBg(themeColors.section_stats_bg, themeColors.section_stats_bg2) || 'transparent',
+    '--section-about-bg':     secBg(themeColors.section_about_bg, themeColors.section_about_bg2) || 'transparent',
+    '--section-agenda-bg':    secBg(themeColors.section_agenda_bg, themeColors.section_agenda_bg2) || 'rgba(108,99,255,0.03)',
+    '--section-speakers-bg':  secBg(themeColors.section_speakers_bg, themeColors.section_speakers_bg2) || 'transparent',
+    '--section-video-bg':     secBg(themeColors.section_video_bg, themeColors.section_video_bg2) || 'rgba(108,99,255,0.04)',
+    '--section-venue-bg':     secBg(themeColors.section_venue_bg, themeColors.section_venue_bg2) || 'rgba(0,0,0,0.3)',
+    '--section-faq-bg':       secBg(themeColors.section_faq_bg, themeColors.section_faq_bg2) || 'rgba(108,99,255,0.03)',
+    '--section-sponsors-bg':  secBg(themeColors.section_sponsors_bg, themeColors.section_sponsors_bg2) || 'rgba(108,99,255,0.03)',
+    '--section-register-bg':  secBg(themeColors.section_register_bg, themeColors.section_register_bg2) || 'transparent',
+    '--section-tickets-bg':   secBg(themeColors.section_tickets_bg, themeColors.section_tickets_bg2) || 'var(--bg-dark)',
+    // ── الأزرار + hover + تدرجات ──
     '--btn-primary-bg':    themeColors.btn_primary_bg     || 'var(--primary)',
     '--btn-primary-bg2':   themeColors.btn_primary_bg2    || 'var(--primary-dark)',
     '--btn-primary-color': themeColors.btn_primary_color  || '#ffffff',
     '--btn-outline-color': themeColors.btn_outline_color  || 'var(--primary)',
         '--btn-radius':        ((themeColors.btn_radius as number) || 8) + 'px',
+    '--btn-primary-hover': themeColors.btn_primary_hover  || undefined,
+    '--btn-outline-hover': themeColors.btn_outline_hover  || undefined,
+    '--link-hover':        themeColors.link_hover         || undefined,
+    '--btn-gradient-angle': ((themeColors.btn_gradient_angle as number) || 135) + 'deg',
+    '--gradient-angle':     ((themeColors.btn_gradient_angle as number) || 135) + 'deg',
+    '--gradient-from':      themeColors.gradient_text_from || 'var(--primary)',
+    '--gradient-to':        themeColors.gradient_text_to   || 'var(--accent)',
+    '--gradient-text-color': themeColors.heading           || '#ffffff',
+    // ── حشوات الأقسام (padding لكل سكشن على حدة) ──
+    ...secPadVars,
     // ── Font family + heading alignment (أي خط / موضع العنوان) ──
     '--font-family': fontFamilyCss((themeColors as any).font_family),
     '--title-align': (themeColors as any).text_align || undefined,
@@ -1270,12 +1338,13 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
 
       {/* ── Hero ─────────────────────────────────────────────────────────────── */}
       <section
-        className="hero-section relative pt-32 pb-20 px-6 overflow-hidden"
+        className="hero-section relative overflow-hidden"
         data-edit="hero"
         data-label="قسم الـ Hero (الخلفية)"
         data-bg="section_hero_bg"
         data-options="transparent"
-        style={{ background: 'var(--section-hero-bg, transparent)' }}
+        data-pad="hero"
+        style={{ background: 'var(--section-hero-bg, transparent)', paddingTop: 'var(--sec-hero-pad-top, 8rem)', paddingBottom: 'var(--sec-hero-pad-bottom, 5rem)', paddingLeft: 'var(--sec-hero-pad-left, 1.5rem)', paddingRight: 'var(--sec-hero-pad-right, 1.5rem)' }}
       >
         {/* خلفية الوسائط: صورة / فيديو / يوتيوب — يضبطها الأدمن */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -1376,7 +1445,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
 
       {/* ── Intro Video ───────────────────────────────────────────────────────── */}
       {event?.show_intro_video && event?.intro_video_url && (
-        <section className="py-16 px-6" style={{ background: 'var(--section-video-bg, rgba(108,99,255,0.04))' }}>
+        <section className="intro-video-section" data-edit="section-bg" data-label="قسم الفيديو التعريفي" data-bg="section_video_bg" data-options="transparent" data-pad="video" style={{ background: 'var(--section-video-bg, rgba(108,99,255,0.04))', paddingTop: 'var(--sec-video-pad-top, 4rem)', paddingBottom: 'var(--sec-video-pad-bottom, 4rem)', paddingLeft: 'var(--sec-video-pad-left, 1.5rem)', paddingRight: 'var(--sec-video-pad-right, 1.5rem)' }}>
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-8">
               <div className="section-badge" data-edit="text" data-label="شارة قسم الفيديو" data-text="video_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
@@ -1425,7 +1494,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       )}
 
       {/* ── Stats ─────────────────────────────────────────────────────────────── */}
-      <section className="stats-section py-16 px-6" data-edit="section-bg" data-label="خلفية قسم الإحصائيات" data-bg="section_stats_bg" data-options="transparent">
+      <section className="stats-section" data-edit="section-bg" data-label="خلفية قسم الإحصائيات" data-bg="section_stats_bg" data-options="transparent" data-pad="stats" style={{ paddingTop: 'var(--sec-stats-pad-top, 4rem)', paddingBottom: 'var(--sec-stats-pad-bottom, 4rem)', paddingLeft: 'var(--sec-stats-pad-left, 1.5rem)', paddingRight: 'var(--sec-stats-pad-right, 1.5rem)' }}>
         <div className="max-w-4xl mx-auto">
           <div className="card grid grid-cols-2 md:grid-cols-4 gap-8 py-8"
             data-edit="card" data-label="أرقام قسم الإحصائيات (الخلفية ولون/حجم النصوص)"
@@ -1439,7 +1508,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       </section>
 
       {/* ── About ─────────────────────────────────────────────────────────────── */}
-      <section id="about" className="py-20 px-6" data-edit="section-bg" data-label="خلفية قسم عن الفعالية" data-bg="section_about_bg" data-options="transparent">
+      <section id="about" data-pad="about" data-edit="section-bg" data-label="خلفية قسم عن الفعالية" data-bg="section_about_bg" data-options="transparent" style={{ paddingTop: 'var(--sec-about-pad-top, 5rem)', paddingBottom: 'var(--sec-about-pad-bottom, 5rem)', paddingLeft: 'var(--sec-about-pad-left, 1.5rem)', paddingRight: 'var(--sec-about-pad-right, 1.5rem)' }}>
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <div className="section-badge" data-edit="text" data-label="شارة قسم عن الفعالية" data-text="about_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
@@ -1471,8 +1540,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
 
       {/* ── Agenda ────────────────────────────────────────────────────────────── */}
       {agenda.length > 0 && (
-      <section id="agenda" className="py-20 px-6" style={{ background: 'var(--section-agenda-bg, rgba(108,99,255,0.03))' }}
-        data-edit="section-bg" data-label="خلفية قسم البرنامج" data-bg="section_agenda_bg" data-options="transparent">
+      <section id="agenda" data-pad="agenda" data-edit="section-bg" data-label="خلفية قسم البرنامج" data-bg="section_agenda_bg" data-options="transparent" style={{ background: 'var(--section-agenda-bg, rgba(108,99,255,0.03))', paddingTop: 'var(--sec-agenda-pad-top, 5rem)', paddingBottom: 'var(--sec-agenda-pad-bottom, 5rem)', paddingLeft: 'var(--sec-agenda-pad-left, 1.5rem)', paddingRight: 'var(--sec-agenda-pad-right, 1.5rem)' }}>
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
             <div className="section-badge" data-edit="text" data-label="شارة قسم البرنامج" data-text="agenda_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
@@ -1546,7 +1614,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
 
       {/* ── Speakers ─────────────────────────────────────────────────────────── */}
       {speakers.length > 0 && (
-      <section id="speakers" className="py-20 px-6" data-edit="section-bg" data-label="خلفية قسم المتحدثين" data-bg="section_speakers_bg" data-options="transparent">
+      <section id="speakers" data-pad="speakers" data-edit="section-bg" data-label="خلفية قسم المتحدثين" data-bg="section_speakers_bg" data-options="transparent" style={{ paddingTop: 'var(--sec-speakers-pad-top, 5rem)', paddingBottom: 'var(--sec-speakers-pad-bottom, 5rem)', paddingLeft: 'var(--sec-speakers-pad-left, 1.5rem)', paddingRight: 'var(--sec-speakers-pad-right, 1.5rem)' }}>
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <div className="section-badge" data-edit="text" data-label="شارة قسم المتحدثين" data-text="speakers_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
@@ -1600,7 +1668,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       </section>
       )}
       {venueGallery.length > 0 && (
-        <section id="venue" className="py-20 px-6" style={{ background: 'var(--section-venue-bg, var(--band))' }}>
+        <section id="venue" data-pad="venue" style={{ background: 'var(--section-venue-bg, var(--band))', paddingTop: 'var(--sec-venue-pad-top, 5rem)', paddingBottom: 'var(--sec-venue-pad-bottom, 5rem)', paddingLeft: 'var(--sec-venue-pad-left, 1.5rem)', paddingRight: 'var(--sec-venue-pad-right, 1.5rem)' }}>
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <div className="section-badge" data-edit="text" data-label="شارة قسم المكان" data-text="venue_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
@@ -1680,12 +1748,11 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       )}
 
       {/* ── Tickets ───────────────────────────────────────────────────────────── */}
-      {event && <TicketsSection eventId={event.id} editableText={editableText} />}
+      {event && <TicketsSection key={`tickets-${event.id}`} eventId={event.id} editableText={editableText} />}
 
       {/* ── Sponsors ──────────────────────────────────────────────────────────── */}
       {sponsors.length > 0 && (
-        <section id="sponsors" className="py-16 px-6" style={{ background: 'var(--section-sponsors-bg, rgba(108,99,255,0.03))' }}
-          data-edit="section-bg" data-label="خلفية قسم الشركاء" data-bg="section_sponsors_bg" data-options="transparent">
+        <section id="sponsors" data-pad="sponsors" data-edit="section-bg" data-label="خلفية قسم الشركاء" data-bg="section_sponsors_bg" data-options="transparent" style={{ background: 'var(--section-sponsors-bg, rgba(108,99,255,0.03))', paddingTop: 'var(--sec-sponsors-pad-top, 4rem)', paddingBottom: 'var(--sec-sponsors-pad-bottom, 4rem)', paddingLeft: 'var(--sec-sponsors-pad-left, 1.5rem)', paddingRight: 'var(--sec-sponsors-pad-right, 1.5rem)' }}>
           <div className="max-w-5xl mx-auto text-center">
             <div className="section-badge" data-edit="text" data-label="شارة قسم الشركاء" data-text="sponsors_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
               <RichInline html={editableText.sponsors_badge} fallback={'الشركاء والرعاة'} />
@@ -1745,7 +1812,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       )}
 
       {/* ── Register ─────────────────────────────────────────────────────────── */}
-      <section id="register" className="py-20 px-6" data-edit="section-bg" data-label="خلفية قسم التسجيل" data-bg="section_register_bg" data-options="transparent">
+      <section id="register" data-pad="register" data-edit="section-bg" data-label="خلفية قسم التسجيل" data-bg="section_register_bg" data-options="transparent" style={{ paddingTop: 'var(--sec-register-pad-top, 5rem)', paddingBottom: 'var(--sec-register-pad-bottom, 5rem)', paddingLeft: 'var(--sec-register-pad-left, 1.5rem)', paddingRight: 'var(--sec-register-pad-right, 1.5rem)' }}>
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
             <div className="section-badge" data-edit="text" data-label="شارة قسم التسجيل" data-text="register_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
@@ -1769,8 +1836,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
 
       {/* ── FAQ ────────────────────────────────────────────────────────────────── */}
       {faqs.length > 0 && (
-        <section id="faq" className="py-20 px-6" style={{ background: 'var(--section-faq-bg, rgba(108,99,255,0.03))' }}
-          data-edit="section-bg" data-label="خلفية قسم الأسئلة" data-bg="section_faq_bg" data-options="transparent">
+        <section id="faq" data-pad="faq" data-edit="section-bg" data-label="خلفية قسم الأسئلة" data-bg="section_faq_bg" data-options="transparent" style={{ background: 'var(--section-faq-bg, rgba(108,99,255,0.03))', paddingTop: 'var(--sec-faq-pad-top, 5rem)', paddingBottom: 'var(--sec-faq-pad-bottom, 5rem)', paddingLeft: 'var(--sec-faq-pad-left, 1.5rem)', paddingRight: 'var(--sec-faq-pad-right, 1.5rem)' }}>
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-10">
               <div className="section-badge" data-edit="text" data-label="شارة قسم الأسئلة" data-text="faq_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
@@ -2133,7 +2199,50 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
                </div>
              ))}
 
-                        {/* الخط العام — أي خط (يطبق على كل الصفحة) */}
+                        {/* ── الحشوة الدقيقة (padding) للقسم/العنصر — تحريك بأربعة اتجاهات ── */}
+            {editTarget.padKey && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, background: 'rgba(108,99,255,0.08)', border: '1px solid rgba(108,99,255,0.25)', borderRadius: '0.5rem', padding: '0.5rem 0.7rem' }}>
+                <label style={{ color: '#a5b4fc', fontSize: '0.72rem', fontWeight: 700 }}>
+                  📐 الحشوة (padding) — حرّك المحتوى بالاتجاهات الأربعة
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, auto)', gap: 6, alignItems: 'center' }}>
+                  {([
+                    ['top', 'أعلى'], ['right', 'يمين'], ['bottom', 'أسفل'], ['left', 'يسار'],
+                  ] as const).map(([side, lbl]) => {
+                    const key = `section_${editTarget.padKey}_pad_${side}`;
+                    const def = side === 'top' ? (editTarget.padKey === 'hero' ? 128 : 80) : (side === 'bottom' ? 80 : 24);
+                    return (
+                      <div key={side} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                        <label style={{ color: '#94a3b8', fontSize: '0.66rem', minWidth: 26 }}>{lbl}:</label>
+                        <input type="number" min={0} max={320}
+                          value={Number(editColors[key as string] ?? (themeColors as any)[key] ?? def)}
+                          onChange={e => setEditColors(prev => ({ ...prev, [key]: Number(e.target.value) }))}
+                          style={{ width: 56, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(108,99,255,0.35)', borderRadius: '0.4rem', padding: '0.25rem 0.3rem', color: 'white', fontSize: '0.75rem', direction: 'ltr' }} />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ── الدخول إلى العناصر المتداخلة داخل القسم (مثل بطاقات المتحدثين) ── */}
+            {editTarget.inner && editTarget.inner.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, flexWrap: 'wrap' }}>
+                <span style={{ color: '#a5b4fc', fontSize: '0.72rem', fontWeight: 700, whiteSpace: 'nowrap', paddingTop: 8 }}>
+                  ➕ داخل القسم ({editTarget.inner.length}):
+                </span>
+                {editTarget.inner.slice(0, 12).map((c, i) => (
+                  <button key={i} onClick={() => selectElement(c.el, true)}
+                    title="الدخول إلى هذا العنصر وتعديل ألوانه وخطوطه ومحتواه"
+                    style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.35)', color: '#6ee7b7', borderRadius: '999px', padding: '0.2rem 0.6rem', cursor: 'pointer', fontSize: '0.7rem', whiteSpace: 'nowrap', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    ⬇ {c.label}
+                  </button>
+                ))}
+                {editTarget.inner.length > 12 && <span style={{ color: '#64748b', fontSize: '0.68rem', paddingTop: 8, whiteSpace: 'nowrap' }}>+{editTarget.inner.length - 12} أخرى…</span>}
+              </div>
+            )}
+
+            {/* الخط العام — أي خط (يطبق على كل الصفحة) */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
               <label style={{ color: '#94a3b8', fontSize: '0.72rem' }}>الخط:</label>
               <select

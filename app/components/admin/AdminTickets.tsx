@@ -8,6 +8,7 @@ import { fetchTickets, createTicketType, updateTicketType, deleteTicketType, fet
 interface AdminTicketsProps {
   eventId: number;
   token: string;
+  eventSlug?: string; // camel لمسح النصوص القديمة للتذاكر المحفوظة من المعاينة المباشرة
 }
 
 const S = {
@@ -45,7 +46,7 @@ function parseFeatures(raw: any): TicketFeature[] {
   }).filter(Boolean) as TicketFeature[];
 }
 
-export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
+export default function AdminTickets({ eventId, token, eventSlug }: AdminTicketsProps) {
   const [tickets, setTickets] = useState<TicketType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,6 +78,7 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
     feature_2: 'حقيبة الحدث والمواد',
     feature_3: 'شهادة حضور رسمية',
     info_text: '💡 هل تحتاج مساعدة؟ تواصل معنا عبر نموذج الدعم الفني',
+    api_features_priority: true, // عرض مزايا التذاكر من الـ API دائماً وتجاهل نصوص المعاينة المباشرة القديمة
     reg_type_mapping: {} as Record<string, number | undefined>,
     global_features: [] as TicketFeature[], // مزايا افتراضية غنية (أيقونة + عنوان + وصف)
   });
@@ -113,12 +115,54 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
         const parsedGlobal = Array.isArray(rawGlobal)
           ? rawGlobal.map((f: any) => typeof f === 'string' ? { icon: 'check', title: f, desc: '' } : f)
           : [];
-        setConfigForm({ ...res.data, global_features: parsedGlobal });
+        setConfigForm({ ...res.data, api_features_priority: res.data.api_features_priority !== undefined ? !!res.data.api_features_priority : true, global_features: parsedGlobal });
       }
     } catch (err) {
       console.error('Error loading config:', err);
     }
   }, [eventId]);
+
+  // ── إزالة «تجاوز المعاينة المباشرة» لمزايا/أسماء التذاكر ═══════════════════
+  // المشكلة: عند تعديل ميزة من داخل «الثيم والألوان ← وضع التعديل المباشر» تُحفظ
+  // كلمة قديمة في site_config.editable_text (feat_* / ticket_*) وتعلي فوق بيانات
+  // الـ API حتى بعد تعديلها من «التذاكر». الحل: عند أي حفظ من تبويب التذاكر نحذف
+  // هذه النصوص القديمة لنبقى دائماً نعرض البيانات الجديدة القادمة من الـ API.
+  const stripTicketTextOverrides = async () => {
+    try {
+      if (!eventSlug || !token) return;
+      const API = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
+      const route = `${API}/api/events/${encodeURIComponent(eventSlug)}`;
+      const res = await fetch(route, { headers: { Authorization: `Bearer ${token}` } });
+      const j: any = await res.json().catch(() => null);
+      const scRaw = j?.data?.site_config;
+      if (!scRaw) return;
+      const sc = typeof scRaw === 'string' ? JSON.parse(scRaw) : scRaw;
+      const et: Record<string, string> = sc.editable_text || {};
+      let changed = false;
+      for (const k of Object.keys(et)) {
+        if (k.startsWith('feat_') || k.startsWith('ticket_') || k.startsWith('tickets_')) {
+          delete et[k];
+          changed = true;
+        }
+      }
+      if (changed) {
+        sc.editable_text = et;
+        await fetch(`${API}/api/events/${eventId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ site_config: sc }),
+        });
+      }
+      // نقل تحديث فوري لأي صفحة حدث مفتوحة (لا حاجة لإعادة تحميل يدوي)
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('tickets-refresh'));
+      clearApiCacheFor(`/api/events/${eventSlug}`);
+      clearApiCacheFor(`/api/events/${eventId}`);
+      clearApiCacheFor(`/api/events/${eventId}/tickets`);
+      clearApiCacheFor(`/api/events/${eventId}/tickets-config`);
+    } catch (err) {
+      console.error('فشل مسح نصوص التذاكر القديمة:', err);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,6 +201,9 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
       setEditingId(null);
       setIsFormOpen(false);
       
+      // إزالة النصوص القديمة المحفوظة من المعاينة المباشرة (feat_*/ticket_*)
+      await stripTicketTextOverrides();
+      
       // Clear in-memory cache and reload directly from server (bypass all caches)
       clearApiCacheFor(`/api/events/${eventId}/tickets`);
       await loadTickets(true);
@@ -193,6 +240,9 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
     try {
       await deleteTicketType(eventId, id, token);
       
+      // إزالة النصوص القديمة للتذاكر المحفوظة من المعاينة المباشرة
+      await stripTicketTextOverrides();
+      
       // Clear cache BEFORE showing message and reloading
       clearApiCacheFor(`/api/events/${eventId}/tickets`);
       await loadTickets(true);
@@ -225,6 +275,7 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
     try {
       setConfigLoading(true);
       await updateTicketsConfig(eventId, configForm, token);
+      await stripTicketTextOverrides();
       setSuccess('✅ تم حفظ الإعدادات بنجاح');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -361,6 +412,19 @@ export default function AdminTickets({ eventId, token }: AdminTicketsProps) {
               <div>
                 <label style={S.label}>نص الفوتر / ملاحظة</label>
                 <input type="text" name="info_text" value={configForm.info_text} onChange={handleConfigChange} style={S.inp} />
+              </div>
+            </div>
+          </div>
+
+          {/* مصدر مزايا التذاكر — إصلاح مشكلة التجاوز من المعاينة المباشرة */}
+          <div style={{ ...S.card, background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.25)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => setConfigForm(cf => ({ ...cf, api_features_priority: !cf.api_features_priority }))}>
+              <input type="checkbox" readOnly checked={configForm.api_features_priority !== false} style={{ width: 18, height: 18, accentColor: '#10b981', cursor: 'pointer' }} />
+              <div>
+                <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '0.88rem' }}>مزايا التذاكر من الـ API دائماً</div>
+                <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: 2 }}>
+                  عند تفعيله تعرض المزايا (التي تعدّلها هنا أو من بطاقات التذاكر) مباشرةً من الـ API، وتُهمَل النصوص القديمة المحفوظة من «الثيم والألوان ← التعديل المباشر». أطفئه فقط إذا أردت أن تتجاوز تعديلات المعاينة المباشرة بيانات المزايا.
+                </div>
               </div>
             </div>
           </div>
