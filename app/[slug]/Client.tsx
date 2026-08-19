@@ -801,8 +801,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
   // ── Direct editor inside preview (click element → edit) ──
   const [editColors, setEditColors] = useState<Record<string, string | number>>({});
   const [editText, setEditText] = useState<Record<string, string>>({});
-  const [editDir, setEditDir] = useState<'rtl' | 'ltr'>('rtl');
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+    const [editDir, setEditDir] = useState<'rtl' | 'ltr'>('rtl');
   const [editTarget, setEditTarget] = useState<null | {
     kind: 'text' | 'section-bg' | 'button' | 'navbar' | 'logo' | 'body-bg' | 'hero' | 'card' | 'section';
     label: string;
@@ -1188,6 +1187,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
     '--fs-body':      (themeColors.fs_body      || 16) + 'px',
     '--fs-small':     (themeColors.fs_small     || 13) + 'px',
     '--fs-nav':       (themeColors.fs_nav       || 14) + 'px',
+    '--logo-navbar-height': ((Number(themeColors.logo_navbar_height)) || 56) + 'px',
     // ── خلفيات الأقسام (لون أو تدرّج عند وجود *_bg2) ──
     '--section-hero-bg':      secBg(themeColors.section_hero_bg, themeColors.section_hero_bg2) || 'transparent',
     '--section-stats-bg':     secBg(themeColors.section_stats_bg, themeColors.section_stats_bg2) || 'transparent',
@@ -1332,7 +1332,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       {/* ── Navbar ───────────────────────────────────────────────────────────── */}
       <nav className="fixed top-0 w-full z-50 glass" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 min-w-0">
             {(siteCfg.logo_position === 'navbar' || siteCfg.logo_position === 'both') && siteCfg.logo_url && (
               <img 
                 src={siteCfg.logo_url} 
@@ -1341,18 +1341,19 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
                 data-edit="logo" data-label="شعار النافبار" data-size="logo_navbar_height" data-min="24" data-max="140"
                                 style={{
                   ...(editMode && !navLogoVisible ? { opacity: 0.4, pointerEvents: 'none' } : {}),
-                  height: 'var(--logo-navbar-height, 360px)',
+                  height: 'var(---navbar-height, 360px)',
+                  maxHeight: 'none',
                   width: 'auto',
                   maxWidth: 360,
-                  // background: theme === 'dark' && themeColors.logo_bg ? themeColors.logo_bg as string : (theme === 'dark' ? 'rgba(255, 255, 255, 0.95)' : 'transparent'),
-                  //                   padding: theme === 'dark' ? `${Number(themeColors.logo_padding || 8)}px ${Number(themeColors.logo_padding || 8) + 4}px` : '0',
+                  // background: theme === 'dark' && themeColors._bg ? themeColors._bg as string : (theme === 'dark' ? 'rgba(255, 255, 255, 0.95)' : 'transparent'),
+                  //                   padding: theme === 'dark' ? `${Number(themeColors._padding || 8)}px ${Number(themeColors._padding || 8) + 4}px` : '0',
                   borderRadius: theme === 'dark' ? `${themeColors.logo_radius || 12}px` : '0',
                   // boxShadow: theme === 'dark' ? '0 4px 16px rgba(0, 0, 0, 0.2)' : 'none',
                   transition: 'all 0.3s ease'
                 }}
               />
             )}
-                        <a href="#" className="font-black text-xl text-[var(--heading)]" style={{ letterSpacing: '-0.02em' }}
+                        <a href="#" className="font-black text-xl text-[var(--heading)] truncate" style={{ letterSpacing: '-0.02em', minWidth: 0 }}
                data-edit="text" data-label="اسم العلامة في النافبار" data-text="navbar_brand" data-color="heading" data-size="fs_nav" data-min="12" data-max="40">
               {editableText.navbar_brand
                 ? <RichInline html={editableText.navbar_brand} />
@@ -1372,82 +1373,18 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
                   </a>
             ))}
           </div>
-          <div className="flex items-center gap-3">
-            {/* زر الهامبورجر — للجوال فقط (متوافق مع جميع الشاشات) */}
-            <button
-              onClick={() => setMobileNavOpen(v => !v)}
-              aria-label={mobileNavOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
-              aria-expanded={mobileNavOpen}
-              className="md:hidden burger-btn"
-              style={{
-                position: 'relative', flexShrink: 0,
-                width: 44, height: 44,
-                alignItems: 'center', justifyContent: 'center',
-                background: mobileNavOpen ? 'var(--primary)' : 'var(--bg-card)',
-                border: `1px solid ${mobileNavOpen ? 'var(--primary)' : 'var(--navbar-border)'}`,
-                borderRadius: 12,
-                cursor: 'pointer', padding: 0, marginInlineStart: 2,
-                color: mobileNavOpen ? '#ffffff' : 'var(--text)',
-                boxShadow: mobileNavOpen ? '0 4px 18px var(--primary)55' : '0 2px 10px rgba(0,0,0,0.25)',
-                transition: 'background 0.25s, border-color 0.25s, box-shadow 0.25s, color 0.25s',
-                WebkitTapHighlightColor: 'transparent',
-              }}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" style={{ display: 'block' }}>
-                {mobileNavOpen ? (
-                  <path d="M6 6 L18 18 M18 6 L6 18" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-                ) : (
-                  <path d="M4 7 H20 M4 12 H20 M4 17 H20" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-                )}
-              </svg>
-            </button>
+                    <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             {siteCfg.show_theme_toggle !== false && <ThemeToggle isDark={theme === 'dark'} onToggle={toggleTheme} size={38} />}
-            <button onClick={() => openModal()} className="btn-primary text-sm py-2 px-4 hidden md:block" data-edit="button" data-label="زر سجّل الآن (النافبار)" data-text="navbar_btn" data-color="btn_primary_color" data-bg="btn_primary_bg">
+            <button
+              onClick={() => openModal()}
+              className="btn-primary text-xs sm:text-sm py-2 px-3 sm:px-4 whitespace-nowrap"
+              data-edit="button" data-label="زر سجّل الآن (النافبار)" data-text="navbar_btn" data-color="btn_primary_color" data-bg="btn_primary_bg"
+            >
               <RichInline html={editableText.navbar_btn} fallback={'سجّل الآن'} />
             </button>
           </div>
         </div>
 
-        {/* ── قائمة الهامبورجر المنسدلة — للجوال فقط بألوان الثيم ── */}
-        <div className={`mobile-nav-panel ${mobileNavOpen ? 'open' : ''}`}
-          style={{ background: 'var(--navbar-bg)', borderBottom: '1px solid var(--primary)', backdropFilter: 'var(--navbar-blur)', boxShadow: '0 18px 40px rgba(0,0,0,0.4)', paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0.5rem)' }}>
-          <div className="px-4 py-3 flex flex-col" style={{ gap: 2, background: 'transparent' }}>
-            {navLinks.map((l, i) => {
-              const itemStyle = {
-                padding: '0.7rem 0.9rem', borderRadius: '0.6rem', fontSize: 'var(--fs-nav, 14px)',
-                fontWeight: 600, textDecoration: 'none', color: 'var(--text)', transition: 'background 0.15s, color 0.15s',
-                display: 'block',
-              } as React.CSSProperties;
-              const hoverEnter = (e: React.MouseEvent<HTMLElement>) => { (e.currentTarget as HTMLElement).style.background = 'var(--primary)22'; (e.currentTarget as HTMLElement).style.color = 'var(--primary)'; };
-              const hoverLeave = (e: React.MouseEvent<HTMLElement>) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text)'; };
-              return l.href.startsWith('/') && l.href !== '#'
-                ? (
-                  <Link key={l.href} href={l.href} style={itemStyle} onClick={() => setMobileNavOpen(false)} onMouseEnter={hoverEnter} onMouseLeave={hoverLeave}>
-                    <RichInline html={editableText[`nav_label_${i}`]} fallback={l.label} />
-                  </Link>
-                )
-                : (
-                  <a key={l.href} href={l.href} style={itemStyle} onClick={() => setMobileNavOpen(false)} onMouseEnter={hoverEnter} onMouseLeave={hoverLeave}>
-                    <RichInline html={editableText[`nav_label_${i}`]} fallback={l.label} />
-                  </a>
-                );
-            })}
-            <div style={{ marginTop: 8, borderTop: '1px solid var(--navbar-border)', paddingTop: 10 }}>
-              <button
-                onClick={() => { openModal(); setMobileNavOpen(false); }}
-                className="btn-primary w-full text-center"
-                style={{ width: '100%', padding: '0.8rem', fontSize: '0.95rem', fontWeight: 700 }}
-                data-edit="button" data-label="زر سجّل الآن (قائمة الجوال)" data-text="navbar_btn" data-color="btn_primary_color" data-bg="btn_primary_bg">
-                <RichInline html={editableText.navbar_btn} fallback={'سجّل الآن'} />
-              </button>
-              <button
-                onClick={() => setMobileNavOpen(false)}
-                style={{ width: '100%', marginTop: 8, padding: '0.7rem', background: 'transparent', border: '1px solid var(--navbar-border)', borderRadius: '0.6rem', color: 'var(--text-muted)', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}>
-                ✕ إغلاق القائمة
-              </button>
-            </div>
-          </div>
-        </div>
       </nav>
 
       {/* ── Event Navigation Bar (prev / next events + archive) ─────────────── */}

@@ -27,12 +27,12 @@ export default function SupportWidget({ eventId, primaryColor = '#2563eb' }: Sup
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (widgetRef.current && !widgetRef.current.contains(event.target as Node)) {
-        if (isOpen && !submitted) {
-          // Don't close if form has unsaved data
-          if (formData.name || formData.email || formData.message) {
-            return;
-          }
+        if (!isOpen) return;
+        // Don't close if form has unsaved data
+        if (!submitted && (formData.name || formData.email || formData.message)) {
+          return;
         }
+        setIsOpen(false);
       }
     };
 
@@ -68,7 +68,7 @@ export default function SupportWidget({ eventId, primaryColor = '#2563eb' }: Sup
   };
 
   return (
-    <div ref={widgetRef} className="fixed bottom-6 left-6 z-40 font-arabic md:left-auto md:right-6 md:z-40">
+      <div ref={widgetRef} className="fixed bottom-6 right-6 z-50 font-arabic" dir="rtl">
       {/* Support Button */}
       <button
         onClick={() => {
@@ -91,9 +91,9 @@ export default function SupportWidget({ eventId, primaryColor = '#2563eb' }: Sup
       </button>
 
       {/* Chat Widget */}
-      {isOpen && (
+            {isOpen && (
         <div
-          className="absolute bottom-24 right-0 w-80 md:w-96 bg-white rounded-2xl shadow-2xl overflow-hidden"
+          className="support-widget-panel absolute bottom-24 right-0 w-[min(calc(100vw-2rem),330px)] sm:w-80 md:w-96 bg-white rounded-2xl shadow-2xl overflow-hidden animate-supportOpen"
           style={{ borderTop: `4px solid ${primaryColor}` }}
         >
           {/* Header */}
@@ -113,7 +113,7 @@ export default function SupportWidget({ eventId, primaryColor = '#2563eb' }: Sup
           </div>
 
           {/* Content */}
-          <div className="p-4 max-h-96 overflow-y-auto">
+                    <div className="p-4 max-h-[calc(100vh-14rem)] md:max-h-96 overflow-y-auto">
             {submitted ? (
               <div className="text-center py-8">
                 <div className="text-5xl mb-4">✓</div>

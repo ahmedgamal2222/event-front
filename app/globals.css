@@ -1073,41 +1073,62 @@ html[data-theme="light"] .text-red-400 {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Mobile Navbar (Burger menu) — قائمة الهامبورجر للجوال فقط بألوان الثيم
+   هواتف فقط — تظبييرات خاصة بالشاشات الصغيرة
    ═══════════════════════════════════════════════════════════════ */
-.event-page .mobile-nav-panel {
-  display: block;
-  visibility: hidden;
-  opacity: 0;
-  max-height: 0;
-  overflow: hidden;
-  transform: translateY(-10px);
-  transition: max-height 0.35s ease, opacity 0.3s ease, transform 0.35s ease, visibility 0s linear 0.35s;
+@media (max-width: 768px) {
+  /* زر "سجّل الآن" في الناف بار: هدف لمس كبير يبقى ثابتاً على اليمين */
+  .event-page .fixed.top-0.w-full.z-50 .btn-primary { min-height: 42px; }
 }
-.event-page .mobile-nav-panel.open {
-  visibility: visible;
-  opacity: 1;
-  max-height: 90dvh;
-  max-height: 90vh;
-  transform: translateY(0);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  transition: max-height 0.35s ease, opacity 0.3s ease, transform 0.35s ease;
-}
-@media (min-width: 768px) {
-  .event-page .mobile-nav-panel { display: none !important; }
-}
-.event-page .mobile-nav-panel a,
-.event-page .mobile-nav-panel button.mobile-nav-link {
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* زر الهامبورجر: يظهر فقط على الهواتف (أقل من 768px) ويُخفى بقوة من كل الشاشات الأكبر */
-.event-page .burger-btn {
-  display: flex !important;
-}
-@media (min-width: 768px) {
-  .event-page .burger-btn {
-    display: none !important;
+/* ═══════════════════════════════════════════════════════════════
+   الناف بار — هواتف فقط (640px): شعار سليم لا يكسر التخطيط
+   + زر تسجيل احترافي ثابت على اليمين
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* شعار الناف بار: حجم مناسب وواضح على الهاتف */
+  .event-page nav.fixed img[data-edit="logo"] {
+    height: auto !important;
+    max-height: 260px !important;
+    max-width: 360px !important;
+    width: auto !important;
+  }
+  /* اسم الحدث في الناف بار: يتقلص بذكاء ليبقي مساحة لزر التسجيل */
+  .event-page nav.fixed a.truncate {
+    font-size: 1rem !important;
+    max-width: 34vw;
+  }
+  /* زر "سجّل الآن": شكل احترافي وهدف لمس مريح على الهاتف */
+  .event-page nav.fixed .btn-primary {
+    min-height: 44px;
+    padding: 0.55rem 0.9rem !important;
+    font-size: 0.85rem !important;
+    border-radius: 0.6rem !important;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  }
+  .event-page nav.fixed .max-w-7xl {
+    padding-left: 0.85rem !important;
+    padding-right: 0.85rem !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   الدعم الفني — هواتف فقط (640px): يفتح أنيقاُ ملتصقاُ بالجهة اليمنى
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  .support-widget-panel {
+    right: 0 !important;
+    left: auto !important;
+    width: min(calc(100vw - 2rem), 330px) !important;
+  }
+}
+
+
+/* Support Widget — فتح أنيق على الهاتف (ينبت من الأسفل اليمين) */
+@keyframes supportOpen {
+  0%   { opacity: 0; transform: translateY(12px) scale(0.96); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-supportOpen { animation: supportOpen 0.22s cubic-bezier(0.16, 1, 0.3, 1) both; }
