@@ -56,6 +56,26 @@ interface ThemeColors {
   section_agenda_bg2?: string; section_speakers_bg2?: string; section_video_bg2?: string;
   section_venue_bg2?: string; section_faq_bg2?: string; section_sponsors_bg2?: string;
   section_register_bg2?: string; section_tickets_bg2?: string;
+  // ─── بطاقات المتحدثين ───
+  spk_photo_w?: number; spk_photo_h?: number; spk_photo_shape?: string; spk_photo_radius?: number;
+  spk_align?: string; spk_cols?: number; spk_gap?: number; spk_equal_h?: number;
+  spk_photo_mb?: number; spk_name_mt?: number; spk_role_mt?: number; spk_company_mt?: number;
+  spk_role_mode?: string;
+  // ─── صفحة المدونات ───
+  blg_max_width?: number; blg_title_fs?: number; blg_header_pad?: number;
+  blg_card_radius?: number; blg_card_gap?: number; blg_title_mt?: number; blg_desc_mt?: number;
+  // ─── الفوتر ───
+  ftr_pad_top?: number; ftr_pad_bottom?: number; ftr_pad_left?: number; ftr_pad_right?: number;
+  ftr_show_image?: number; ftr_image?: string; ftr_image_w?: number; ftr_image_h?: number;
+  ftr_image_radius?: number; ftr_image_mb?: number; ftr_align?: string; ftr_text_size?: number; ftr_gap?: number;
+  // ─── صورة داخل الـ Hero ───
+  hero_img_show?: number; hero_img_src?: string; hero_img_w?: number; hero_img_h?: number;
+  hero_img_radius?: number; hero_img_mt?: number; hero_img_mb?: number; hero_img_pos?: string;
+  // ─── استبدال الاختصار (S3) واسم الحدث بصور ───
+  hero_abbr_type?: 'text'|'image'; hero_abbr_image?: string; hero_abbr_image_w?: number; hero_abbr_image_h?: number;
+  hero_abbr_image_radius?: number; hero_abbr_image_mt?: number; hero_abbr_image_mb?: number;
+  hero_name_type?: 'text'|'image'; hero_name_image?: string; hero_name_image_w?: number; hero_name_image_h?: number;
+  hero_name_image_radius?: number; hero_name_image_mt?: number; hero_name_image_mb?: number;
 }
 
 const BASE_THEME: ThemeColors = {
@@ -94,6 +114,26 @@ const BASE_THEME: ThemeColors = {
   section_sponsors_pad_top: 64, section_sponsors_pad_bottom: 64, section_sponsors_pad_left: 24, section_sponsors_pad_right: 24,
   section_register_pad_top: 80, section_register_pad_bottom: 80, section_register_pad_left: 24, section_register_pad_right: 24,
   section_tickets_pad_top: 80, section_tickets_pad_bottom: 80, section_tickets_pad_left: 24, section_tickets_pad_right: 24,
+  // ── بطاقات المتحدثين (افتراضات) ──
+  spk_photo_w: 80, spk_photo_h: 80, spk_photo_shape: 'circle', spk_photo_radius: 16,
+  spk_align: 'center', spk_cols: 4, spk_gap: 24, spk_equal_h: 1,
+  spk_photo_mb: 16, spk_name_mt: 4, spk_role_mt: 6, spk_company_mt: 4,
+  spk_role_mode: 'show',
+  // ── صفحة المدونات (افتراضات) ──
+  blg_max_width: 1100, blg_title_fs: 32, blg_header_pad: 32,
+  blg_card_radius: 16, blg_card_gap: 20, blg_title_mt: 12, blg_desc_mt: 4,
+  // ── الفوتر (افتراضات) ──
+  ftr_pad_top: 24, ftr_pad_bottom: 24, ftr_pad_left: 24, ftr_pad_right: 24,
+  ftr_show_image: 0, ftr_image: '', ftr_image_w: 120, ftr_image_h: 0,
+  ftr_image_radius: 12, ftr_image_mb: 12, ftr_align: 'center', ftr_text_size: 13, ftr_gap: 24,
+  // ── صورة داخل الـ Hero (افتراضات) ──
+  hero_img_show: 0, hero_img_src: '', hero_img_w: 320, hero_img_h: 0,
+  hero_img_radius: 16, hero_img_mt: 0, hero_img_mb: 16, hero_img_pos: 'below_badge',
+  // ── استبدال الاختصار (S3) واسم الحدث بصور (افتراضات) ──
+  hero_abbr_type: 'text', hero_abbr_image: '', hero_abbr_image_w: 220, hero_abbr_image_h: 0,
+  hero_abbr_image_radius: 0, hero_abbr_image_mt: 0, hero_abbr_image_mb: 16,
+  hero_name_type: 'text', hero_name_image: '', hero_name_image_w: 360, hero_name_image_h: 0,
+  hero_name_image_radius: 0, hero_name_image_mt: 0, hero_name_image_mb: 16,
 };
 const PRESETS: { name: string; emoji: string; colors: ThemeColors }[] = [
   { name: 'البنفسجي', emoji: '🟣', colors: { primary:'#6C63FF', primary_dark:'#4f46e5', accent:'#f59e0b', bg_dark:'#0d0b1a', bg_card:'#13102a', text:'#e2e8f0', text_muted:'#94a3b8', heading:'#ffffff', navbar_bg_dark:'rgba(13,11,26,0.88)', navbar_bg_light:'rgba(255,255,255,0.98)', navbar_blur:'on', navbar_border:'rgba(108,99,255,0.25)', heading_light:'#0f172a', text_light:'#0f172a', text_muted_light:'#475569', bg_light:'#f5f6fc' } },
@@ -253,7 +293,7 @@ interface Props { eventId: number; eventSlug: string; token: string; currentPrim
 export default function AdminThemeBuilder({ eventId, eventSlug, token, currentPrimaryColor, save, saving }: Props) {
   const [colors, setColors] = useState<ThemeColors>({ ...BASE_THEME, primary: currentPrimaryColor || BASE_THEME.primary || '#6C63FF' });
   const [loaded, setLoaded] = useState(false);
-  const [tab, setTab] = useState<'dark' | 'light' | 'sections' | 'gradient' | 'fonts' | 'logo' | 'hero' | 'preview'>('dark');
+  const [tab, setTab] = useState<'dark' | 'light' | 'sections' | 'gradient' | 'fonts' | 'logo' | 'hero' | 'speakers' | 'blog' | 'footer' | 'preview'>('dark');
   const [secSel, setSecSel] = useState('hero');
   const [previewMode, setPreviewMode] = useState<'dark' | 'light'>('dark');
   const [previewSrc, setPreviewSrc] = useState('');
@@ -267,6 +307,8 @@ export default function AdminThemeBuilder({ eventId, eventSlug, token, currentPr
   const [directColors, setDirectColors] = useState<Record<string, string | number>>({});
   const [directText, setDirectText] = useState<Record<string, string>>({});
   const [directDir, setDirectDir] = useState<'rtl' | 'ltr'>('rtl');
+  // سجل الحفظ والتراجع — نسخ الإعدادات السابقة مع التاريخ والحساب
+  const [history, setHistory] = useState<any[]>([]);
 
   useEffect(() => {
     const onMsg = (ev: MessageEvent) => {
@@ -296,6 +338,7 @@ export default function AdminThemeBuilder({ eventId, eventSlug, token, currentPr
             const sc = JSON.parse(d.data.site_config);
             if (sc.theme_colors) setColors(prev => ({ ...prev, ...sc.theme_colors }));
             else if (d.data.primary_color) setColors(prev => ({ ...prev, primary: d.data.primary_color }));
+            if (Array.isArray(sc.save_history)) setHistory(sc.save_history);
           } catch {}
         } else if (d.data?.primary_color) setColors(prev => ({ ...prev, primary: d.data.primary_color }));
         setLoaded(true);
@@ -332,6 +375,24 @@ export default function AdminThemeBuilder({ eventId, eventSlug, token, currentPr
     const eventData = await eventRes.json();
     let sc: any = {};
     if (eventData.data?.site_config) { try { sc = JSON.parse(eventData.data.site_config); } catch {} }
+    // ── سجل الحفظ: احفظ نسخة الإعدادات الحالية (قبل هذه الحفظة) مع التاريخ والحساب ──
+    const savedBy = (() => {
+      try {
+        const u = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('admin_user') || 'null') : null;
+        return (u?.name || u?.email || 'Admin');
+      } catch { return 'Admin'; }
+    })();
+    const hist = Array.isArray(sc.save_history) ? sc.save_history : [];
+    hist.push({
+      id: Date.now(),
+      saved_at: new Date().toISOString(),
+      saved_by: savedBy,
+      theme_colors: sc.theme_colors || {},
+      editable_text: sc.editable_text || {},
+      page_direction: sc.page_direction || 'rtl',
+    });
+    if (hist.length > 20) hist.splice(0, hist.length - 20);
+    sc.save_history = hist;
     // حفظ ألوان الثيم بما فيها التعديلات المباشرة + النصوص + الاتجاه
     sc.theme_colors = { ...colors, ...directColors };
     if (directText && Object.keys(directText).length > 0) {
@@ -345,7 +406,34 @@ export default function AdminThemeBuilder({ eventId, eventSlug, token, currentPr
       const err = await res.json().catch(() => null);
       throw new Error(err?.error || 'فشل الحفظ');
     }
+    setHistory(hist);
   });
+
+  // استرجاع نسخة من السجل إلى لوحة التحرير (تُثبَّت بضغطة «حفظ الثيم»)
+  const restoreFromHistory = (h: any) => {
+    if (!h) return;
+    if (h.theme_colors && typeof h.theme_colors === 'object') setColors(prev => ({ ...prev, ...h.theme_colors }));
+    if (h.editable_text && typeof h.editable_text === 'object') setDirectText({ ...(h.editable_text as any) });
+    setDirectDir(h.page_direction === 'ltr' ? 'ltr' : 'rtl');
+    setTab('preview');
+  };
+
+  // حذف نسخة من السجل (يُحفظ فوراً في site_config)
+  const deleteHistory = async (id: number) => {
+    try {
+      const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+      const eventRes = await fetch(`${API_BASE}/api/events/${eventSlug}`, { headers });
+      const eventData = await eventRes.json();
+      let sc: any = {};
+      if (eventData.data?.site_config) { try { sc = JSON.parse(eventData.data.site_config); } catch {} }
+      const h = (Array.isArray(sc.save_history) ? sc.save_history : []).filter((x: any) => x.id !== id);
+      sc.save_history = h;
+      setHistory(h);
+      await fetch(`${API_BASE}/api/events/${eventId}`, {
+        method: 'PUT', headers, body: JSON.stringify({ primary_color: sc.theme_colors?.primary || colors.primary, site_config: sc }),
+      });
+    } catch {}
+  };
 
   // احرص on saveAll المحدّث عند كل رندر بحيث المستمع postMessage (مرفق مرة واحدة)
   // يستدعي آخر إصدار — مع الوثائق الألوان/الخطوط/المحاذاة الحية — ولا يتلف بالإغلاق.
@@ -364,6 +452,9 @@ export default function AdminThemeBuilder({ eventId, eventSlug, token, currentPr
     { key: 'fonts',   label: '✍️ حجم الخطوط' },
     { key: 'logo',    label: '🖼️ الشعار' },
     { key: 'hero',    label: '🎬 خلفية الـ Hero' },
+    { key: 'speakers',label: '🎙️ بطاقات المتحدثين' },
+    { key: 'blog',    label: '📝 صفحة المدونات' },
+    { key: 'footer',  label: '🦶 الفوتر' },
     { key: 'preview', label: '👁️ معاينة حية' },
   ];
 const activeFields = tab === 'dark' ? DARK_FIELDS : tab === 'light' ? LIGHT_FIELDS : SECTION_FIELDS;
@@ -419,6 +510,46 @@ const activeFields = tab === 'dark' ? DARK_FIELDS : tab === 'light' ? LIGHT_FIEL
             </button>
           ))}
         </div>
+      </div>
+
+      {/* ── سجل الحفظ والتراجع ── */}
+      <div style={S.card}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+          <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 0, fontSize: '0.95rem' }}>🕘 سجل الحفظ والتراجع</h3>
+          <span style={{ color: '#64748b', fontSize: '0.75rem' }}>{history.length}/20 نسخة</span>
+        </div>
+        <p style={{ color: '#64748b', fontSize: '0.78rem', margin: '6px 0 12px', lineHeight: 1.7 }}>
+          عند كل «💾 حفظ الثيم» تُحفظ نسخة تلقائية من الإعدادات السابقة مع <strong style={{ color: '#94a3b8' }}>التاريخ</strong> و<strong style={{ color: '#94a3b8' }}>الحساب</strong> الذي حفظها.
+          اضغط «↩ استرجاع» لتحميل أي نسخة في لوحة التحرير، ثم اضغط «💾 حفظ الثيم» لتثبيتها على الموقع.
+        </p>
+        {history.length === 0 ? (
+          <p style={{ color: '#475569', fontSize: '0.8rem', margin: 0 }}>
+            لا توجد نسخ بعد — احفظ الثيم مرة واحدة لبدء السجل.
+          </p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {history.slice().reverse().map(h => (
+              <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '0.5rem', padding: '0.5rem 0.75rem' }}>
+                <div>
+                  <div style={{ color: '#cbd5e1', fontSize: '0.8rem', fontWeight: 600 }}>
+                    🗓 {new Date(h.saved_at).toLocaleString('ar-SY')}
+                  </div>
+                  <div style={{ color: '#64748b', fontSize: '0.72rem', marginTop: 2 }}>
+                    👤 {h.saved_by || 'Admin'} · نسخة قبل آخر حفظ
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    style={{ background: '#374151', color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.35rem 0.75rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                    onClick={() => restoreFromHistory(h)}>↩ استرجاع</button>
+                  <button
+                    style={{ background: 'transparent', color: '#ef4444', border: '1px solid #ef444455', borderRadius: '0.4rem', padding: '0.35rem 0.6rem', cursor: 'pointer', fontSize: '0.78rem' }}
+                    onClick={() => deleteHistory(h.id)}>🗑</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ── Colors tabs (dark / light) ── */}
@@ -569,13 +700,221 @@ const activeFields = tab === 'dark' ? DARK_FIELDS : tab === 'light' ? LIGHT_FIEL
         </div>
       )}
 
+      {/* ── Speakers cards tab ── */}
+      {tab === 'speakers' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={S.card}>
+            <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 4, fontSize: '0.95rem' }}>🎙️ تخصيص بطاقات المتحدثين</h3>
+            <p style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: 12 }}>
+              تحكم كامل بشكل بطاقة المتحدث: حجم الصورة وشكلها، الاتجاه، عدد الأعمدة، توازن الارتفاع، إزاحة كل نص بالبكسل، ومعالجة غياب المنصب/الشركة.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+              <SizeControl label="عرض الصورة (px)" min={40} max={220} value={(colors.spk_photo_w as number) ?? 80} onChange={v => setValue('spk_photo_w', v)} />
+              <SizeControl label="ارتفاع الصورة (px)" min={40} max={220} value={(colors.spk_photo_h as number) ?? 80} onChange={v => setValue('spk_photo_h', v)} />
+              <SizeControl label="استدارة الصورة (px) — 0 = مربع" min={0} max={120} value={(colors.spk_photo_radius as number) ?? 16} onChange={v => setValue('spk_photo_radius', v)} />
+              <SizeControl label="عدد الأعمدة (شاشة كبيرة)" min={2} max={6} value={(colors.spk_cols as number) ?? 4} onChange={v => setValue('spk_cols', v)} />
+              <SizeControl label="المسافة بين البطاقات (px)" min={0} max={80} value={(colors.spk_gap as number) ?? 24} onChange={v => setValue('spk_gap', v)} />
+              <SizeControl label="المسافة تحت الصورة (px)" min={0} max={80} value={(colors.spk_photo_mb as number) ?? 16} onChange={v => setValue('spk_photo_mb', v)} />
+              <SizeControl label="إزاحة اسم المتحدث (px)" min={-30} max={60} value={(colors.spk_name_mt as number) ?? 4} onChange={v => setValue('spk_name_mt', v)} />
+              <SizeControl label="إزاحة المنصب (px)" min={-30} max={60} value={(colors.spk_role_mt as number) ?? 6} onChange={v => setValue('spk_role_mt', v)} />
+              <SizeControl label="إزاحة الشركة (px)" min={-30} max={60} value={(colors.spk_company_mt as number) ?? 4} onChange={v => setValue('spk_company_mt', v)} />
+            </div>
+          </div>
+
+          <div style={S.card}>
+            <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 12, fontSize: '0.95rem' }}>شكل الصورة</h3>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {[['circle','⭕ دائرة'],['rounded','🔲 مستديرة'],['square','⬜ مربع']].map(([val, lab]) => (
+                <button key={val} onClick={() => setValue('spk_photo_shape', val)} style={{
+                  padding: '0.4rem 1rem', borderRadius: '0.45rem', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', border: 'none',
+                  background: (colors.spk_photo_shape || 'circle') === val ? '#6C63FF' : 'rgba(255,255,255,0.07)',
+                  color: (colors.spk_photo_shape || 'circle') === val ? 'white' : '#94a3b8',
+                }}>{lab}</button>
+              ))}
+            </div>
+          </div>
+
+          <div style={S.card}>
+            <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 12, fontSize: '0.95rem' }}>الاتجاه والتوازن</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <div style={S.label}>اتجاه محتوى البطاقة</div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {[['center','⏺ توسيط'],['right','⬅ يمين'],['left','➡ يسار']].map(([val, lab]) => (
+                    <button key={val} onClick={() => setValue('spk_align', val)} style={{
+                      padding: '0.4rem 1rem', borderRadius: '0.45rem', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', border: 'none',
+                      background: (colors.spk_align || 'center') === val ? '#6C63FF' : 'rgba(255,255,255,0.07)',
+                      color: (colors.spk_align || 'center') === val ? 'white' : '#94a3b8',
+                    }}>{lab}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div style={S.label}>توازن ارتفاع البطاقات</div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {[['1','✅ متساوية الارتفاع'],['0','❌ تلقائي']].map(([val, lab]) => (
+                    <button key={val} onClick={() => setValue('spk_equal_h', +val)} style={{
+                      padding: '0.4rem 1rem', borderRadius: '0.45rem', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', border: 'none',
+                      background: String(colors.spk_equal_h ?? 1) === val ? '#6C63FF' : 'rgba(255,255,255,0.07)',
+                      color: String(colors.spk_equal_h ?? 1) === val ? 'white' : '#94a3b8',
+                    }}>{lab}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div style={S.label}>معالجة غياب المنصب (role)</div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {[['show','👁 إخفاء إن لم يوجد'],['force','📝 إظهار دائماً (بدون منصب)'],['mute','🚫 إخفاء دائماً']].map(([val, lab]) => (
+                    <button key={val} onClick={() => setValue('spk_role_mode', val)} style={{
+                      padding: '0.4rem 1rem', borderRadius: '0.45rem', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', border: 'none',
+                      background: (colors.spk_role_mode || 'show') === val ? '#6C63FF' : 'rgba(255,255,255,0.07)',
+                      color: (colors.spk_role_mode || 'show') === val ? 'white' : '#94a3b8',
+                    }}>{lab}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Blog page tab ── */}
+      {tab === 'blog' && (
+        <div style={S.card}>
+          <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 4, fontSize: '0.95rem' }}>📝 تخصيص صفحة المدونات</h3>
+          <p style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: 12, lineHeight: 1.7 }}>
+            تحكّم كامل بشكل صفحة المدونات والأخبار: عرض الصفحة، حجم العنوان، حشوة رأس الصفحة، شكل البطاقات، وإزاحة كل نص بالبكسل.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+            <SizeControl label="عرض الصفحة (px)" min={640} max={1440} value={(colors.blg_max_width as number) ?? 1100} onChange={v => setValue('blg_max_width', v)} />
+            <SizeControl label="حجم عنوان الصفحة (px)" min={16} max={80} value={(colors.blg_title_fs as number) ?? 32} onChange={v => setValue('blg_title_fs', v)} />
+            <SizeControl label="حشوة رأس الصفحة (px)" min={0} max={120} value={(colors.blg_header_pad as number) ?? 32} onChange={v => setValue('blg_header_pad', v)} />
+            <SizeControl label="استدارة بطاقة المقال (px)" min={0} max={40} value={(colors.blg_card_radius as number) ?? 16} onChange={v => setValue('blg_card_radius', v)} />
+            <SizeControl label="المسافة بين البطاقات (px)" min={0} max={80} value={(colors.blg_card_gap as number) ?? 20} onChange={v => setValue('blg_card_gap', v)} />
+            <SizeControl label="إزاحة العنوان (px)" min={-20} max={60} value={(colors.blg_title_mt as number) ?? 12} onChange={v => setValue('blg_title_mt', v)} />
+            <SizeControl label="إزاحة الوصف (px)" min={-20} max={60} value={(colors.blg_desc_mt as number) ?? 4} onChange={v => setValue('blg_desc_mt', v)} />
+          </div>
+        </div>
+      )}
+
+      {/* ── Footer tab ── */}
+      {tab === 'footer' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={S.card}>
+            <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 4, fontSize: '0.95rem' }}>🦶 تخصيص الفوتر (أسفل الصفحة)</h3>
+            <p style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: 12, lineHeight: 1.7 }}>
+              تحكم كامل بالفوتر: الحشوات الأربع بالبكسل، حجم النص، والمسافة بين الروابط.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+              <SizeControl label="الحشوة العلوية (px)" min={0} max={120} value={(colors.ftr_pad_top as number) ?? 24} onChange={v => setValue('ftr_pad_top', v)} />
+              <SizeControl label="الحشوة السفلية (px)" min={0} max={120} value={(colors.ftr_pad_bottom as number) ?? 24} onChange={v => setValue('ftr_pad_bottom', v)} />
+              <SizeControl label="الحشوة اليمنى (px)" min={0} max={120} value={(colors.ftr_pad_right as number) ?? 24} onChange={v => setValue('ftr_pad_right', v)} />
+              <SizeControl label="الحشوة اليسرى (px)" min={0} max={120} value={(colors.ftr_pad_left as number) ?? 24} onChange={v => setValue('ftr_pad_left', v)} />
+              <SizeControl label="حجم نص الروابط (px)" min={10} max={30} value={(colors.ftr_text_size as number) ?? 13} onChange={v => setValue('ftr_text_size', v)} />
+              <SizeControl label="المسافة بين الروابط (px)" min={0} max={80} value={(colors.ftr_gap as number) ?? 24} onChange={v => setValue('ftr_gap', v)} />
+            </div>
+          </div>
+          <div style={S.card}>
+            <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 12, fontSize: '0.95rem' }}>🖼️ صورة الفوتر (شعار)</h3>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              {[['1','✅ إظهار الصورة'],['0','🚫 إخفاء']].map(([val, lab]) => (
+                <button key={val} onClick={() => setValue('ftr_show_image', +val)} style={{
+                  padding: '0.4rem 1rem', borderRadius: '0.45rem', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', border: 'none',
+                  background: String(colors.ftr_show_image ?? 0) === val ? '#6C63FF' : 'rgba(255,255,255,0.07)',
+                  color: String(colors.ftr_show_image ?? 0) === val ? 'white' : '#94a3b8',
+                }}>{lab}</button>
+              ))}
+            </div>
+            {(colors.ftr_show_image ?? 0) === 1 && (
+              <>
+                <label style={S.label}>رابط الصورة (خارجي أو مرفوع)</label>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
+                  <input value={(colors.ftr_image as string) || ''} onChange={e => setValue('ftr_image', e.target.value)} placeholder="https://.../logo.png أو /uploads/..." style={{ ...S.inp, maxWidth: 460 }} />
+                  <HeroBgUploadBtn accept="image/*" label="📤 رفع صورة من الجهاز" uploadingLabel="جار الرفع..." maxMB={15} token={token} onUploaded={url => setValue('ftr_image', url)} />
+                </div>
+                {(colors.ftr_image as string) && (
+                  <img src={colors.ftr_image as string} alt="footer" style={{ maxHeight: 80, borderRadius: 8, marginBottom: 12, display: 'block' }} />
+                )}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+                  <SizeControl label="العرض (px)" min={20} max={400} value={(colors.ftr_image_w as number) ?? 120} onChange={v => setValue('ftr_image_w', v)} />
+                  <SizeControl label="الارتفاع (px) — 0=تلقائي" min={0} max={400} value={(colors.ftr_image_h as number) ?? 0} onChange={v => setValue('ftr_image_h', v)} />
+                  <SizeControl label="استدارة الصورة (px)" min={0} max={200} value={(colors.ftr_image_radius as number) ?? 12} onChange={v => setValue('ftr_image_radius', v)} />
+                  <SizeControl label="المسافة تحت الصورة (px)" min={0} max={80} value={(colors.ftr_image_mb as number) ?? 12} onChange={v => setValue('ftr_image_mb', v)} />
+                </div>
+                <div style={{ marginTop: 12 }}>
+                  <div style={S.label}>الاتجاه</div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {[['center','⏺ توسيط'],['right','⬅ يمين'],['left','➡ يسار']].map(([val, lab]) => (
+                      <button key={val} onClick={() => setValue('ftr_align', val)} style={{
+                        padding: '0.4rem 1rem', borderRadius: '0.45rem', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', border: 'none',
+                        background: (colors.ftr_align || 'center') === val ? '#6C63FF' : 'rgba(255,255,255,0.07)',
+                        color: (colors.ftr_align || 'center') === val ? 'white' : '#94a3b8',
+                      }}>{lab}</button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ── Hero Background tab (image / video / youtube / external) ── */}
       {tab === 'hero' && (
-        <HeroBgEditor
-          colors={colors as any}
-          setValue={setValue}
-          token={token}
-        />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <HeroBgEditor
+            colors={colors as any}
+            setValue={setValue}
+            token={token}
+          />
+          <div style={S.card}>
+            <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 12, fontSize: '0.95rem' }}>🖼️ صورة داخل محتوى الـ Hero</h3>
+            <p style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: 12, lineHeight: 1.7 }}>
+              ضع صورة داخل قسم الـ Hero (فوق العنوان أو تحته) مرفوعة من الجهاز أو برابط خارجي، وتحكّم بأبعادها وهوامشها بالبكسل.
+            </p>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              {[['1','✅ إظهار الصورة'],['0','🚫 إخفاء']].map(([val, lab]) => (
+                <button key={val} onClick={() => setValue('hero_img_show', +val)} style={{
+                  padding: '0.4rem 1rem', borderRadius: '0.45rem', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', border: 'none',
+                  background: String(colors.hero_img_show ?? 0) === val ? '#6C63FF' : 'rgba(255,255,255,0.07)',
+                  color: String(colors.hero_img_show ?? 0) === val ? 'white' : '#94a3b8',
+                }}>{lab}</button>
+              ))}
+            </div>
+            {(colors.hero_img_show ?? 0) === 1 && (
+              <>
+                <label style={S.label}>رابط الصورة (خارجي أو مرفوع)</label>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
+                  <input value={(colors.hero_img_src as string) || ''} onChange={e => setValue('hero_img_src', e.target.value)} placeholder="https://.../image.png أو /uploads/..." style={{ ...S.inp, maxWidth: 460 }} />
+                  <HeroBgUploadBtn accept="image/*" label="📤 رفع صورة من الجهاز" uploadingLabel="جار الرفع..." maxMB={15} token={token} onUploaded={url => setValue('hero_img_src', url)} />
+                </div>
+                {(colors.hero_img_src as string) && (
+                  <img src={colors.hero_img_src as string} alt="hero content" style={{ maxHeight: 120, borderRadius: 8, marginBottom: 12, display: 'block' }} />
+                )}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+                  <SizeControl label="العرض (px)" min={40} max={1200} value={(colors.hero_img_w as number) ?? 320} onChange={v => setValue('hero_img_w', v)} />
+                  <SizeControl label="الارتفاع (px) — 0=تلقائي" min={0} max={800} value={(colors.hero_img_h as number) ?? 0} onChange={v => setValue('hero_img_h', v)} />
+                  <SizeControl label="استدارة الصورة (px)" min={0} max={400} value={(colors.hero_img_radius as number) ?? 16} onChange={v => setValue('hero_img_radius', v)} />
+                  <SizeControl label="إزاحة علوية (px)" min={-60} max={120} value={(colors.hero_img_mt as number) ?? 0} onChange={v => setValue('hero_img_mt', v)} />
+                  <SizeControl label="إزاحة سفلية (px)" min={0} max={120} value={(colors.hero_img_mb as number) ?? 16} onChange={v => setValue('hero_img_mb', v)} />
+                </div>
+                <div style={{ marginTop: 12 }}>
+                  <div style={S.label}>الموضع داخل الـ Hero</div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {[['below_badge','أسفل شريط الموقع'],['above_title','فوق العنوان'],['after_buttons','بعد الأزرار']].map(([val, lab]) => (
+                      <button key={val} onClick={() => setValue('hero_img_pos', val)} style={{
+                        padding: '0.4rem 1rem', borderRadius: '0.45rem', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', border: 'none',
+                        background: (colors.hero_img_pos || 'below_badge') === val ? '#6C63FF' : 'rgba(255,255,255,0.07)',
+                        color: (colors.hero_img_pos || 'below_badge') === val ? 'white' : '#94a3b8',
+                      }}>{lab}</button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          <HeroSwapEditor colors={colors as any} setValue={setValue} token={token} />
+        </div>
       )}
 
       {/* ── Live preview tab ── */}
@@ -641,6 +980,67 @@ const activeFields = tab === 'dark' ? DARK_FIELDS : tab === 'light' ? LIGHT_FIEL
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HeroSwapEditor — استبدال الاختصار الكبير (S3) واسم الحدث بصور (رفع/رابط)
+// مع التحكم بالأبعاد والاستدارة والهوامش بالبكسل — للتحكم من الأدمن.
+// ─────────────────────────────────────────────────────────────────────────────
+function HeroSwapRow({ colors, setValue, token, prefix, title, defW, defH }: {
+  colors: Record<string, any>; setValue: (k: any, v: any) => void; token: string;
+  prefix: string; title: string; defW: number; defH: number;
+}) {
+  const type = String(colors[`${prefix}_type`] || 'text');
+  const img = String(colors[`${prefix}_image`] || '');
+  const key = (k: string) => `${prefix}_${k}`;
+  return (
+    <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 12, marginTop: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+        <h4 style={{ color: 'white', fontWeight: 700, margin: 0, fontSize: '0.9rem' }}>{title}</h4>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {[['text','🔤 نص'],['image','🖼️ صورة']].map(([val, lab]) => (
+            <button key={val} onClick={() => setValue(key('type'), val)} style={{
+              padding: '0.35rem 0.9rem', borderRadius: '0.45rem', cursor: 'pointer', fontWeight: 600, fontSize: '0.78rem', border: 'none',
+              background: type === val ? '#6C63FF' : 'rgba(255,255,255,0.07)',
+              color: type === val ? 'white' : '#94a3b8',
+            }}>{lab}</button>
+          ))}
+        </div>
+      </div>
+      {type === 'image' && (
+        <>
+          <label style={S.label}>رابط الصورة (خارجي أو مرفوع)</label>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
+            <input value={img} onChange={e => setValue(key('image'), e.target.value)} placeholder="https://.../logo.png أو /uploads/..." style={{ ...S.inp, maxWidth: 460 }} />
+            <HeroBgUploadBtn accept="image/*" label="📤 رفع صورة من الجهاز" uploadingLabel="جار الرفع..." maxMB={15} token={token} onUploaded={url => setValue(key('image'), url)} />
+          </div>
+          {img && <img src={img} alt={title} style={{ maxHeight: 90, borderRadius: 8, marginBottom: 12, display: 'block' }} />}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+            <SizeControl label="العرض (px)" min={40} max={1200} value={Number(colors[key('image_w')]) || defW} onChange={v => setValue(key('image_w'), v)} />
+            <SizeControl label="الارتفاع (px) — 0=تلقائي" min={0} max={800} value={Number(colors[key('image_h')]) || defH} onChange={v => setValue(key('image_h'), v)} />
+            <SizeControl label="استدارة الصورة (px)" min={0} max={400} value={Number(colors[key('image_radius')]) ?? 0} onChange={v => setValue(key('image_radius'), v)} />
+            <SizeControl label="إزاحة علوية (px)" min={-60} max={120} value={Number(colors[key('image_mt')]) ?? 0} onChange={v => setValue(key('image_mt'), v)} />
+            <SizeControl label="إزاحة سفلية (px)" min={0} max={120} value={Number(colors[key('image_mb')]) ?? 16} onChange={v => setValue(key('image_mb'), v)} />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function HeroSwapEditor({ colors, setValue, token }: {
+  colors: Record<string, any>; setValue: (k: any, v: any) => void; token: string;
+}) {
+  return (
+    <div style={S.card}>
+      <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 4, fontSize: '0.95rem' }}>🖼️ استبدال الاختصار (S3) واسم الحدث بصور</h3>
+      <p style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: 0, lineHeight: 1.7 }}>
+        حوّل الاختصار الكبير (مثل S3) أو اسم الحدث من نص إلى صورة (رفع من الجهاز أو رابط)، واضبط أبعادها واستدارتها وموقعها بالبكسل. يمكنك أيضاً تعديل ذلك من وضع التعديل المباشر.
+      </p>
+      <HeroSwapRow colors={colors} setValue={setValue} token={token} prefix="hero_abbr" title="الاختصار الكبير (S3)" defW={220} defH={0} />
+      <HeroSwapRow colors={colors} setValue={setValue} token={token} prefix="hero_name" title="اسم الحدث" defW={360} defH={0} />
     </div>
   );
 }

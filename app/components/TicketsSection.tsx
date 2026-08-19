@@ -295,13 +295,7 @@ export default function TicketsSection({ eventId, editableText }: { eventId: num
         </div>
 
         {/* Info Footer */}
-        <div className="mt-16 p-6 rounded-lg" style={{ background: 'var(--panel)', border: '1px solid var(--panel-border)' }}>
-                    <div className="text-center">
-            <p className="text-sm text-[var(--text-muted)]" data-edit="text" data-label="نص المساعدة في التذاكر" data-text="tickets_info" data-color="text" data-size="fs_body" data-min="10" data-max="24">
-              <RichTextInline html={editableText?.tickets_info} fallback={config.info_text} />
-            </p>
-          </div>
-        </div>
+     
       </div>
     </section>
   );

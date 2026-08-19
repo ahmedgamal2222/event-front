@@ -1220,6 +1220,64 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
     '--title-align': (themeColors as any).text_align || undefined,
   } as React.CSSProperties : undefined;
 
+  // ── إعدادات بطاقات المتحدثين (من الثيم) ──
+  const spkPhotoW   = Number((themeColors as any).spk_photo_w) || 80;
+  const spkPhotoH   = Number((themeColors as any).spk_photo_h) || 80;
+  const spkShape    = ((themeColors as any).spk_photo_shape as string) || 'circle';
+  const spkRadius   = spkShape === 'circle' ? 9999 : spkShape === 'square' ? 0 : Number((themeColors as any).spk_photo_radius) || 16;
+  const spkAlign    = ((themeColors as any).spk_align as string) || 'center';
+  const spkAlignText: 'center' | 'left' | 'right' = spkAlign === 'left' ? 'left' : spkAlign === 'right' ? 'right' : 'center';
+  const spkCols     = Number((themeColors as any).spk_cols) || 4;
+  const spkGap      = Number((themeColors as any).spk_gap) != null ? Number((themeColors as any).spk_gap) : 24;
+  const spkEqual    = (themeColors as any).spk_equal_h !== 0;
+  const spkPhotoMb  = Number((themeColors as any).spk_photo_mb) != null ? Number((themeColors as any).spk_photo_mb) : 16;
+  const spkNameMt   = Number((themeColors as any).spk_name_mt) != null ? Number((themeColors as any).spk_name_mt) : 4;
+  const spkRoleMt   = Number((themeColors as any).spk_role_mt) != null ? Number((themeColors as any).spk_role_mt) : 6;
+  const spkCompMt   = Number((themeColors as any).spk_company_mt) != null ? Number((themeColors as any).spk_company_mt) : 4;
+  const spkRoleMode = ((themeColors as any).spk_role_mode as string) || 'show';
+
+  // ── إعدادات الفوتر (من الثيم) ──
+  const ftrPadT    = Number((themeColors as any).ftr_pad_top) ?? 24;
+  const ftrPadB    = Number((themeColors as any).ftr_pad_bottom) ?? 24;
+  const ftrPadL    = Number((themeColors as any).ftr_pad_left) ?? 24;
+  const ftrPadR    = Number((themeColors as any).ftr_pad_right) ?? 24;
+  const ftrShowImg = (themeColors as any).ftr_show_image === 1;
+  const ftrImg     = ((themeColors as any).ftr_image as string) || '';
+  const ftrImgW    = Number((themeColors as any).ftr_image_w) ?? 120;
+  const ftrImgH    = Number((themeColors as any).ftr_image_h) ?? 0;
+  const ftrImgR    = Number((themeColors as any).ftr_image_radius) ?? 12;
+  const ftrImgMb   = Number((themeColors as any).ftr_image_mb) ?? 12;
+  const ftrAlign   = ((themeColors as any).ftr_align as string) || 'center';
+  const ftrTextSize = Number((themeColors as any).ftr_text_size) ?? 13;
+  const ftrGap     = Number((themeColors as any).ftr_gap) ?? 24;
+
+  // ── صورة داخل محتوى الـ Hero (من الثيم) ──
+  const heroImgShow = (themeColors as any).hero_img_show === 1;
+  const heroImgSrc  = ((themeColors as any).hero_img_src as string) || '';
+  const heroImgW    = Number((themeColors as any).hero_img_w) ?? 320;
+  const heroImgH    = Number((themeColors as any).hero_img_h) ?? 0;
+  const heroImgR    = Number((themeColors as any).hero_img_radius) ?? 16;
+  const heroImgMt   = Number((themeColors as any).hero_img_mt) ?? 0;
+  const heroImgMb   = Number((themeColors as any).hero_img_mb) ?? 16;
+  const heroImgPos  = ((themeColors as any).hero_img_pos as string) || 'below_badge';
+
+  // ── استبدال الاختصار الكبير (S3) بصوره + مكان اسم الحدث (من الثيم / التعديل المباشر) ──
+  const tc = (k: string) => (editMode ? (editColors[k] ?? themeColors[k]) : themeColors[k]);
+  const heroAbbrType = String(tc('hero_abbr_type') || 'text');
+  const heroAbbrImg  = String(tc('hero_abbr_image') || '');
+  const heroAbbrW    = Number(tc('hero_abbr_image_w')) || 220;
+  const heroAbbrH    = Number(tc('hero_abbr_image_h')) || 0;
+  const heroAbbrR    = Number(tc('hero_abbr_image_radius')) || 0;
+  const heroAbbrMt   = Number(tc('hero_abbr_image_mt')) ?? 0;
+  const heroAbbrMb   = Number(tc('hero_abbr_image_mb')) ?? 16;
+  const heroNameType = String(tc('hero_name_type') || 'text');
+  const heroNameImg  = String(tc('hero_name_image') || '');
+  const heroNameW    = Number(tc('hero_name_image_w')) || 360;
+  const heroNameH    = Number(tc('hero_name_image_h')) || 0;
+  const heroNameR    = Number(tc('hero_name_image_radius')) || 0;
+  const heroNameMt   = Number(tc('hero_name_image_mt')) ?? 0;
+  const heroNameMb   = Number(tc('hero_name_image_mb')) ?? 16;
+
   // Light-mode navbar color — injected on :root so the CSS data-theme="light" block picks it up
   const navbarBgLight = themeColors.navbar_bg_light || 'rgba(255,255,255,0.98)';
   if (typeof document !== 'undefined') {
@@ -1387,6 +1445,11 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
             <RichInline html={editableText.hero_badge} fallback={`${location} · ${ed.month} ${ed.year}`} />
           </div>
 
+          {heroImgShow && heroImgSrc && heroImgPos === 'below_badge' && (
+            <img src={heroImgSrc} alt="hero visual"
+              style={{ width: heroImgW, height: heroImgH || 'auto', borderRadius: heroImgR, marginTop: heroImgMt, marginBottom: heroImgMb, maxWidth: '100%', objectFit: 'contain', alignSelf: 'center' }} />
+          )}
+
           {event?.logo && (
             <div className="mb-6 flex justify-center">
               <img src={event.logo} alt="شعار الحدث"
@@ -1395,14 +1458,35 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
             </div>
           )}
 
-          <h1 className="hero-title font-black mb-4" style={{ letterSpacing: '-0.03em', color: 'var(--heading)', fontSize: 'var(--fs-hero, 72px)', lineHeight: 1.1 }}
-              data-edit="text" data-label="الاختصار الكبير (S3)" data-text="hero_abbr" data-color="primary" data-size="fs_hero" data-min="24" data-max="140">
-            <span className="text-[var(--primary)]"><RichInline html={editableText.hero_abbr} fallback={siteCfg.hero_abbr} /></span>
-          </h1>
-          <h2 className="hero-subtitle font-bold mb-2" style={{ color: 'var(--heading)', fontSize: 'var(--fs-hero-sub, 30px)' }}
-              data-edit="text" data-label="اسم الحدث" data-text="event_name" data-color="heading" data-size="fs_hero_sub" data-min="14" data-max="60">
-            <RichInline html={editableText.event_name} fallback={eventName} />
-          </h2>
+          {heroImgShow && heroImgSrc && heroImgPos === 'above_title' && (
+            <img src={heroImgSrc} alt="hero visual"
+              style={{ width: heroImgW, height: heroImgH || 'auto', borderRadius: heroImgR, marginTop: heroImgMt, marginBottom: heroImgMb, maxWidth: '100%', objectFit: 'contain', alignSelf: 'center' }} />
+          )}
+
+          {heroAbbrType === 'image' && heroAbbrImg ? (
+            <div className="hero-title-area" style={{ marginTop: heroAbbrMt, marginBottom: heroAbbrMb, display: 'flex', justifyContent: 'inherit', width: '100%' }}>
+              <img src={heroAbbrImg} alt="S3"
+                data-edit="text" data-label="صورة الاختصار (S3)" data-text="hero_abbr"
+                style={{ width: heroAbbrW, height: heroAbbrH || 'auto', borderRadius: heroAbbrR, objectFit: 'contain', maxWidth: '100%' }} />
+            </div>
+          ) : (
+            <h1 className="hero-title font-black mb-4" style={{ letterSpacing: '-0.03em', color: 'var(--heading)', fontSize: 'var(--fs-hero, 72px)', lineHeight: 1.1 }}
+                data-edit="text" data-label="الاختصار الكبير (S3)" data-text="hero_abbr" data-color="primary" data-size="fs_hero" data-min="24" data-max="140">
+              <span className="text-[var(--primary)]"><RichInline html={editableText.hero_abbr} fallback={siteCfg.hero_abbr} /></span>
+            </h1>
+          )}
+          {heroNameType === 'image' && heroNameImg ? (
+            <div className="hero-name-img" style={{ marginTop: heroNameMt, marginBottom: heroNameMb, display: 'flex', justifyContent: 'center', width: '100%' }}>
+              <img src={heroNameImg} alt={eventName}
+                data-edit="text" data-label="اسم الحدث" data-text="event_name"
+                style={{ width: heroNameW, height: heroNameH || 'auto', borderRadius: heroNameR, objectFit: 'contain', maxWidth: '100%' }} />
+            </div>
+          ) : (
+            <h2 className="hero-subtitle font-bold mb-2" style={{ color: 'var(--heading)', fontSize: 'var(--fs-hero-sub, 30px)' }}
+                data-edit="text" data-label="اسم الحدث" data-text="event_name" data-color="heading" data-size="fs_hero_sub" data-min="14" data-max="60">
+              <RichInline html={editableText.event_name} fallback={eventName} />
+            </h2>
+          )}
           <p className="text-lg text-[var(--text-muted)] mb-2" style={{ fontSize: 'var(--fs-body, 16px)' }}
              data-edit="text" data-label="الشعار النصي" data-text="event_tagline" data-color="text" data-size="fs_body" data-min="10" data-max="30">
             <RichInline html={editableText.event_tagline} fallback={eventTagline} />
@@ -1440,6 +1524,11 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
               </button>
             )}
           </div>
+
+          {heroImgShow && heroImgSrc && heroImgPos === 'after_buttons' && (
+            <img src={heroImgSrc} alt="hero visual"
+              style={{ width: heroImgW, height: heroImgH || 'auto', borderRadius: heroImgR, marginTop: heroImgMt, marginBottom: heroImgMb, maxWidth: '100%', objectFit: 'contain', alignSelf: 'center' }} />
+          )}
         </div>
       </section>
 
@@ -1628,38 +1717,55 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
               <RichInline html={editableText.speakers_sub} fallback={'نخبة من رواد الأعمال والمستثمرين والخبراء · اضغط لقراءة السيرة الذاتية'} />
             </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 spk-grid gap-6">
+            <style>{`
+              .spk-grid{ gap: ${spkGap}px; }
+              @media (min-width:1024px){ .spk-grid{ grid-template-columns: repeat(${spkCols}, minmax(0,1fr)) !important; } }
+            `}</style>
             {speakers.map(speaker => (
               <div key={speaker.id}
-                className="card text-center hover:border-[var(--primary)] transition-all group cursor-pointer"
+                className={`card hover:border-[var(--primary)] transition-all group cursor-pointer flex flex-col ${spkEqual ? 'h-full' : ''}`}
+                style={{ textAlign: spkAlignText, alignItems: spkAlignText === 'center' ? 'center' : spkAlignText === 'left' ? 'flex-start' : 'flex-end' }}
                 onClick={() => !speaker.is_surprise && setSelectedSpeaker(speaker)}
                 data-edit="card" data-label={`بطاقة متحدث: ${speaker.name_ar || speaker.name} (خلفية + لون/حجم النصوص)`}
                 data-bg="bg_card" data-bgmodeaware="1"
                 data-colors="heading:لون الاسم,text:لون المنصب,primary:لون الشركة" data-sizes="fs_card_title:حجم الاسم:12:40,fs_body:حجم النص:10:30">
                 {speaker.photo_url ? (
                   <img src={speaker.photo_url} alt={speaker.name_ar}
-                    className="w-20 h-20 rounded-full mx-auto mb-4 object-cover border-2 group-hover:border-[var(--primary)] transition-all"
-                    style={{ borderColor: 'rgba(108,99,255,0.3)' }} />
+                    className="object-cover border-2 group-hover:border-[var(--primary)] transition-all"
+                    style={{ width: spkPhotoW, height: spkPhotoH, borderRadius: spkRadius, marginBottom: spkPhotoMb, borderColor: 'rgba(108,99,255,0.3)', display: 'block' }} />
                 ) : (
-                  <div className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center text-xl font-black text-white"
-                       style={{ background: speaker.is_surprise ? 'rgba(255,255,255,0.1)' : `linear-gradient(135deg, ${primaryColor}, #4f46e5)` }}>
+                  <div className="flex items-center justify-center text-xl font-black text-white"
+                       style={{ width: spkPhotoW, height: spkPhotoH, borderRadius: spkRadius, marginBottom: spkPhotoMb, background: speaker.is_surprise ? 'rgba(255,255,255,0.1)' : `linear-gradient(135deg, ${primaryColor}, #4f46e5)` }}>
                     {speaker.is_surprise ? '?' : (speaker.name_ar?.split(' ').map((w: string) => w[0]).slice(0,2).join('') || speaker.name[0])}
                   </div>
                 )}
-                <h3 className="font-bold text-sm text-white" data-edit="text" data-label="اسم المتحدث" data-text={`speaker_${speaker.id}_name`} data-color="heading" data-size="fs_card_title" data-min="12" data-max="40">
+                <h3 className="font-bold" style={{ marginTop: spkNameMt, fontSize: 'var(--fs-card-title, 1rem)', color: 'var(--heading)', lineHeight: 1.4 }}
+                    data-edit="text" data-label="اسم المتحدث" data-text={`speaker_${speaker.id}_name`} data-color="heading" data-size="fs_card_title" data-min="12" data-max="40">
                   <RichInline html={editableText[`speaker_${speaker.id}_name`]} fallback={speaker.name_ar || speaker.name} />
                 </h3>
-                <p className="text-xs text-[var(--text-muted)] mt-0.5" data-edit="text" data-label="منصب المتحدث" data-text={`speaker_${speaker.id}_title`} data-color="text" data-size="fs_body" data-min="8" data-max="22">
-                  <RichInline html={editableText[`speaker_${speaker.id}_title`]} fallback={speaker.title_ar} />
-                </p>
-                <p className="text-xs mt-1 font-semibold text-[var(--primary)]" data-edit="text" data-label="شركة المتحدث" data-text={`speaker_${speaker.id}_company`} data-color="primary" data-size="fs_body" data-min="8" data-max="22">
-                  <RichInline html={editableText[`speaker_${speaker.id}_company`]} fallback={speaker.company} />
-                </p>
+                {(() => {
+                  const role = String(speaker.title_ar || '').trim();
+                  if (spkRoleMode === 'hide') return null;
+                  if (spkRoleMode !== 'force' && !role) return null;
+                  return (
+                    <p className="text-xs" style={{ marginTop: spkRoleMt, color: 'var(--text-muted)' }}
+                       data-edit="text" data-label="منصب المتحدث" data-text={`speaker_${speaker.id}_title`} data-color="text" data-size="fs_body" data-min="8" data-max="22">
+                      <RichInline html={editableText[`speaker_${speaker.id}_title`]} fallback={role || '— بدون منصب —'} />
+                    </p>
+                  );
+                })()}
+                {speaker.company ? (
+                  <p className="text-xs font-semibold" style={{ marginTop: spkCompMt, color: 'var(--primary)' }}
+                     data-edit="text" data-label="شركة المتحدث" data-text={`speaker_${speaker.id}_company`} data-color="primary" data-size="fs_body" data-min="8" data-max="22">
+                    <RichInline html={editableText[`speaker_${speaker.id}_company`]} fallback={speaker.company} />
+                  </p>
+                ) : null}
                 {speaker.is_featured === 1 && (
-                  <span className="tag mt-2 text-xs" style={{ background: '#f59e0b20', color: '#f59e0b' }}>✦ مميز</span>
+                  <span className="tag text-xs" style={{ background: '#f59e0b20', color: '#f59e0b', marginTop: 8 }}>✦ مميز</span>
                 )}
                 {!speaker.is_surprise && (
-                  <p className="text-xs text-[var(--text-muted)] mt-2 opacity-0 group-hover:opacity-100 transition-opacity">اضغط للمزيد ←</p>
+                  <p className="text-xs opacity-0 group-hover:opacity-100 transition-opacity" style={{ marginTop: 'auto', paddingTop: 10, color: 'var(--text-muted)' }}>اضغط للمزيد ←</p>
                 )}
               </div>
             ))}
@@ -1873,9 +1979,17 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
           <div className="font-black text-xl mb-2 text-white"><span className="text-[var(--primary)]">S3</span> Summit</div>
-          <p className="text-[var(--text-muted)] text-sm" data-edit="text" data-label="اسم الحدث في الفوتر" data-text="event_name" data-color="text" data-size="fs_body" data-min="10" data-max="26">
-            <RichInline html={editableText.event_name} fallback={eventName} />
-          </p>
+          {heroNameType === 'image' && heroNameImg ? (
+            <div className="flex justify-center w-full" style={{ marginTop: heroNameMt, marginBottom: heroNameMb }}>
+              <img src={heroNameImg} alt={eventName}
+                data-edit="text" data-label="اسم الحدث في الفوتر" data-text="event_name"
+                style={{ width: heroNameW, height: heroNameH || 'auto', borderRadius: heroNameR, objectFit: 'contain', maxWidth: '100%' }} />
+            </div>
+          ) : (
+            <p className="text-[var(--text-muted)] text-sm" data-edit="text" data-label="اسم الحدث في الفوتر" data-text="event_name" data-color="text" data-size="fs_body" data-min="10" data-max="26">
+              <RichInline html={editableText.event_name} fallback={eventName} />
+            </p>
+          )}
           <p className="text-[var(--text-muted)] text-sm">{sd.day}–{ed.day} {ed.month} {ed.year}</p>
         </div>
         <div>
@@ -2051,11 +2165,16 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
 
       {/* ── Footer ────────────────────────────────────────────────────────────── */}
       {(footerPages.length > 0 || (termsData?.show_in_footer && (termsData?.terms_content || termsData?.privacy_content))) && (
-        <footer style={{ background: 'var(--footer-bg)', borderTop: '1px solid rgba(108,99,255,0.15)', padding: '1.5rem 1.5rem', textAlign: 'center' }}>
-          <div style={{ maxWidth: 900, margin: '0 auto', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.5rem 1.5rem' }}>
+        <footer style={{ background: 'var(--footer-bg)', borderTop: '1px solid rgba(108,99,255,0.15)', padding: `${ftrPadT}px ${ftrPadR}px ${ftrPadB}px ${ftrPadL}px`, textAlign: ftrAlign as any }}>
+          <div style={{ maxWidth: 900, margin: '0 auto', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: `0.5rem ${ftrGap}px` }}>
+            {ftrShowImg && ftrImg && (
+              <div style={{ width: '100%', display: 'flex', justifyContent: ftrAlign === 'center' ? 'center' : ftrAlign === 'left' ? 'flex-start' : 'flex-end', marginBottom: ftrImgMb }}>
+                <img src={ftrImg} alt="footer logo" style={{ width: ftrImgW, height: ftrImgH || 'auto', borderRadius: ftrImgR, objectFit: 'contain', maxWidth: '100%' }} />
+              </div>
+            )}
             {footerPages.map(page => (
               <a key={page.id} href={`/terms?page=${page.slug}`}
-                className="text-[var(--text-muted)]" style={{ textDecoration: 'none', fontSize: '0.82rem', transition: 'color 0.15s' }}
+                className="text-[var(--text-muted)]" style={{ textDecoration: 'none', fontSize: `${ftrTextSize}px`, transition: 'color 0.15s' }}
                 onMouseEnter={e => (e.currentTarget.style.color = '#6C63FF')}
                 onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}>
                 {page.title_ar || page.title}
@@ -2063,7 +2182,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
             ))}
             {termsData?.show_in_footer && termsData?.terms_content && (
               <a href={`/terms?tab=terms`}
-                className="text-[var(--text-muted)]" style={{ textDecoration: 'none', fontSize: '0.82rem', transition: 'color 0.15s' }}
+                className="text-[var(--text-muted)]" style={{ textDecoration: 'none', fontSize: `${ftrTextSize}px`, transition: 'color 0.15s' }}
                 onMouseEnter={e => (e.currentTarget.style.color = '#6C63FF')}
                 onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}>
                 الشروط والأحكام
@@ -2071,7 +2190,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
             )}
             {termsData?.show_in_footer && termsData?.privacy_content && (
               <a href={`/terms?tab=privacy`}
-                className="text-[var(--text-muted)]" style={{ textDecoration: 'none', fontSize: '0.82rem', transition: 'color 0.15s' }}
+                className="text-[var(--text-muted)]" style={{ textDecoration: 'none', fontSize: `${ftrTextSize}px`, transition: 'color 0.15s' }}
                 onMouseEnter={e => (e.currentTarget.style.color = '#6C63FF')}
                 onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}>
                 سياسة الخصوصية
@@ -2179,6 +2298,35 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
               </div>
             )}
 
+            {/* استبدال الاختصار (S3) / اسم الحدث بصورة (من وضع التعديل المباشر) */}
+            {editTarget.textKey && (editTarget.textKey === 'hero_abbr' || editTarget.textKey === 'event_name') && (() => {
+              const prefix = editTarget.textKey === 'hero_abbr' ? 'hero_abbr' : 'hero_name';
+              const typeKey = `${prefix}_type`;
+              const isImg = String(editColors[typeKey] ?? themeColors[typeKey] ?? 'text') === 'image';
+              const set = (k: string, v: any) => setEditColors(p => ({ ...p, [k]: v }));
+              const num = (k: string) => Number(editColors[k] ?? themeColors[k] ?? '');
+              const sb = (act: boolean) => ({ padding: '0.3rem 0.7rem', borderRadius: '0.4rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.72rem', border: 'none',
+                background: act ? '#6C63FF' : 'rgba(255,255,255,0.07)', color: act ? 'white' : '#94a3b8' } as React.CSSProperties);
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <span style={{ color: '#a5b4fc', fontSize: '0.72rem', fontWeight: 700, whiteSpace: 'nowrap' }}>🖼️ كصورة:</span>
+                  <button style={sb(!isImg)} onClick={() => set(typeKey, 'text')}>🔤 نص</button>
+                  <button style={sb(isImg)} onClick={() => set(typeKey, 'image')}>🖼️ صورة</button>
+                  {isImg && (
+                    <>
+                      <input value={String(editColors[`${prefix}_image`] ?? '')} onChange={e => set(`${prefix}_image`, e.target.value)}
+                        placeholder="رابط الصورة (أو ارفعها من تبويب hero)" style={{ width: 190, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(108,99,255,0.35)', borderRadius: '0.4rem', padding: '0.3rem 0.5rem', color: 'white', fontSize: '0.78rem' }} />
+                      <label style={{ color: '#64748b', fontSize: '0.7rem' }}>العرض</label>
+                      <input type="number" value={num(`${prefix}_image_w`) || 220} onChange={e => set(`${prefix}_image_w`, Number(e.target.value))}
+                        style={{ width: 52, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(108,99,255,0.35)', borderRadius: '0.4rem', padding: '0.3rem 0.4rem', color: 'white', fontSize: '0.78rem', direction: 'ltr' }} />
+                      <label style={{ color: '#64748b', fontSize: '0.7rem' }}>الارتفاع</label>
+                      <input type="number" value={num(`${prefix}_image_h`) || 0} onChange={e => set(`${prefix}_image_h`, Number(e.target.value))}
+                        style={{ width: 52, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(108,99,255,0.35)', borderRadius: '0.4rem', padding: '0.3rem 0.4rem', color: 'white', fontSize: '0.78rem', direction: 'ltr' }} />
+                    </>
+                  )}
+                </div>
+              );
+            })()}
             {/* حقول حجم إضافية (البطاقات/السكاشن تتيح تعديل حجم كل نوع نص بشكل منفصل) */}
             {editTarget.sizeFields?.map(f => (
               <div key={f.key} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
