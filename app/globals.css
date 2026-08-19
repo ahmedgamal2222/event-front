@@ -2,29 +2,29 @@
 
 @layer base {
   :root {
-    --primary: #6C63FF;
-    --primary-dark: #4f46e5;
-    --accent: #f59e0b;
-    --bg-dark: #0d0b1a;
-    --bg-card: #13102a;
-    --text: #e2e8f0;
-    --text-muted: #94a3b8;
-    --border: rgba(108, 99, 255, 0.2);
+    --primary: #14b8a6;
+    --primary-dark: #0f766e;
+    --accent: #D4AF37;
+    --bg-dark: #052e33;
+    --bg-card: #0b4248;
+    --text: #e6f7f5;
+    --text-muted: #7fb8b1;
+    --border: rgba(20, 184, 166, 0.25);
     --heading: #ffffff;
     --band: rgba(0, 0, 0, 0.3);
     --panel: rgba(255, 255, 255, 0.05);
     --panel-border: rgba(255, 255, 255, 0.1);
     --footer-bg: rgba(0, 0, 0, 0.4);
-    --navbar-bg: rgba(19, 16, 42, 0.75);
+    --navbar-bg: rgba(5, 46, 51, 0.92);
     --navbar-blur: blur(12px);
-    --navbar-border: rgba(108, 99, 255, 0.2);
-    --option-bg: #1a1730;
+    --navbar-border: rgba(20, 184, 166, 0.35);
+    --option-bg: #0b4248;
     --event-nav-bg: rgba(0, 0, 0, 0.4);
-    --event-nav-border: rgba(108, 99, 255, 0.2);
-    --event-nav-text: #94a3b8;
+    --event-nav-border: rgba(20, 184, 166, 0.25);
+    --event-nav-text: #7fb8b1;
     --event-nav-text-hover: #ffffff;
-    --price-section-bg: rgba(108, 99, 255, 0.1);
-    --price-section-border: rgba(108, 99, 255, 0.2);
+    --price-section-bg: rgba(20, 184, 166, 0.1);
+    --price-section-border: rgba(20, 184, 166, 0.25);
 
     /* ── Typography (controllable via event theme) ── */
     --fs-hero: 72px;
@@ -1000,3 +1000,114 @@ html[data-theme="light"] .text-red-400 {
 .event-page .stats-section  { background: var(--section-stats-bg, transparent); }
 .event-page .intro-video-section { background: var(--section-video-bg, rgba(108, 99, 255, 0.04)); }
 .event-page .tickets-section    { background: var(--section-tickets-bg, var(--bg-dark)); }
+
+/* ═══════════════════════════════════════════════════════════════
+   Mobile responsiveness — تحسينات مخصصة للهاتف فقط (max-width: 640px)
+   الأزرار + الشكل العام على الشاشات الصغيرة
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* الـ Hero: تصغير العنوان الكبير والحشوات لتناسب الهاتف */
+  .event-page .hero-title {
+    font-size: calc(min(var(--fs-hero, 72px), 40px)) !important;
+    line-height: 1.15 !important;
+  }
+  .event-page .hero-subtitle {
+    font-size: calc(min(var(--fs-hero-sub, 30px), 19px)) !important;
+  }
+  .event-page .hero-section {
+    padding-top: 84px !important;
+    padding-bottom: 46px !important;
+    background-position: center !important;
+  }
+  /* عناوين الأقسام */
+  .event-page .section-title {
+    font-size: 1.5rem !important;
+  }
+  /* الأزرار: أكبر وأسهل للّمس، وأكثر تناسباً مع عرض الشاشة */
+  .event-page .btn-primary,
+  .event-page .btn-outline {
+    min-height: 46px;
+    padding: 0.7rem 0.9rem !important;
+    font-size: 0.92rem !important;
+    border-radius: 0.6rem !important;
+  }
+  /* أزرار الـ Hero توزّع جنباً إلى جنب */
+  .event-page .hero-section .flex.gap-3 {
+    width: 100%;
+  }
+  .event-page .hero-section .flex.gap-3 > .btn-primary,
+  .event-page .hero-section .flex.gap-3 > .btn-outline {
+    flex: 1 1 45%;
+    justify-content: center;
+    text-align: center;
+    white-space: normal;
+  }
+  /* بطاقات المتحدثين: تباعد أصغر */
+  .event-page .spk-grid {
+    gap: 12px !important;
+  }
+  .event-page .card {
+    padding-left: 0.9rem;
+    padding-right: 0.9rem;
+  }
+  /* نصوص وأنصاف العناوين */
+  .event-page .text-lg { font-size: 0.95rem !important; }
+  .event-page .text-4xl { font-size: 1.9rem !important; }
+  .event-page .text-2xl { font-size: 1.2rem !important; }
+  .event-page .max-w-4xl { padding-left: 0.25rem !important; padding-right: 0.25rem !important; }
+  /* الفوتر: ضبط الهوامش */
+  .event-page footer .max-w-6xl { padding: 0 0.9rem !important; }
+}
+
+/* لوحة التحكم: الريسبونسيف للجوال */
+@media (max-width: 640px) {
+  .admin-dashboard-wrap input,
+  .admin-dashboard-wrap select,
+  .admin-dashboard-wrap textarea {
+    max-width: 100% !important;
+    font-size: 16px; /* منع التكبير التلقائي في iOS */
+  }
+  .admin-dashboard-wrap button {
+    font-size: 0.8rem !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Mobile Navbar (Burger menu) — قائمة الهامبورجر للجوال فقط بألوان الثيم
+   ═══════════════════════════════════════════════════════════════ */
+.event-page .mobile-nav-panel {
+  display: block;
+  visibility: hidden;
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transform: translateY(-10px);
+  transition: max-height 0.35s ease, opacity 0.3s ease, transform 0.35s ease, visibility 0s linear 0.35s;
+}
+.event-page .mobile-nav-panel.open {
+  visibility: visible;
+  opacity: 1;
+  max-height: 90dvh;
+  max-height: 90vh;
+  transform: translateY(0);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  transition: max-height 0.35s ease, opacity 0.3s ease, transform 0.35s ease;
+}
+@media (min-width: 768px) {
+  .event-page .mobile-nav-panel { display: none !important; }
+}
+.event-page .mobile-nav-panel a,
+.event-page .mobile-nav-panel button.mobile-nav-link {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* زر الهامبورجر: يظهر فقط على الهواتف (أقل من 768px) ويُخفى بقوة من كل الشاشات الأكبر */
+.event-page .burger-btn {
+  display: flex !important;
+}
+@media (min-width: 768px) {
+  .event-page .burger-btn {
+    display: none !important;
+  }
+}

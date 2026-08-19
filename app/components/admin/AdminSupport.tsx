@@ -65,13 +65,19 @@ export default function AdminSupport({ eventId, token }: AdminSupportProps) {
       setError(null);
 
       // Optimistic update - update UI immediately
-      const updatedMsg = { ...selectedMessage, admin_response: responseText, admin_name: 'Admin', status: 'resolved' as any };
+      const adminUser = (() => {
+        try {
+          const u = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('admin_user') || 'null') : null;
+          return (u?.name || u?.email || 'Admin');
+        } catch { return 'Admin'; }
+      })();
+      const updatedMsg = { ...selectedMessage, admin_response: responseText, admin_name: adminUser, status: 'resolved' as any };
       setMessages(prev => prev.map(m => m.id === selectedMessage.id ? updatedMsg : m));
       setSelectedMessage(updatedMsg);
 
       await respondToSupportMessage(eventId, selectedMessage.id, {
         admin_response: responseText,
-        admin_name: 'Admin',
+        admin_name: adminUser,
         status: 'resolved',
         priority: selectedMessage.priority
       }, token);

@@ -56,10 +56,11 @@ export default function HomeClient() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--bg-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center', color: '#94a3b8', fontFamily: 'system-ui, sans-serif' }}>
-          <div style={{ fontSize: '2rem', marginBottom: '0.75rem', opacity: 0.5 }}>🌌</div>
-          <p style={{ margin: 0 }}>جاري التحميل...</p>
+      <div style={{ minHeight: '100vh', background: '#052e33', display: 'flex', alignItems: 'center', justifyContent: 'center', direction: 'rtl' }}>
+        <style>{`@keyframes loaderspin{to{transform:rotate(360deg)}}`}</style>
+        <div style={{ textAlign: 'center', color: '#7fb8b1', fontFamily: "'Cairo', 'Segoe UI', system-ui, sans-serif" }}>
+          <div style={{ width: 42, height: 42, border: '3px solid #14b8a6', borderTopColor: 'transparent', borderRadius: '50%', margin: '0 auto 1rem', animation: 'loaderspin 0.8s linear infinite' }} />
+          <p style={{ margin: 0, fontSize: '0.9rem' }}>جاري التحميل...</p>
         </div>
       </div>
     );
@@ -68,13 +69,13 @@ export default function HomeClient() {
   if (fetchError) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center', color: '#94a3b8', fontFamily: 'system-ui, sans-serif', direction: 'rtl', padding: '2rem' }}>
+        <div style={{ textAlign: 'center', color: 'var(--text-muted, #94a3b8)', fontFamily: 'system-ui, sans-serif', direction: 'rtl', padding: '2rem' }}>
           <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>⚠️</div>
-          <p style={{ margin: '0 0 0.5rem', color: 'white', fontWeight: 600 }}>تعذّر تحميل الفعاليات</p>
+          <p style={{ margin: '0 0 0.5rem', color: 'var(--heading, white)', fontWeight: 600 }}>تعذّر تحميل الفعاليات</p>
           <p style={{ margin: '0 0 1.5rem', fontSize: '0.85rem' }}>تحقق من اتصالك بالإنترنت وحاول مجدداً</p>
           <button
             onClick={loadEvents}
-            style={{ background: '#6C63FF', color: 'white', border: 'none', borderRadius: '0.5rem', padding: '0.6rem 1.5rem', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}
+            style={{ background: 'var(--btn-primary-bg, #6C63FF)', color: 'var(--btn-primary-color, white)', border: 'none', borderRadius: '0.5rem', padding: '0.6rem 1.5rem', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}
           >
             🔄 إعادة المحاولة
           </button>

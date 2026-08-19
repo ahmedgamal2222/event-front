@@ -802,6 +802,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
   const [editColors, setEditColors] = useState<Record<string, string | number>>({});
   const [editText, setEditText] = useState<Record<string, string>>({});
   const [editDir, setEditDir] = useState<'rtl' | 'ltr'>('rtl');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<null | {
     kind: 'text' | 'section-bg' | 'button' | 'navbar' | 'logo' | 'body-bg' | 'hero' | 'card' | 'section';
     label: string;
@@ -1329,7 +1330,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       {/* Pixel Tracking */}
       <PixelInjector eventId={event?.id || 1} />
       {/* ── Navbar ───────────────────────────────────────────────────────────── */}
-      <nav className="fixed top-0 w-full z-50 glass" >
+      <nav className="fixed top-0 w-full z-50 glass" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             {(siteCfg.logo_position === 'navbar' || siteCfg.logo_position === 'both') && siteCfg.logo_url && (
@@ -1372,10 +1373,79 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
             ))}
           </div>
           <div className="flex items-center gap-3">
+            {/* زر الهامبورجر — للجوال فقط (متوافق مع جميع الشاشات) */}
+            <button
+              onClick={() => setMobileNavOpen(v => !v)}
+              aria-label={mobileNavOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
+              aria-expanded={mobileNavOpen}
+              className="md:hidden burger-btn"
+              style={{
+                position: 'relative', flexShrink: 0,
+                width: 44, height: 44,
+                alignItems: 'center', justifyContent: 'center',
+                background: mobileNavOpen ? 'var(--primary)' : 'var(--bg-card)',
+                border: `1px solid ${mobileNavOpen ? 'var(--primary)' : 'var(--navbar-border)'}`,
+                borderRadius: 12,
+                cursor: 'pointer', padding: 0, marginInlineStart: 2,
+                color: mobileNavOpen ? '#ffffff' : 'var(--text)',
+                boxShadow: mobileNavOpen ? '0 4px 18px var(--primary)55' : '0 2px 10px rgba(0,0,0,0.25)',
+                transition: 'background 0.25s, border-color 0.25s, box-shadow 0.25s, color 0.25s',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" style={{ display: 'block' }}>
+                {mobileNavOpen ? (
+                  <path d="M6 6 L18 18 M18 6 L6 18" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                ) : (
+                  <path d="M4 7 H20 M4 12 H20 M4 17 H20" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+                )}
+              </svg>
+            </button>
             {siteCfg.show_theme_toggle !== false && <ThemeToggle isDark={theme === 'dark'} onToggle={toggleTheme} size={38} />}
-            <button onClick={() => openModal()} className="btn-primary text-sm py-2 px-4" data-edit="button" data-label="زر سجّل الآن (النافبار)" data-text="navbar_btn" data-color="btn_primary_color" data-bg="btn_primary_bg">
+            <button onClick={() => openModal()} className="btn-primary text-sm py-2 px-4 hidden md:block" data-edit="button" data-label="زر سجّل الآن (النافبار)" data-text="navbar_btn" data-color="btn_primary_color" data-bg="btn_primary_bg">
               <RichInline html={editableText.navbar_btn} fallback={'سجّل الآن'} />
             </button>
+          </div>
+        </div>
+
+        {/* ── قائمة الهامبورجر المنسدلة — للجوال فقط بألوان الثيم ── */}
+        <div className={`mobile-nav-panel ${mobileNavOpen ? 'open' : ''}`}
+          style={{ background: 'var(--navbar-bg)', borderBottom: '1px solid var(--primary)', backdropFilter: 'var(--navbar-blur)', boxShadow: '0 18px 40px rgba(0,0,0,0.4)', paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0.5rem)' }}>
+          <div className="px-4 py-3 flex flex-col" style={{ gap: 2, background: 'transparent' }}>
+            {navLinks.map((l, i) => {
+              const itemStyle = {
+                padding: '0.7rem 0.9rem', borderRadius: '0.6rem', fontSize: 'var(--fs-nav, 14px)',
+                fontWeight: 600, textDecoration: 'none', color: 'var(--text)', transition: 'background 0.15s, color 0.15s',
+                display: 'block',
+              } as React.CSSProperties;
+              const hoverEnter = (e: React.MouseEvent<HTMLElement>) => { (e.currentTarget as HTMLElement).style.background = 'var(--primary)22'; (e.currentTarget as HTMLElement).style.color = 'var(--primary)'; };
+              const hoverLeave = (e: React.MouseEvent<HTMLElement>) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text)'; };
+              return l.href.startsWith('/') && l.href !== '#'
+                ? (
+                  <Link key={l.href} href={l.href} style={itemStyle} onClick={() => setMobileNavOpen(false)} onMouseEnter={hoverEnter} onMouseLeave={hoverLeave}>
+                    <RichInline html={editableText[`nav_label_${i}`]} fallback={l.label} />
+                  </Link>
+                )
+                : (
+                  <a key={l.href} href={l.href} style={itemStyle} onClick={() => setMobileNavOpen(false)} onMouseEnter={hoverEnter} onMouseLeave={hoverLeave}>
+                    <RichInline html={editableText[`nav_label_${i}`]} fallback={l.label} />
+                  </a>
+                );
+            })}
+            <div style={{ marginTop: 8, borderTop: '1px solid var(--navbar-border)', paddingTop: 10 }}>
+              <button
+                onClick={() => { openModal(); setMobileNavOpen(false); }}
+                className="btn-primary w-full text-center"
+                style={{ width: '100%', padding: '0.8rem', fontSize: '0.95rem', fontWeight: 700 }}
+                data-edit="button" data-label="زر سجّل الآن (قائمة الجوال)" data-text="navbar_btn" data-color="btn_primary_color" data-bg="btn_primary_bg">
+                <RichInline html={editableText.navbar_btn} fallback={'سجّل الآن'} />
+              </button>
+              <button
+                onClick={() => setMobileNavOpen(false)}
+                style={{ width: '100%', marginTop: 8, padding: '0.7rem', background: 'transparent', border: '1px solid var(--navbar-border)', borderRadius: '0.6rem', color: 'var(--text-muted)', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}>
+                ✕ إغلاق القائمة
+              </button>
+            </div>
           </div>
         </div>
       </nav>
