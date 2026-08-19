@@ -1282,13 +1282,13 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
                 data-edit="logo" data-label="شعار النافبار" data-size="logo_navbar_height" data-min="24" data-max="140"
                                 style={{
                   ...(editMode && !navLogoVisible ? { opacity: 0.4, pointerEvents: 'none' } : {}),
-                  height: 'var(--logo-navbar-height, 56px)',
+                  height: 'var(--logo-navbar-height, 360px)',
                   width: 'auto',
-                  maxWidth: 220,
-                  background: theme === 'dark' && themeColors.logo_bg ? themeColors.logo_bg as string : (theme === 'dark' ? 'rgba(255, 255, 255, 0.95)' : 'transparent'),
-                                    padding: theme === 'dark' ? `${Number(themeColors.logo_padding || 8)}px ${Number(themeColors.logo_padding || 8) + 4}px` : '0',
+                  maxWidth: 360,
+                  // background: theme === 'dark' && themeColors.logo_bg ? themeColors.logo_bg as string : (theme === 'dark' ? 'rgba(255, 255, 255, 0.95)' : 'transparent'),
+                  //                   padding: theme === 'dark' ? `${Number(themeColors.logo_padding || 8)}px ${Number(themeColors.logo_padding || 8) + 4}px` : '0',
                   borderRadius: theme === 'dark' ? `${themeColors.logo_radius || 12}px` : '0',
-                  boxShadow: theme === 'dark' ? '0 4px 16px rgba(0, 0, 0, 0.2)' : 'none',
+                  // boxShadow: theme === 'dark' ? '0 4px 16px rgba(0, 0, 0, 0.2)' : 'none',
                   transition: 'all 0.3s ease'
                 }}
               />
@@ -1916,7 +1916,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
           </div>
         </div>
         </div>
-        {(siteCfg.logo_position === 'footer' || siteCfg.logo_position === 'both') && siteCfg.logo_url && (
+        {/* {(siteCfg.logo_position === 'footer' || siteCfg.logo_position === 'both') && siteCfg.logo_url && (
           <div className="max-w-6xl mx-auto mt-8 pt-6 pb-6 text-center border-t" style={{ borderColor: 'rgba(108,99,255,0.12)' }}>
             <img 
               src={siteCfg.logo_url} 
@@ -1931,10 +1931,10 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
               }}
             />
           </div>
-        )}
-        <div className="max-w-6xl mx-auto pt-6 text-center text-sm text-[var(--text-muted)]" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        )} */}
+        {/* <div className="max-w-6xl mx-auto pt-6 text-center text-sm text-[var(--text-muted)]" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
           © {ed.year} {event?.name_ar || event?.name || 'S³ Summit'} · جميع الحقوق محفوظة
-        </div>
+        </div> */}
       </footer>
 
       {/* ── Support Widget ─────────────────────────────────────────────────────── */}

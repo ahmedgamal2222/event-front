@@ -39,3 +39,4 @@
 - Phase 1: Infrastructure + Hero background editor.
 - Phase 2: Click-to-edit overlay + property panel.
 - Phase 3: Advanced positioning + animations.
+rgba(255,255,255,0.95) 
