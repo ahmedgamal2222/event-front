@@ -59,6 +59,12 @@ export async function apiFetch<T>(path: string, options?: RequestInit, bypassCac
     // Auto-logout on expired/invalid token
     if (res.status === 401 && typeof window !== 'undefined') {
       localStorage.removeItem('admin_token');
+      localStorage.removeItem('admin_user');
+      // Signal every open tab to log out immediately (cross-tab security)
+      try {
+        localStorage.setItem('admin_logout_at', Date.now().toString());
+        setTimeout(() => localStorage.removeItem('admin_logout_at'), 500);
+      } catch {}
       window.location.href = '/admin';
       throw new Error('انتهت صلاحية الجلسة، يرجى تسجيل الدخول مجدداً');
     }

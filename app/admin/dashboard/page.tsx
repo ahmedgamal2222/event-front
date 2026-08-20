@@ -293,6 +293,7 @@ function AdminDashboardInner() {
     const handleExpired = () => {
       localStorage.removeItem('admin_token');
       localStorage.removeItem('admin_user');
+      try { localStorage.setItem('admin_logout_at', Date.now().toString()); setTimeout(() => localStorage.removeItem('admin_logout_at'), 500); } catch {}
       router.replace('/admin');
     };
     // Load user info and determine role, then load permissions
@@ -360,6 +361,24 @@ function AdminDashboardInner() {
     loadEvents();
   }, []);
 
+  // ── Cross-tab session sync (highest security) ──────────────────────────
+  // If ANY other tab removes the token or broadcasts a logout, this tab
+  // must end its session too — even if this tab made no network call yet.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      const localLogout = () => {
+        localStorage.removeItem('admin_token');
+        localStorage.removeItem('admin_user');
+        router.replace('/admin');
+      };
+      if (e.key === 'admin_token' && !e.newValue) { localLogout(); return; }
+      if (e.key === 'admin_logout_at' && e.newValue) { localLogout(); return; }
+      if (e.key === 'admin_user' && !e.newValue) { localLogout(); return; }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [router]);
+
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
   const save = async (fn: () => Promise<any>) => {
@@ -376,7 +395,23 @@ function AdminDashboardInner() {
     finally { setSaving(false); }
   };
 
-  const logout = () => { localStorage.removeItem('admin_token'); router.replace('/admin'); };
+  // Logout: revoke the server-side session FIRST, then clear local state
+  // and broadcast so every other tab logs out immediately.
+  const logout = async () => {
+    const t = getToken();
+    if (t) {
+      try {
+        await fetch(`${API_BASE}/api/auth/logout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
+        });
+      } catch {}
+    }
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_user');
+    try { localStorage.setItem('admin_logout_at', Date.now().toString()); setTimeout(() => localStorage.removeItem('admin_logout_at'), 500); } catch {}
+    router.replace('/admin');
+  };
 
   // Permission helper: can the current user access this tab for the current event?
   const canAccess = (tabKey: string): boolean => {
