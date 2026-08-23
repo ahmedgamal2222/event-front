@@ -3,8 +3,8 @@ import './globals.css';
 import ApiProxyInterceptor from './components/ApiProxyInterceptor';
 
 export const metadata: Metadata = {
-  title: 'Event Management Platform – منصة إدارة الفعاليات',
-  description: 'A complete event management platform for summits, conferences, and gatherings.',
+  title: 'Scientific Startup Summit in Syria – قمة الشركات الناشئة العلمية في سوريا',
+  description: 'A comprehensive scientific summit for startups, bringing together researchers, entrepreneurs, and investors.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
