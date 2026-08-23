@@ -1,0 +1,25 @@
+app/components/admin/AdminFilesTab.tsx(29,77): error TS1501: This regular expression flag is only available when targeting 'es6' or later.
+app/components/admin/AdminFilesTab.tsx(53,5): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/admin/AdminFilesTab.tsx(54,7): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/admin/AdminFilesTab.tsx(55,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/admin/AdminFilesTab.tsx(56,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/admin/AdminFilesTab.tsx(57,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/admin/AdminFilesTab.tsx(63,7): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/admin/AdminFilesTab.tsx(64,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/admin/AdminFilesTab.tsx(65,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/admin/AdminFilesTab.tsx(66,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/admin/AdminFilesTab.tsx(67,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/admin/AdminFilesTab.tsx(69,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/admin/AdminFilesTab.tsx(70,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/admin/AdminFilesTab.tsx(71,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/admin/AdminFilesTab.tsx(75,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/admin/AdminFilesTab.tsx(76,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/admin/AdminFilesTab.tsx(82,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/admin/AdminFilesTab.tsx(86,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/admin/AdminFilesTab.tsx(87,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/admin/AdminFilesTab.tsx(92,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/admin/AdminFilesTab.tsx(96,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/admin/AdminFilesTab.tsx(97,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/admin/AdminFilesTab.tsx(98,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/admin/AdminFilesTab.tsx(99,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/admin/AdminFilesTab.tsx(100,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.

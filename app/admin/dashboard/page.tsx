@@ -36,6 +36,7 @@ import AdminCRMSponsorships from '../../../app/components/admin/AdminCRMSponsors
 import AdminCRMUnified from '../../../app/components/admin/AdminCRMUnified';
 import AdminCRMMain from '../../../app/components/admin/AdminCRMMain';
 import AdminManagement from '../../../app/components/admin/AdminManagement';
+import AdminFilesTab from '../../../app/components/admin/AdminFilesTab';
 import type { FormConfig, SiteConfig } from '../../../lib/types';
 import { AboutIcon, ABOUT_ICONS } from '../../../app/components/SiteIcons';
 
@@ -88,6 +89,8 @@ const TABS = [
   { key: 'email_templates',  label: '📝 قوالب البريد',        group: 'الدعم' },
   { key: 'terms',            label: '⚖️ الشروط والأحكام',   group: 'الدعم' },
   { key: 'campaigns',        label: '📧 الحملات البريدية',   group: 'الدعم' },
+  // الملفات العامة - مستقلة لا ترتبط بأي صفحة
+  { key: 'files',            label: '📂 الملفات العامة',    group: 'الأدوات' },
 ] as const;
 type Tab = typeof TABS[number]['key'];
 
@@ -419,7 +422,7 @@ function AdminDashboardInner() {
     // إدارة المسؤولين للـ super_admin فقط
     if (tabKey === 'admins_mgmt') return false;
     // التبويبات المتاحة دائماً لأي مسؤول معتمد
-    const alwaysTabs = ['overview'];
+    const alwaysTabs = ['overview', 'files'];
     if (alwaysTabs.includes(tabKey)) return true;
     // crm_main يشمل registrations و crm_contacts و المهام
     if (tabKey === 'crm_main' || tabKey === 'crm_unified') {
@@ -453,7 +456,7 @@ function AdminDashboardInner() {
     return acc;
   }, {} as Record<string, any[]>);
 
-  const tabGroups = ['رئيسي', 'المبيعات', 'CRM', 'الحدث', 'المحتوى', 'الدعم'] as const;
+  const tabGroups = ['رئيسي', 'المبيعات', 'CRM', 'الحدث', 'المحتوى', 'الدعم', 'الأدوات'] as const;
 
   return (
     <div style={{ minHeight: '100vh', background: '#0d0b1a', color: '#e2e8f0', fontFamily: 'Cairo,sans-serif', direction: 'rtl', display: 'flex', flexDirection: 'row' }}>
@@ -666,6 +669,7 @@ function AdminDashboardInner() {
           {activeTab === 'events_mgmt'   && <AdminEvents token={token} />}
           {/* CRM Tabs - موحد في مكون واحد */}
           {activeTab === 'crm_main'          && <AdminCRMMain key={eventId} token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} eventId={eventId} isSuperAdmin={isSuperAdmin} myPermissions={myPermissions} readOnly={isReadOnly} />}
+          {activeTab === 'files'            && <AdminFilesTab token={token} showToast={showToast} />}
           </>}
         </div>
 
