@@ -1530,6 +1530,18 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
                 <RichInline html={editableText.hero_btn_secondary} fallback={siteCfg.hero_btn_secondary} />
               </button>
             )}
+
+            <a
+              href="/files/program2026.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-outline inline-flex items-center gap-2"
+              style={{ textDecoration: 'none' }}
+              title="تحميل برنامج الفعالية (PDF)"
+              aria-label="تحميل برنامج الفعالية (PDF)"
+            >
+              📄 برنامج الفعالية (PDF)
+            </a>
           </div>
 
           {heroImgShow && heroImgSrc && heroImgPos === 'after_buttons' && (
