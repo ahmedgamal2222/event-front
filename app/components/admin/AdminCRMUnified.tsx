@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import ContactInteractionLog from './ContactInteractionLog';
+import AdminSendEmailModal from './AdminSendEmailModal';
 
 const S = {
   inp: { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '0.5rem', padding: '0.55rem 0.85rem', color: 'white', outline: 'none', width: '100%', fontSize: '0.9rem', colorScheme: 'dark' } as React.CSSProperties,
@@ -128,6 +129,9 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly, onI
 
   const [showInteraction, setShowInteraction] = useState(false);
   const [interaction, setInteraction] = useState({ channel: 'call', direction: 'outbound', subject: '', summary: '', logged_by: '' });
+
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [interactionsReloadKey, setInteractionsReloadKey] = useState(0);
 
   const [adminsList, setAdminsList] = useState<AdminUser[]>([]);
   const [countries, setCountries] = useState<Country[]>([]);
@@ -450,8 +454,12 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly, onI
     if (d.success) {
       setShowInteraction(false);
       setInteraction({ channel: 'call', direction: 'outbound', subject: '', summary: '', logged_by: '' });
+      setInteractionsReloadKey(k => k + 1);
       if (onInteractionSaved) onInteractionSaved();
-      else openContact(selected.id);
+      else {
+        await openContact(selected.id);
+        setDetailTab('interactions');
+      }
     } else alert(d.error);
   };
 
@@ -637,7 +645,12 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly, onI
                   onClick={() => { if (roAlert()) return; setShowTaskForm(true); setDetailTab('tasks'); }}
                   title={readOnly ? 'وضع المشاهدة فقط' : 'إضافة مهمة'}
                 >+ مهمة</button>
-                <button style={S.btn('#1e293b')} onClick={() => setShowInteraction(true)}>💬</button>
+                <button
+                  style={{ ...S.btn('#0e9f8a'), ...(readOnly ? roStyle : {}) }}
+                  onClick={() => { if (roAlert()) return; setShowEmailModal(true); }}
+                  title={readOnly ? 'وضع المشاهدة فقط' : 'إرسال بريد إلكتروني للشخص وتسجيله في سجل التواصل'}
+                >📧 إرسال بريد</button>
+                <button style={S.btn('#1e293b')} onClick={() => setShowInteraction(true)} title="تسجيل تواصل">💬</button>
                 <button
                   onClick={() => { if (roAlert()) return; deleteContact(selected.id, selected.full_name); }}
                   style={{ background: 'rgba(239,68,68,0.12)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.35)', borderRadius: '0.4rem', padding: '0.45rem 0.7rem', cursor: readOnly ? 'not-allowed' : 'pointer', fontSize: '0.82rem', fontWeight: 600, ...(readOnly ? roStyle : {}) }}
@@ -1059,6 +1072,7 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly, onI
             {detailTab === 'interactions' && (
               <div>
                 <ContactInteractionLog
+                  key={interactionsReloadKey}
                   contactId={selected.id}
                   contactName={selected.full_name}
                   token={token}
@@ -1261,6 +1275,25 @@ export default function AdminCRMUnified({ token, apiBase, eventId, readOnly, onI
                 </div>
               </div>
             </div>
+          )}
+
+          {/* Send Email Modal */}
+          {showEmailModal && (
+            <AdminSendEmailModal
+              contactId={selected.id}
+              contactName={selected.full_name}
+              contactEmail={selected.email}
+              token={token}
+              apiBase={apiBase}
+              eventId={eventId}
+              onClose={() => setShowEmailModal(false)}
+              onSent={() => {
+                setShowEmailModal(false);
+                setShowInteraction(false);
+                setInteractionsReloadKey(k => k + 1);
+                openContact(selected.id).then(() => setDetailTab('interactions'));
+              }}
+            />
           )}
         </div>
       ) : null}

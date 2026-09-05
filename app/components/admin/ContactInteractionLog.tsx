@@ -20,6 +20,27 @@ const CHANNEL_LABELS: Record<string, string> = {
 const DIR_COLOR: Record<string, string> = { outbound: '#10b981', inbound: '#3b82f6' };
 const DIR_LABEL: Record<string, string> = { outbound: '↑ صادر', inbound: '↓ وارد' };
 
+/* هل الملخص محتوى HTML (مثل رسالة بريد مرسلة من المحرر) */
+const isHtml = (s?: string) => !!s && /<[a-z][^>]*>/i.test(s);
+
+const EMAIL_PREVIEW_CSS = `
+.cl-email-body{direction:rtl;text-align:right;color:#cbd5e1;font-size:0.85rem;line-height:1.9;margin-top:6px;background:rgba(255,255,255,0.04);border:1px solid rgba(108,99,255,0.22);border-radius:0.6rem;padding:12px 14px}
+.cl-email-body p{color:#cbd5e1;line-height:1.9;margin:0 0 8px}
+.cl-email-body h2{color:#a5b4fc;font-size:1.05rem;font-weight:700;margin:10px 0 6px}
+.cl-email-body h3{color:#c4b5fd;font-size:0.95rem;font-weight:700;margin:8px 0 4px}
+.cl-email-body strong{color:#fff}
+.cl-email-body em{color:#c4b5fd}
+.cl-email-body ul,.cl-email-body ol{padding-right:1.4rem;margin:4px 0 10px;color:#cbd5e1}
+.cl-email-body li{margin-bottom:4px;line-height:1.7}
+.cl-email-body a{color:#818cf8}
+.cl-email-body blockquote{border-right:3px solid #8b5cf6;background:rgba(139,92,246,0.12);padding:8px 12px;margin:8px 0;border-radius:0 8px 8px 0;color:#d6c8ff}
+.cl-email-body img{max-width:100%;border-radius:8px;margin:4px 0}
+.cl-email-body hr{border:none;border-top:1px solid rgba(148,163,184,0.2);margin:10px 0}
+.cl-email-body pre,.cl-email-body code{background:rgba(15,23,42,0.85);color:#93c5fd;border-radius:5px;padding:2px 6px;font-size:0.78rem;direction:ltr;font-family:Consolas,monospace}
+.cl-email-body table{border-collapse:collapse;width:100%}
+.cl-email-body td,.cl-email-body th{border:1px solid rgba(148,163,184,0.25);padding:6px}
+`;
+
 interface Interaction {
   id: number;
   channel: string;
@@ -124,6 +145,7 @@ export default function ContactInteractionLog({ contactId, contactName, token, a
 
   return (
     <div>
+      <style>{EMAIL_PREVIEW_CSS}</style>
       {/* Header */}
       <div style={{ 
         padding: '0.5rem 0', 
@@ -278,15 +300,32 @@ export default function ContactInteractionLog({ contactId, contactName, token, a
                             }}>
                               {CHANNEL_LABELS[item.channel] || item.channel}
                             </span>
+                            {item.channel === 'email' && item.direction === 'outbound' && (
+                              <span style={{
+                                fontSize: '0.68rem', color: '#a5b4fc',
+                                background: 'rgba(108,99,255,0.15)',
+                                border: '1px solid rgba(108,99,255,0.3)',
+                                padding: '2px 7px', borderRadius: 99, fontWeight: 600
+                              }}>
+                                ✉️ أُرسل للعميل
+                              </span>
+                            )}
                           </div>
 
                           {item.summary && (
-                            <p style={{ 
-                              color: '#94a3b8', fontSize: '0.8rem', 
-                              margin: '0 0 6px', lineHeight: 1.5 
-                            }}>
-                              {item.summary}
-                            </p>
+                            isHtml(item.summary) ? (
+                              <div
+                                className="cl-email-body"
+                                dangerouslySetInnerHTML={{ __html: item.summary }}
+                              />
+                            ) : (
+                              <p style={{
+                                color: '#94a3b8', fontSize: '0.8rem',
+                                margin: '0 0 6px', lineHeight: 1.5
+                              }}>
+                                {item.summary}
+                              </p>
+                            )
                           )}
 
                           <div style={{ 
