@@ -76,6 +76,12 @@ interface ThemeColors {
   hero_abbr_image_radius?: number; hero_abbr_image_mt?: number; hero_abbr_image_mb?: number;
   hero_name_type?: 'text'|'image'; hero_name_image?: string; hero_name_image_w?: number; hero_name_image_h?: number;
   hero_name_image_radius?: number; hero_name_image_mt?: number; hero_name_image_mb?: number;
+  // ─── أشكال العناصر (Figma-like) ───
+  card_radius?: number; card_border_w?: number; card_shadow?: 'none'|'soft'|'medium'|'strong';
+  badge_radius?: number; badge_pad_x?: number; badge_pad_y?: number; badge_bg?: string;
+  input_radius?: number; section_gap?: number; section_radius?: number;
+  section_border_w?: number; section_border?: string;
+  title_align?: 'center'|'right'|'left'; image_radius?: number;
 }
 
 const BASE_THEME: ThemeColors = {
@@ -102,6 +108,11 @@ const BASE_THEME: ThemeColors = {
   btn_primary_hover: '#5a4bf0', btn_outline_hover: '#6C63FF', link_hover: '#6C63FF',
   btn_gradient_angle: 135,
   gradient_text_from: '#6C63FF', gradient_text_to: '#f59e0b', gradient_text_enabled: '1',
+  // ── أشكال العناصر (افتراضات) ──
+  card_radius: 16, card_border_w: 1, card_shadow: 'none',
+  badge_radius: 9999, badge_pad_x: 0, badge_pad_y: 0, badge_bg: 'transparent',
+  input_radius: 8, section_gap: 0, section_radius: 0,
+  section_border_w: 0, section_border: 'transparent', title_align: 'center', image_radius: 12,
   // ── تموضع الأقسام (حشوات افتراضية) ──
   section_hero_pad_top: 128, section_hero_pad_bottom: 80, section_hero_pad_left: 24, section_hero_pad_right: 24,
   section_stats_pad_top: 80, section_stats_pad_bottom: 80, section_stats_pad_left: 24, section_stats_pad_right: 24,
@@ -254,6 +265,22 @@ const SECTIONS_META: { key: string; label: string; bgKey: keyof ThemeColors; bg2
   { key: 'tickets', label: 'التذاكر', bgKey: 'section_tickets_bg', bg2Key: 'section_tickets_bg2', defPadTop: 80, defPadBottom: 80 },
 ];
 
+// ── الأقسام القابلة لِبناء الصفحة (ترتيب + إظهار + اتجاه) — ترتيب DOM الافتراضي ──
+const BUILD_SECTIONS: { key: string; label: string; emoji: string }[] = [
+  { key: 'hero',     label: 'الواجهة الرئيسية (Hero)', emoji: '🚀' },
+  { key: 'video',    label: 'الفيديو التعريفي',        emoji: '🎬' },
+  { key: 'stats',    label: 'الإحصائيات',              emoji: '📊' },
+  { key: 'about',    label: 'عن الفعالية',             emoji: 'ℹ️' },
+  { key: 'agenda',   label: 'البرنامج',                emoji: '🗓️' },
+  { key: 'speakers', label: 'المتحدثون',               emoji: '🎙️' },
+  { key: 'venue',    label: 'مكان الحدث',              emoji: '📍' },
+  { key: 'tickets',  label: 'التذاكر',                 emoji: '🎫' },
+  { key: 'sponsors', label: 'الشركاء والرعاة',         emoji: '🤝' },
+  { key: 'register', label: 'التسجيل',                 emoji: '📝' },
+  { key: 'faq',      label: 'الأسئلة الشائعة',         emoji: '❓' },
+];
+const DEFAULT_SEC_ORDER = BUILD_SECTIONS.map(s => s.key);
+
 function ColorPicker({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.04)', borderRadius: '0.6rem', padding: '0.65rem 0.85rem' }}>
@@ -293,7 +320,7 @@ interface Props { eventId: number; eventSlug: string; token: string; currentPrim
 export default function AdminThemeBuilder({ eventId, eventSlug, token, currentPrimaryColor, save, saving }: Props) {
   const [colors, setColors] = useState<ThemeColors>({ ...BASE_THEME, primary: currentPrimaryColor || BASE_THEME.primary || '#6C63FF' });
   const [loaded, setLoaded] = useState(false);
-  const [tab, setTab] = useState<'dark' | 'light' | 'sections' | 'gradient' | 'fonts' | 'logo' | 'hero' | 'speakers' | 'blog' | 'footer' | 'preview'>('dark');
+  const [tab, setTab] = useState<'dark' | 'light' | 'sections' | 'gradient' | 'fonts' | 'logo' | 'hero' | 'speakers' | 'blog' | 'footer' | 'layout' | 'preview'>('dark');
   const [secSel, setSecSel] = useState('hero');
   const [previewMode, setPreviewMode] = useState<'dark' | 'light'>('dark');
   const [previewSrc, setPreviewSrc] = useState('');
@@ -309,6 +336,10 @@ export default function AdminThemeBuilder({ eventId, eventSlug, token, currentPr
   const [directDir, setDirectDir] = useState<'rtl' | 'ltr'>('rtl');
   // سجل الحفظ والتراجع — نسخ الإعدادات السابقة مع التاريخ والحساب
   const [history, setHistory] = useState<any[]>([]);
+  // ── بناء الصفحة: ترتيب الأقسام + إظهارها + اتجاه كل قسم ──
+  const [secOrder, setSecOrder] = useState<string[]>(DEFAULT_SEC_ORDER);
+  const [secVisible, setSecVisible] = useState<Record<string, boolean>>({});
+  const [secDirs, setSecDirs] = useState<Record<string, 'rtl' | 'ltr'>>({});
 
   useEffect(() => {
     const onMsg = (ev: MessageEvent) => {
@@ -339,6 +370,9 @@ export default function AdminThemeBuilder({ eventId, eventSlug, token, currentPr
             if (sc.theme_colors) setColors(prev => ({ ...prev, ...sc.theme_colors }));
             else if (d.data.primary_color) setColors(prev => ({ ...prev, primary: d.data.primary_color }));
             if (Array.isArray(sc.save_history)) setHistory(sc.save_history);
+            if (Array.isArray(sc.section_order) && sc.section_order.length > 0) setSecOrder(sc.section_order);
+            if (sc.section_visible && typeof sc.section_visible === 'object') setSecVisible(sc.section_visible);
+            if (sc.section_dir && typeof sc.section_dir === 'object') setSecDirs(sc.section_dir);
           } catch {}
         } else if (d.data?.primary_color) setColors(prev => ({ ...prev, primary: d.data.primary_color }));
         setLoaded(true);
@@ -357,6 +391,10 @@ export default function AdminThemeBuilder({ eventId, eventSlug, token, currentPr
     if (directText && Object.keys(directText).length > 0) params.set('theme_text', JSON.stringify(directText));
     if (directDir && directDir !== 'rtl') params.set('theme_dir', directDir);
     if (editDirectly) params.set('edit', '1');
+    // بناء الصفحة: الترتيب + الإظهار + اتجاه كل قسم
+    if (secOrder && secOrder.length > 0) params.set('theme_order', JSON.stringify(secOrder));
+    if (secVisible && Object.keys(secVisible).length > 0) params.set('theme_show', JSON.stringify(secVisible));
+    if (secDirs && Object.keys(secDirs).length > 0) params.set('theme_dirs', JSON.stringify(secDirs));
     return `/${eventSlug}?${params.toString()}`;
   };
 
@@ -367,7 +405,7 @@ export default function AdminThemeBuilder({ eventId, eventSlug, token, currentPr
     debounceRef.current = setTimeout(() => setPreviewSrc(buildPreviewUrl(previewMode)), 450);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [colors, tab, previewMode, editDirectly, eventSlug]);
+  }, [colors, tab, previewMode, editDirectly, eventSlug, secOrder, secVisible, secDirs]);
 
   const saveAll = () => save(async () => {
     const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
@@ -390,6 +428,9 @@ export default function AdminThemeBuilder({ eventId, eventSlug, token, currentPr
       theme_colors: sc.theme_colors || {},
       editable_text: sc.editable_text || {},
       page_direction: sc.page_direction || 'rtl',
+      section_order: Array.isArray(sc.section_order) ? sc.section_order : DEFAULT_SEC_ORDER,
+      section_visible: sc.section_visible || {},
+      section_dir: sc.section_dir || {},
     });
     if (hist.length > 20) hist.splice(0, hist.length - 20);
     sc.save_history = hist;
@@ -399,6 +440,10 @@ export default function AdminThemeBuilder({ eventId, eventSlug, token, currentPr
       sc.editable_text = { ...(sc.editable_text || {}), ...directText };
     }
     if (directDir && directDir !== 'rtl') sc.page_direction = directDir;
+    // بناء الصفحة: ترتيب الأقسام + الإظهار + الاتجاه (تُدمج وتُحبس في site_config)
+    sc.section_order = Array.isArray(secOrder) && secOrder.length > 0 ? secOrder : DEFAULT_SEC_ORDER;
+    sc.section_visible = { ...(secVisible || {}) };
+    sc.section_dir = { ...(secDirs || {}) };
     const res = await fetch(`${API_BASE}/api/events/${eventId}`, {
       method: 'PUT', headers, body: JSON.stringify({ primary_color: colors.primary, site_config: sc }),
     });
@@ -415,6 +460,9 @@ export default function AdminThemeBuilder({ eventId, eventSlug, token, currentPr
     if (h.theme_colors && typeof h.theme_colors === 'object') setColors(prev => ({ ...prev, ...h.theme_colors }));
     if (h.editable_text && typeof h.editable_text === 'object') setDirectText({ ...(h.editable_text as any) });
     setDirectDir(h.page_direction === 'ltr' ? 'ltr' : 'rtl');
+    if (Array.isArray(h.section_order) && h.section_order.length > 0) setSecOrder(h.section_order);
+    if (h.section_visible && typeof h.section_visible === 'object') setSecVisible(h.section_visible);
+    if (h.section_dir && typeof h.section_dir === 'object') setSecDirs(h.section_dir);
     setTab('preview');
   };
 
@@ -442,6 +490,28 @@ export default function AdminThemeBuilder({ eventId, eventSlug, token, currentPr
   const applyPreset = (p: ThemeColors) => setColors(prev => ({ ...BASE_THEME, ...prev, ...p }));
   const resetTheme = () => setColors({ ...BASE_THEME });
 
+  // ── بناء الصفحة: أدوات الترتيب والإظهار والاتجاه ──
+  const moveSection = (key: string, dir: -1 | 1) => {
+    setSecOrder(prev => {
+      const arr = prev.length ? [...prev] : [...DEFAULT_SEC_ORDER];
+      const i = arr.indexOf(key);
+      const j = i + dir;
+      if (i < 0 || j < 0 || j >= arr.length) return prev;
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      return arr;
+    });
+  };
+  const toggleSectionVisible = (key: string) =>
+    setSecVisible(prev => ({ ...prev, [key]: prev[key] === false }));
+  const toggleSectionDir = (key: string) =>
+    setSecDirs(prev => ({ ...prev, [key]: (prev[key] || 'rtl') === 'rtl' ? 'ltr' : 'rtl' }));
+  // زر مصغّر لأزرار بناء الصفحة (ترتيب / إظهار / اتجاه)
+  const iconBtn = (disabled: boolean, color = '#94a3b8'): React.CSSProperties => ({
+    width: 34, height: 34, borderRadius: '0.45rem', cursor: disabled ? 'not-allowed' : 'pointer',
+    border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)',
+    color: disabled ? '#334155' : color, fontWeight: 700, fontSize: '0.82rem', lineHeight: 1, padding: 0,
+  });
+
   if (!loaded) return <p style={{ color: '#94a3b8' }}>جار التحميل...</p>;
 
   const TABS: { key: typeof tab; label: string }[] = [
@@ -455,6 +525,7 @@ export default function AdminThemeBuilder({ eventId, eventSlug, token, currentPr
     { key: 'speakers',label: '🎙️ بطاقات المتحدثين' },
     { key: 'blog',    label: '📝 صفحة المدونات' },
     { key: 'footer',  label: '🦶 الفوتر' },
+    { key: 'layout',  label: '🔀 بناء الصفحة' },
     { key: 'preview', label: '👁️ معاينة حية' },
   ];
 const activeFields = tab === 'dark' ? DARK_FIELDS : tab === 'light' ? LIGHT_FIELDS : SECTION_FIELDS;
@@ -914,6 +985,104 @@ const activeFields = tab === 'dark' ? DARK_FIELDS : tab === 'light' ? LIGHT_FIEL
             )}
           </div>
           <HeroSwapEditor colors={colors as any} setValue={setValue} token={token} />
+        </div>
+      )}
+
+{/* ── Layout / Build page tab ── */}
+      {tab === 'layout' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {/* ترتيب الأقسام + الإظهار + الاتجاه */}
+          <div style={S.card}>
+            <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 4, fontSize: '0.95rem' }}>🔀 ترتيب الأقسام في الصفحة</h3>
+            <p style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: 12 }}>
+              أعد ترتيب أقسام الموقع بالأسهم ↑↓، وأظهر/أخفِ أي قسم بزر العين 👁، وبدّل اتجاه محتوى أي قسم (RTL/LTR).
+              كل التغييرات تنعكس فوراً في «👁️ المعاينة الحية» وتُحفظ نهائياً بضغط «💾 حفظ الثيم».
+            </p>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+              <button onClick={() => setSecOrder(DEFAULT_SEC_ORDER)} style={S.btn('#1a2744', true)}>↺ إعادة الترتيب الافتراضي</button>
+              <button onClick={() => setSecVisible({})} style={S.btn('#1a2744', true)}>👁️ إظهار جميع الأقسام</button>
+              <button onClick={() => setSecDirs({})} style={S.btn('#1a2744', true)}>↔️ استرجاع الاتجاه الافتراضي</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {secOrder.map((key, i) => {
+                const meta = BUILD_SECTIONS.find(s => s.key === key);
+                if (!meta) return null;
+                const hidden = secVisible[key] === false;
+                const isRtl = secDirs[key] !== 'ltr';
+                return (
+                  <div key={key} style={{
+                    display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+                    background: hidden ? 'rgba(255,255,255,0.02)' : 'rgba(108,99,255,0.08)',
+                    border: `1px solid ${hidden ? 'rgba(255,255,255,0.06)' : 'rgba(108,99,255,0.25)'}`,
+                    borderRadius: '0.7rem', padding: '0.55rem 0.85rem', opacity: hidden ? 0.55 : 1,
+                  }}>
+                    <div style={{ minWidth: 26, fontWeight: 800, color: '#6C63FF', fontSize: '0.9rem' }}>{i + 1}</div>
+                    <div style={{ flex: 1, minWidth: 170, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: '1.1rem' }}>{meta.emoji}</span>
+                      <span style={{ color: 'white', fontWeight: 600, fontSize: '0.86rem' }}>{meta.label}</span>
+                      {hidden && <span style={{ fontSize: '0.7rem', color: '#f87171' }}>مخفي</span>}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <button disabled={i === 0} onClick={() => moveSection(key, -1)} title="تحريك لأعلى"
+                        style={iconBtn(i === 0)}>↑</button>
+                      <button disabled={i === secOrder.length - 1} onClick={() => moveSection(key, 1)} title="تحريك لأسفل"
+                        style={iconBtn(i === secOrder.length - 1)}>↓</button>
+                      <button onClick={() => toggleSectionVisible(key)} title={hidden ? 'إظهار القسم' : 'إخفاء القسم'}
+                        style={iconBtn(false, hidden ? '#f87171' : '#22c55e')}>{hidden ? '🚫' : '👁'}</button>
+                      <button onClick={() => toggleSectionDir(key)} title="اتجاه المحتوى داخل القسم"
+                        style={iconBtn(false, isRtl ? '#6C63FF' : '#22c55e')}>{isRtl ? '↔ RTL' : '↔ LTR'}</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: 10 }}>
+              💡 بعض الأقسام (مثل البرنامج/المتحدثين) تظهر فقط عندما يحتوي الحدث على بياناتها.
+            </div>
+          </div>
+{/* ── أشكال العناصر (Figma-like) ── */}
+          <div style={S.card}>
+            <h3 style={{ color: 'white', fontWeight: 700, marginBottom: 4, fontSize: '0.95rem' }}>🪄 أشكال العناصر (تحكم مثل Figma)</h3>
+            <p style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: 12 }}>
+              تحكم كامل باستدارة الزوايا، سمك الحدود، الحشوات، الظلال، والمحاذاة لكل نوع عنصر في الصفحة — تُطبق مباشرة على الموقع.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 10 }}>
+              <SizeControl label="استدارة البطاقات (px)" min={0} max={48} value={(colors.card_radius as number) ?? 16} onChange={v => setValue('card_radius', v)} />
+              <SizeControl label="سمك حدود البطاقات (px)" min={0} max={6} value={(colors.card_border_w as number) ?? 1} onChange={v => setValue('card_border_w', v)} />
+              <SizeControl label="استدارة الشارات (px)" min={0} max={40} value={(colors.badge_radius as number) ?? 9999} onChange={v => setValue('badge_radius', v)} />
+              <SizeControl label="حشوة الشارة أفقية (px)" min={0} max={40} value={(colors.badge_pad_x as number) ?? 0} onChange={v => setValue('badge_pad_x', v)} />
+              <SizeControl label="حشوة الشارة عمودية (px)" min={0} max={30} value={(colors.badge_pad_y as number) ?? 0} onChange={v => setValue('badge_pad_y', v)} />
+              <SizeControl label="استدارة الحقول (px)" min={0} max={30} value={(colors.input_radius as number) ?? 8} onChange={v => setValue('input_radius', v)} />
+              <SizeControl label="المسافة بين الأقسام (px)" min={0} max={120} value={(colors.section_gap as number) ?? 0} onChange={v => setValue('section_gap', v)} />
+              <SizeControl label="استدارة زوايا الأقسام (px)" min={0} max={60} value={(colors.section_radius as number) ?? 0} onChange={v => setValue('section_radius', v)} />
+              <SizeControl label="سمك حدود الأقسام (px)" min={0} max={6} value={(colors.section_border_w as number) ?? 0} onChange={v => setValue('section_border_w', v)} />
+              <SizeControl label="استدارة الصور (px)" min={0} max={60} value={(colors.image_radius as number) ?? 12} onChange={v => setValue('image_radius', v)} />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10, marginTop: 10, background: 'rgba(0,0,0,0.2)', borderRadius: '0.6rem', padding: 12 }}>
+              <div>
+                <label style={{ ...S.label, color: '#94a3b8' }}>ظل البطاقات</label>
+                <select value={String((colors as any).card_shadow || 'none')} onChange={e => setValue('card_shadow', e.target.value)} style={S.inp}>
+                  <option value="none">بدون ظل</option>
+                  <option value="soft">ظل ناعم</option>
+                  <option value="medium">ظل متوسط</option>
+                  <option value="strong">ظل قوي</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ ...S.label, color: '#94a3b8' }}>محاذاة عناوين الأقسام</label>
+                <select value={String((colors as any).title_align || 'center')} onChange={e => setValue('title_align', e.target.value)} style={S.inp}>
+                  <option value="center">وسط</option>
+                  <option value="right">يمين</option>
+                  <option value="left">يسار</option>
+                </select>
+              </div>
+              <ColorPicker label="خلفية الشارات" value={(colors.badge_bg as string) || ''} onChange={v => setValue('badge_bg', v)} />
+              <ColorPicker label="لون حدود الأقسام" value={(colors.section_border as string) || ''} onChange={v => setValue('section_border', v)} />
+            </div>
+            <div style={{ fontSize: '0.72rem', color: '#64748b', background: 'rgba(0,0,0,0.25)', borderRadius: '0.6rem', padding: 12, marginTop: 12 }}>
+              💾 بعد الانتهاء اضغط «حفظ الثيم» — تُحفظ كل هذه الإعدادات وتُطبق على الصفحة الحقيقية مباشرة. «المعاينة الحية» تعرض النتيجة قبل الحفظ.
+            </div>
+          </div>
         </div>
       )}
 

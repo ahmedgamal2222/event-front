@@ -61,10 +61,13 @@ export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all', r
 
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
-  // Load admins for dropdown
+  // Load admins for dropdown — فقط المعتمدين الفعليين (دفاع إضافي فوق فلتر الـ Backend)
   useEffect(() => {
     fetch(`${apiBase}/api/auth/admins-list`, { headers }).then(r => r.json()).then(d => {
-      if (d.success) setAdminsList(d.data || []);
+      if (d.success) {
+        const list = (d.data || []).filter((a: any) => a.approval_status !== 'pending' && a.approval_status !== 'rejected' && a.is_active !== 0);
+        setAdminsList(list);
+      }
     }).catch(() => {});
   }, [apiBase, token]);
 
@@ -309,7 +312,7 @@ export default function AdminCRMTasks({ token, apiBase, eventId, mode = 'all', r
                 ...form,
                 assignees: extraAssignees.map(id => {
                   const a = adminsList.find(ad => ad.id === id);
-                  return { email: a?.email || '', name: a?.name || '' };
+                  return { admin_email: a?.email || '', admin_name: a?.name || '', is_creator: 0, email: a?.email || '', name: a?.name || '' };
                 }),
               })} disabled={saving}>{saving ? 'جاري الحفظ...' : 'حفظ'}</button>
               <button style={S.btn('#374151')} onClick={() => setShowForm(false)}>إلغاء</button>

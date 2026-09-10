@@ -78,6 +78,21 @@
     --sec-sponsors-pad-top: 4rem; --sec-sponsors-pad-bottom: 4rem; --sec-sponsors-pad-left: 1.5rem; --sec-sponsors-pad-right: 1.5rem;
     --sec-register-pad-top: 5rem; --sec-register-pad-bottom: 5rem; --sec-register-pad-left: 1.5rem; --sec-register-pad-right: 1.5rem;
     --sec-tickets-pad-top: 5rem; --sec-tickets-pad-bottom: 5rem; --sec-tickets-pad-left: 1.5rem; --sec-tickets-pad-right: 1.5rem;
+
+    /* ── أشكال العناصر (تتحكم بها لوحة الثيم والألوان — Figma-like) ── */
+    --card-radius: 1rem;
+    --card-border-w: 1px;
+    --card-shadow: none;
+    --badge-radius: 9999px;
+    --badge-pad-x: 0px;
+    --badge-pad-y: 0px;
+    --badge-bg: transparent;
+    --input-radius: 0.5rem;
+    --section-gap: 0px;
+    --section-radius: 0px;
+    --section-border-w: 0px;
+    --section-border-color: transparent;
+    --image-radius: 0.75rem;
   }
 
   /* ── Light Mode ─────────────────────────────────────────────── */
@@ -459,11 +474,16 @@
     text-transform: uppercase;
     letter-spacing: 0.1em;
     margin-bottom: 0.5rem;
+    background: var(--badge-bg, transparent);
+    padding: var(--badge-pad-y, 0) var(--badge-pad-x, 0);
+    border-radius: var(--badge-radius, 9999px);
+    display: inline-block;
   }
   .card {
     background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 1rem;
+    border: var(--card-border-w, 1px) solid var(--border);
+    border-radius: var(--card-radius, 1rem);
+    box-shadow: var(--card-shadow, none);
     padding: 1.5rem;
   }
   .tag {
@@ -477,7 +497,7 @@
     width: 100%;
     background: var(--panel);
     border: 1px solid var(--panel-border);
-    border-radius: 0.5rem;
+    border-radius: var(--input-radius, 0.5rem);
     padding: 0.75rem 1rem;
     color: var(--text);
     font-size: 0.95rem;

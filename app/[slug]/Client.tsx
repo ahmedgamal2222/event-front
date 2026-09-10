@@ -147,7 +147,7 @@ function InlineRichText({ value, onChange, placeholder }: { value: string; onCha
     if (!ref.current) return;
     ref.current.focus();
     try {
-      document.execCommand('styleWithCSS', false, true);
+      document.execCommand('styleWithCSS', false, true as any);
       document.execCommand('foreColor', false, color);
     } catch { /* بعض المتصفحات ترفض بدون تحديد */ }
     emit();
@@ -796,6 +796,10 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
   const [previewTheme, setPreviewTheme] = useState<Record<string, string | number> | null>(null);
   const [previewText, setPreviewText] = useState<Record<string, string> | null>(null);
   const [previewDir, setPreviewDir] = useState<'rtl' | 'ltr' | null>(null);
+  // معاينة ترتيب الأقسام / إظهارها / اتجاه كل قسم (من لوحة بناء الصفحة في الأدمن)
+  const [previewOrder, setPreviewOrder] = useState<string[] | null>(null);
+  const [previewShow, setPreviewShow] = useState<Record<string, boolean> | null>(null);
+  const [previewDirs, setPreviewDirs] = useState<Record<string, 'rtl' | 'ltr'> | null>(null);
   const [editMode, setEditMode] = useState(false);
 
   // ── Direct editor inside preview (click element → edit) ──
@@ -847,6 +851,9 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
     const tt = params.get('theme_text');
     const td = params.get('theme_dir');
     const ed = params.get('edit');
+    const torder = params.get('theme_order');
+    const tshow = params.get('theme_show');
+    const tdirs = params.get('theme_dirs');
     if (tm === 'light' || tm === 'dark') setPreviewMode(tm);
     if (tp) {
       try { setPreviewTheme(JSON.parse(decodeURIComponent(tp))); } catch {}
@@ -855,6 +862,18 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       try { setPreviewText(JSON.parse(decodeURIComponent(tt))); } catch {}
     }
     if (td === 'rtl' || td === 'ltr') setPreviewDir(td);
+    if (torder) {
+      try {
+        const arr = JSON.parse(decodeURIComponent(torder));
+        if (Array.isArray(arr)) setPreviewOrder(arr.filter((x: any) => typeof x === 'string'));
+      } catch {}
+    }
+    if (tshow) {
+      try { const o = JSON.parse(decodeURIComponent(tshow)); if (o && typeof o === 'object') setPreviewShow(o); } catch {}
+    }
+    if (tdirs) {
+      try { const o = JSON.parse(decodeURIComponent(tdirs)); if (o && typeof o === 'object') setPreviewDirs(o); } catch {}
+    }
     setEditMode(ed === '1');
   }, []);
 
@@ -1150,6 +1169,35 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       secPadVars[`--sec-${m[1]}-pad-${m[2]}`] = Number(v) + 'px';
     }
   }
+  // ظلال البطاقات (من لوحة الأشكال في الثيم)
+  const CARD_SHADOW_CSS: Record<string, string> = {
+    none: 'none',
+    soft: '0 4px 20px rgba(0,0,0,0.12)',
+    medium: '0 8px 32px rgba(0,0,0,0.20)',
+    strong: '0 16px 48px rgba(0,0,0,0.32)',
+  };
+  // ── ترتيب الأقسام / إظهارها / اتجاه كل قسم ──
+  // (تُخزَّن في site_config وتُدمج مع معايير معاينة لوحة الأدمن)
+  const savedSections: string[] = Array.isArray((siteCfg as any).section_order) ? (siteCfg as any).section_order : [];
+  const orderedSections: string[] = previewOrder && previewOrder.length ? previewOrder : savedSections;
+  const visibleMap: Record<string, boolean> = { ...((siteCfg as any).section_visible || {}), ...(previewShow || {}) };
+  const dirMap: Record<string, 'rtl' | 'ltr'> = { ...((siteCfg as any).section_dir || {}), ...(previewDirs || {}) };
+  const secLayoutStyle: Record<string, string> = {};
+  orderedSections.forEach((k: string, i: number) => { secLayoutStyle[`--sec-order-${k}`] = String(i + 1); });
+  // الفوتر يبقى في النهاية دائماً مهما رُتِّبت الأقسام
+  secLayoutStyle['--sec-order-footer'] = String(orderedSections.length + 1);
+  Object.entries(visibleMap).forEach(([k, v]) => { secLayoutStyle[`--sec-show-${k}`] = v ? 'block' : 'none'; });
+  Object.entries(dirMap).forEach(([k, v]) => { if (v === 'rtl' || v === 'ltr') secLayoutStyle[`--sec-dir-${k}`] = v; });
+  // ستايل يُدمج في كل قسم: ترتيب (flex order) + إظهار/إخفاء + اتجاه + شكل القسم العام
+  const secLayout = (k: string): React.CSSProperties => ({
+    width: '100%',
+    minWidth: 0,
+    order: `var(--sec-order-${k}, 0)`,
+    display: `var(--sec-show-${k}, block)`,
+    direction: `var(--sec-dir-${k}, ${pageDir})` as React.CSSProperties['direction'],
+    borderRadius: 'var(--section-radius, 0px)',
+    border: 'var(--section-border-w, 0px) solid var(--section-border-color, transparent)',
+  });
   // تفعيل/إيقاف تدرج العناوين من الثيم
   if (typeof document !== 'undefined') {
     document.documentElement.setAttribute('data-gradient-text', String(themeColors.gradient_text_enabled ?? '1') === '0' ? '0' : '1');
@@ -1218,7 +1266,21 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
     ...secPadVars,
     // ── Font family + heading alignment (أي خط / موضع العنوان) ──
     '--font-family': fontFamilyCss((themeColors as any).font_family),
-    '--title-align': (themeColors as any).text_align || undefined,
+    '--title-align': (themeColors as any).title_align || (themeColors as any).text_align || undefined,
+    // ── أشكال العناصر (بطاقات / شارات / حقول / أقسام / صور) ──
+    '--card-radius':        ((themeColors.card_radius as number) ?? 16) + 'px',
+    '--card-border-w':      ((themeColors.card_border_w as number) ?? 1) + 'px',
+    '--card-shadow':        CARD_SHADOW_CSS[String((themeColors as any).card_shadow || 'none')] || 'none',
+    '--badge-radius':       ((themeColors.badge_radius as number) ?? 9999) + 'px',
+    '--badge-pad-x':        ((themeColors.badge_pad_x as number) ?? 0) + 'px',
+    '--badge-pad-y':        ((themeColors.badge_pad_y as number) ?? 0) + 'px',
+    '--badge-bg':           (themeColors.badge_bg as string) || 'transparent',
+    '--input-radius':       ((themeColors.input_radius as number) ?? 8) + 'px',
+    '--section-gap':        ((themeColors.section_gap as number) ?? 0) + 'px',
+    '--section-radius':     ((themeColors.section_radius as number) ?? 0) + 'px',
+    '--section-border-w':   ((themeColors.section_border_w as number) ?? 0) + 'px',
+    '--section-border-color': (themeColors.section_border as string) || 'transparent',
+    '--image-radius':       ((themeColors.image_radius as number) ?? 12) + 'px',
   } as React.CSSProperties : undefined;
 
   // ── إعدادات بطاقات المتحدثين (من الثيم) ──
@@ -1322,7 +1384,14 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
   return (
     <div
       className="event-page min-h-screen"
-      style={{ background: 'var(--bg-dark)', ...(themeVarsStyle || {}) }}
+      style={{
+        background: 'var(--bg-dark)',
+        ...(themeVarsStyle || {}),
+        ...secLayoutStyle,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 'var(--section-gap, 0px)',
+      }}
       data-editing={editMode ? '1' : '0'}
       dir={pageDir}
       onClickCapture={handleEditClick}
@@ -1409,7 +1478,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
         data-bg="section_hero_bg"
         data-options="transparent"
         data-pad="hero"
-        style={{ background: 'var(--section-hero-bg, transparent)', paddingTop: 'var(--sec-hero-pad-top, 8rem)', paddingBottom: 'var(--sec-hero-pad-bottom, 5rem)', paddingLeft: 'var(--sec-hero-pad-left, 1.5rem)', paddingRight: 'var(--sec-hero-pad-right, 1.5rem)' }}
+        style={{ ...secLayout('hero'), background: 'var(--section-hero-bg, transparent)', paddingTop: 'var(--sec-hero-pad-top, 8rem)', paddingBottom: 'var(--sec-hero-pad-bottom, 5rem)', paddingLeft: 'var(--sec-hero-pad-left, 1.5rem)', paddingRight: 'var(--sec-hero-pad-right, 1.5rem)' }}
       >
         {/* خلفية الوسائط: صورة / فيديو / يوتيوب — يضبطها الأدمن */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -1542,7 +1611,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
 
       {/* ── Intro Video ───────────────────────────────────────────────────────── */}
       {event?.show_intro_video && event?.intro_video_url && (
-        <section className="intro-video-section" data-edit="section-bg" data-label="قسم الفيديو التعريفي" data-bg="section_video_bg" data-options="transparent" data-pad="video" style={{ background: 'var(--section-video-bg, rgba(108,99,255,0.04))', paddingTop: 'var(--sec-video-pad-top, 4rem)', paddingBottom: 'var(--sec-video-pad-bottom, 4rem)', paddingLeft: 'var(--sec-video-pad-left, 1.5rem)', paddingRight: 'var(--sec-video-pad-right, 1.5rem)' }}>
+        <section className="intro-video-section" data-edit="section-bg" data-label="قسم الفيديو التعريفي" data-bg="section_video_bg" data-options="transparent" data-pad="video" style={{ ...secLayout('video'), background: 'var(--section-video-bg, rgba(108,99,255,0.04))', paddingTop: 'var(--sec-video-pad-top, 4rem)', paddingBottom: 'var(--sec-video-pad-bottom, 4rem)', paddingLeft: 'var(--sec-video-pad-left, 1.5rem)', paddingRight: 'var(--sec-video-pad-right, 1.5rem)' }}>
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-8">
               <div className="section-badge" data-edit="text" data-label="شارة قسم الفيديو" data-text="video_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
@@ -1591,7 +1660,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       )}
 
       {/* ── Stats ─────────────────────────────────────────────────────────────── */}
-      <section className="stats-section" data-edit="section-bg" data-label="خلفية قسم الإحصائيات" data-bg="section_stats_bg" data-options="transparent" data-pad="stats" style={{ paddingTop: 'var(--sec-stats-pad-top, 4rem)', paddingBottom: 'var(--sec-stats-pad-bottom, 4rem)', paddingLeft: 'var(--sec-stats-pad-left, 1.5rem)', paddingRight: 'var(--sec-stats-pad-right, 1.5rem)' }}>
+      <section className="stats-section" data-edit="section-bg" data-label="خلفية قسم الإحصائيات" data-bg="section_stats_bg" data-options="transparent" data-pad="stats" style={{ ...secLayout('stats'), paddingTop: 'var(--sec-stats-pad-top, 4rem)', paddingBottom: 'var(--sec-stats-pad-bottom, 4rem)', paddingLeft: 'var(--sec-stats-pad-left, 1.5rem)', paddingRight: 'var(--sec-stats-pad-right, 1.5rem)' }}>
         <div className="max-w-4xl mx-auto">
           <div className="card grid grid-cols-2 md:grid-cols-4 gap-8 py-8"
             data-edit="card" data-label="أرقام قسم الإحصائيات (الخلفية ولون/حجم النصوص)"
@@ -1605,7 +1674,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       </section>
 
       {/* ── About ─────────────────────────────────────────────────────────────── */}
-      <section id="about" data-pad="about" data-edit="section-bg" data-label="خلفية قسم عن الفعالية" data-bg="section_about_bg" data-options="transparent" style={{ paddingTop: 'var(--sec-about-pad-top, 5rem)', paddingBottom: 'var(--sec-about-pad-bottom, 5rem)', paddingLeft: 'var(--sec-about-pad-left, 1.5rem)', paddingRight: 'var(--sec-about-pad-right, 1.5rem)' }}>
+      <section id="about" data-pad="about" data-edit="section-bg" data-label="خلفية قسم عن الفعالية" data-bg="section_about_bg" data-options="transparent" style={{ ...secLayout('about'), paddingTop: 'var(--sec-about-pad-top, 5rem)', paddingBottom: 'var(--sec-about-pad-bottom, 5rem)', paddingLeft: 'var(--sec-about-pad-left, 1.5rem)', paddingRight: 'var(--sec-about-pad-right, 1.5rem)' }}>
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <div className="section-badge" data-edit="text" data-label="شارة قسم عن الفعالية" data-text="about_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
@@ -1637,7 +1706,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
 
       {/* ── Agenda ────────────────────────────────────────────────────────────── */}
       {agenda.length > 0 && (
-      <section id="agenda" data-pad="agenda" data-edit="section-bg" data-label="خلفية قسم البرنامج" data-bg="section_agenda_bg" data-options="transparent" style={{ background: 'var(--section-agenda-bg, rgba(108,99,255,0.03))', paddingTop: 'var(--sec-agenda-pad-top, 5rem)', paddingBottom: 'var(--sec-agenda-pad-bottom, 5rem)', paddingLeft: 'var(--sec-agenda-pad-left, 1.5rem)', paddingRight: 'var(--sec-agenda-pad-right, 1.5rem)' }}>
+      <section id="agenda" data-pad="agenda" data-edit="section-bg" data-label="خلفية قسم البرنامج" data-bg="section_agenda_bg" data-options="transparent" style={{ ...secLayout('agenda'), background: 'var(--section-agenda-bg, rgba(108,99,255,0.03))', paddingTop: 'var(--sec-agenda-pad-top, 5rem)', paddingBottom: 'var(--sec-agenda-pad-bottom, 5rem)', paddingLeft: 'var(--sec-agenda-pad-left, 1.5rem)', paddingRight: 'var(--sec-agenda-pad-right, 1.5rem)' }}>
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
             <div className="section-badge" data-edit="text" data-label="شارة قسم البرنامج" data-text="agenda_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
@@ -1711,7 +1780,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
 
       {/* ── Speakers ─────────────────────────────────────────────────────────── */}
       {speakers.length > 0 && (
-      <section id="speakers" data-pad="speakers" data-edit="section-bg" data-label="خلفية قسم المتحدثين" data-bg="section_speakers_bg" data-options="transparent" style={{ paddingTop: 'var(--sec-speakers-pad-top, 5rem)', paddingBottom: 'var(--sec-speakers-pad-bottom, 5rem)', paddingLeft: 'var(--sec-speakers-pad-left, 1.5rem)', paddingRight: 'var(--sec-speakers-pad-right, 1.5rem)' }}>
+      <section id="speakers" data-pad="speakers" data-edit="section-bg" data-label="خلفية قسم المتحدثين" data-bg="section_speakers_bg" data-options="transparent" style={{ ...secLayout('speakers'), paddingTop: 'var(--sec-speakers-pad-top, 5rem)', paddingBottom: 'var(--sec-speakers-pad-bottom, 5rem)', paddingLeft: 'var(--sec-speakers-pad-left, 1.5rem)', paddingRight: 'var(--sec-speakers-pad-right, 1.5rem)' }}>
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <div className="section-badge" data-edit="text" data-label="شارة قسم المتحدثين" data-text="speakers_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
@@ -1782,7 +1851,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       </section>
       )}
       {venueGallery.length > 0 && (
-        <section id="venue" data-pad="venue" style={{ background: 'var(--section-venue-bg, var(--band))', paddingTop: 'var(--sec-venue-pad-top, 5rem)', paddingBottom: 'var(--sec-venue-pad-bottom, 5rem)', paddingLeft: 'var(--sec-venue-pad-left, 1.5rem)', paddingRight: 'var(--sec-venue-pad-right, 1.5rem)' }}>
+        <section id="venue" data-pad="venue" style={{ ...secLayout('venue'), background: 'var(--section-venue-bg, var(--band))', paddingTop: 'var(--sec-venue-pad-top, 5rem)', paddingBottom: 'var(--sec-venue-pad-bottom, 5rem)', paddingLeft: 'var(--sec-venue-pad-left, 1.5rem)', paddingRight: 'var(--sec-venue-pad-right, 1.5rem)' }}>
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <div className="section-badge" data-edit="text" data-label="شارة قسم المكان" data-text="venue_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
@@ -1862,11 +1931,13 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       )}
 
       {/* ── Tickets ───────────────────────────────────────────────────────────── */}
-      {event && <TicketsSection key={`tickets-${event.id}`} eventId={event.id} editableText={editableText} />}
+      <div style={{ ...secLayout('tickets') }}>
+        {event && <TicketsSection key={`tickets-${event.id}`} eventId={event.id} editableText={editableText} />}
+      </div>
 
       {/* ── Sponsors ──────────────────────────────────────────────────────────── */}
       {sponsors.length > 0 && (
-        <section id="sponsors" data-pad="sponsors" data-edit="section-bg" data-label="خلفية قسم الشركاء" data-bg="section_sponsors_bg" data-options="transparent" style={{ background: 'var(--section-sponsors-bg, rgba(108,99,255,0.03))', paddingTop: 'var(--sec-sponsors-pad-top, 4rem)', paddingBottom: 'var(--sec-sponsors-pad-bottom, 4rem)', paddingLeft: 'var(--sec-sponsors-pad-left, 1.5rem)', paddingRight: 'var(--sec-sponsors-pad-right, 1.5rem)' }}>
+        <section id="sponsors" data-pad="sponsors" data-edit="section-bg" data-label="خلفية قسم الشركاء" data-bg="section_sponsors_bg" data-options="transparent" style={{ ...secLayout('sponsors'), background: 'var(--section-sponsors-bg, rgba(108,99,255,0.03))', paddingTop: 'var(--sec-sponsors-pad-top, 4rem)', paddingBottom: 'var(--sec-sponsors-pad-bottom, 4rem)', paddingLeft: 'var(--sec-sponsors-pad-left, 1.5rem)', paddingRight: 'var(--sec-sponsors-pad-right, 1.5rem)' }}>
           <div className="max-w-5xl mx-auto text-center">
             <div className="section-badge" data-edit="text" data-label="شارة قسم الشركاء" data-text="sponsors_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
               <RichInline html={editableText.sponsors_badge} fallback={'الشركاء والرعاة'} />
@@ -1926,7 +1997,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       )}
 
       {/* ── Register ─────────────────────────────────────────────────────────── */}
-      <section id="register" data-pad="register" data-edit="section-bg" data-label="خلفية قسم التسجيل" data-bg="section_register_bg" data-options="transparent" style={{ paddingTop: 'var(--sec-register-pad-top, 5rem)', paddingBottom: 'var(--sec-register-pad-bottom, 5rem)', paddingLeft: 'var(--sec-register-pad-left, 1.5rem)', paddingRight: 'var(--sec-register-pad-right, 1.5rem)' }}>
+      <section id="register" data-pad="register" data-edit="section-bg" data-label="خلفية قسم التسجيل" data-bg="section_register_bg" data-options="transparent" style={{ ...secLayout('register'), paddingTop: 'var(--sec-register-pad-top, 5rem)', paddingBottom: 'var(--sec-register-pad-bottom, 5rem)', paddingLeft: 'var(--sec-register-pad-left, 1.5rem)', paddingRight: 'var(--sec-register-pad-right, 1.5rem)' }}>
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
             <div className="section-badge" data-edit="text" data-label="شارة قسم التسجيل" data-text="register_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
@@ -1950,7 +2021,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
 
       {/* ── FAQ ────────────────────────────────────────────────────────────────── */}
       {faqs.length > 0 && (
-        <section id="faq" data-pad="faq" data-edit="section-bg" data-label="خلفية قسم الأسئلة" data-bg="section_faq_bg" data-options="transparent" style={{ background: 'var(--section-faq-bg, rgba(108,99,255,0.03))', paddingTop: 'var(--sec-faq-pad-top, 5rem)', paddingBottom: 'var(--sec-faq-pad-bottom, 5rem)', paddingLeft: 'var(--sec-faq-pad-left, 1.5rem)', paddingRight: 'var(--sec-faq-pad-right, 1.5rem)' }}>
+        <section id="faq" data-pad="faq" data-edit="section-bg" data-label="خلفية قسم الأسئلة" data-bg="section_faq_bg" data-options="transparent" style={{ ...secLayout('faq'), background: 'var(--section-faq-bg, rgba(108,99,255,0.03))', paddingTop: 'var(--sec-faq-pad-top, 5rem)', paddingBottom: 'var(--sec-faq-pad-bottom, 5rem)', paddingLeft: 'var(--sec-faq-pad-left, 1.5rem)', paddingRight: 'var(--sec-faq-pad-right, 1.5rem)' }}>
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-10">
               <div className="section-badge" data-edit="text" data-label="شارة قسم الأسئلة" data-text="faq_badge" data-color="primary" data-size="fs_small" data-min="10" data-max="24">
@@ -1983,7 +2054,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       )}
 
       {/* ── Footer ────────────────────────────────────────────────────────────── */}
-      <footer className="py-12 px-6 border-t">
+      <footer className="py-12 px-6 border-t" style={{ ...secLayout('footer') }}>
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
           <div className="font-black text-xl mb-2 text-white"><span className="text-[var(--primary)]">S3</span> Summit</div>
@@ -2173,7 +2244,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
 
       {/* ── Footer ────────────────────────────────────────────────────────────── */}
       {(footerPages.length > 0 || (termsData?.show_in_footer && (termsData?.terms_content || termsData?.privacy_content))) && (
-        <footer style={{ background: 'var(--footer-bg)', borderTop: '1px solid rgba(108,99,255,0.15)', padding: `${ftrPadT}px ${ftrPadR}px ${ftrPadB}px ${ftrPadL}px`, textAlign: ftrAlign as any }}>
+        <footer style={{ ...secLayout('footer'), background: 'var(--footer-bg)', borderTop: '1px solid rgba(108,99,255,0.15)', padding: `${ftrPadT}px ${ftrPadR}px ${ftrPadB}px ${ftrPadL}px`, textAlign: ftrAlign as any }}>
           <div style={{ maxWidth: 900, margin: '0 auto', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: `0.5rem ${ftrGap}px` }}>
             {ftrShowImg && ftrImg && (
               <div style={{ width: '100%', display: 'flex', justifyContent: ftrAlign === 'center' ? 'center' : ftrAlign === 'left' ? 'flex-start' : 'flex-end', marginBottom: ftrImgMb }}>

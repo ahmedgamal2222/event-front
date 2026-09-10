@@ -91,10 +91,13 @@ export default function AdminCRMRegistrations({ token, apiBase, eventId }: Props
 
   useEffect(() => { load(); loadStats(); }, [load, loadStats]);
 
-  // Load admins for task dropdown
+  // Load admins for task dropdown — المعتمدون فقط (دفاع إضافي فوق فلتر الـ API)
   useEffect(() => {
     fetch(`${apiBase}/api/auth/admins-list`, { headers }).then(r => r.json()).then(d => {
-      if (d.success) setAdminsList(d.data || []);
+      if (d.success) {
+        const list = (d.data || []).filter((a: any) => a.approval_status !== 'pending' && a.approval_status !== 'rejected' && a.is_active !== 0);
+        setAdminsList(list);
+      }
     }).catch(() => {});
   }, [apiBase, token]);
 

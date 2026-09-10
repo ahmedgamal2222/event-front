@@ -502,10 +502,13 @@ export default function AdminEventRegistrations({ token, eventId, readOnly, onIn
   const currentUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('admin_user') || '{}') : {};
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
-  // Load admins list
+  // Load admins list — المعتمدون فقط (دفاع إضافي فوق فلتر الـ API)
   useEffect(() => {
     fetch(`${API_BASE}/api/auth/admins-list`, { headers }).then(r => r.json()).then(d => {
-      if (d.success) setAdminsList(d.data || []);
+      if (d.success) {
+        const list = (d.data || []).filter((a: any) => a.approval_status !== 'pending' && a.approval_status !== 'rejected' && a.is_active !== 0);
+        setAdminsList(list);
+      }
     }).catch(() => {});
   }, [token]);
 

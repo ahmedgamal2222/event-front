@@ -107,6 +107,22 @@ export interface ThemeColors {
   gradient_text_to?: string;    // نهاية تدرج العناوين المتدرجة
   gradient_text_enabled?: string; // '1' تفعيل تدرج النصوص | '0' إيقافه
 
+  // ─── أشكال العناصر (Figma-like shape controls) ─────────────────────────────
+  card_radius?: number;             // استدارة زوايا البطاقات (px)
+  card_border_w?: number;           // سمك حدود البطاقات (px)
+  card_shadow?: 'none' | 'soft' | 'medium' | 'strong'; // ظل البطاقات
+  badge_radius?: number;            // استدارة زوايا شارات الأقسام (px)
+  badge_pad_x?: number;             // حشوة الشارة الأفقية (px)
+  badge_pad_y?: number;             // حشوة الشارة العمودية (px)
+  badge_bg?: string;                // خلفية الشارة
+  input_radius?: number;            // استدارة زوايا حقول الإدخال (px)
+  section_gap?: number;             // المسافة بين الأقسام (px)
+  section_radius?: number;          // استدارة زوايا الأقسام (px)
+  section_border_w?: number;        // سمك حدود الأقسام (px)
+  section_border?: string;          // لون حدود الأقسام
+  title_align?: 'center' | 'right' | 'left'; // محاذاة عناوين الأقسام
+  image_radius?: number;            // استدارة الصور والأطر البصرية (px)
+
   // ─── تموضع الأقسام (حشوة padding لكل سكشن بشكل مستقل) ─────────────────────
   section_hero_pad_top?: number; section_hero_pad_bottom?: number; section_hero_pad_left?: number; section_hero_pad_right?: number;
   section_stats_pad_top?: number; section_stats_pad_bottom?: number; section_stats_pad_left?: number; section_stats_pad_right?: number;
@@ -148,6 +164,9 @@ export interface SiteConfig {
   default_theme?: 'dark' | 'light'; // الوضع الافتراضي للزوار الجدد
   editable_text?: Record<string, string>; // نصوص معدّلة مباشرة من معاينة المُحرر
   page_direction?: 'rtl' | 'ltr';        // اتجاه الصفحة (يُعدَّل من المعاينة المباشرة)
+  section_order?: string[];              // ترتيب الأقسام في الصفحة
+  section_visible?: Record<string, boolean>; // إظهار / إخفاء كل قسم
+  section_dir?: Record<string, 'rtl' | 'ltr'>; // اتجاه المحتوى داخل كل قسم
 }
 
 export interface ExtraField {
