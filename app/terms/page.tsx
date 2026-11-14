@@ -3,6 +3,8 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import PixelInjector from '../components/PixelInjector';
+import EmbeddedRegistrationForm from '../components/EmbeddedRegistrationForm';
+import { apiFetch } from '../../lib/api';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
 const EVENT_ID = Number(process.env.NEXT_PUBLIC_EVENT_ID || 1);
@@ -100,10 +102,9 @@ function TermsContent() {
 
   useEffect(() => {
     if (pageSlug) {
-      // Load custom static page
-      fetch(`${API_BASE}/api/events/${EVENT_ID}/pages/${pageSlug}`, { cache: 'no-store' })
-        .then(r => r.json())
-        .then(data => { if (data.data) setStaticPage(data.data); })
+      // Load custom static page (عبر lib/api لاستخدام البروكسي على النطاق الرسمي)
+      apiFetch<any>(`/api/events/${EVENT_ID}/pages/${encodeURIComponent(pageSlug)}`)
+        .then((data: any) => { if (data.data) setStaticPage(data.data); })
         .catch(() => {})
         .finally(() => setLoading(false));
       return;
@@ -149,6 +150,12 @@ function TermsContent() {
               </h1>
               <style>{STYLES}</style>
               <div className="tc" dangerouslySetInnerHTML={{ __html: staticPage.content_ar || staticPage.content || '' }} />
+              {Number(staticPage.embed_form) === 1 && (
+                <div style={{ marginTop: '2rem', background: hexToRgba(primary, 0.06), border: `1px solid ${hexToRgba(primary, 0.25)}`, borderRadius: '1rem', padding: '1.5rem' }}>
+                  <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: heading, margin: '0 0 1rem' }}>📝 استمارة التسجيل</h2>
+                  <EmbeddedRegistrationForm eventId={EVENT_ID} primaryColor={btnPrimary} />
+                </div>
+              )}
             </>
           )}
         </div>
@@ -167,8 +174,12 @@ function TermsContent() {
       </div>
       <div style={{ maxWidth: 820, margin: '0 auto', padding: '2.5rem 1.5rem 5rem' }}>
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem' }}>
-          <a href="/terms?tab=terms" style={tabStyle('terms')}>📋 الشروط والأحكام</a>
-          <a href="/terms?tab=privacy" style={tabStyle('privacy')}>🔒 سياسة الخصوصية</a>
+          {!pageSlug && (
+            <>
+              <a href="/terms?tab=terms" style={tabStyle('terms')}>📋 الشروط والأحكام</a>
+              <a href="/terms?tab=privacy" style={tabStyle('privacy')}>🔒 سياسة الخصوصية</a>
+            </>
+          )}
         </div>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '4rem', color: textMuted }}>

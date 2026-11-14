@@ -22,6 +22,7 @@ interface Page {
   id: number; slug: string; title: string; title_ar?: string;
   content?: string; content_ar?: string;
   position: string; sort_order: number; is_published: number;
+  embed_form?: number;
 }
 
 export default function AdminPages({ eventId, token }: { eventId: number; token: string }) {
@@ -35,9 +36,9 @@ export default function AdminPages({ eventId, token }: { eventId: number; token:
   const [pageBlocks, setPageBlocks] = useState<Block[]>([]);
   const [pageHtml, setPageHtml] = useState('');
 
-  const emptyPage = () => ({ id: 0, slug: '', title: '', title_ar: '', content: '', content_ar: '', position: 'footer', sort_order: 0, is_published: 1 });
+  const emptyPage = () => ({ id: 0, slug: '', title: '', title_ar: '', content: '', content_ar: '', position: 'footer', sort_order: 0, is_published: 1, embed_form: 0 });
 
-  const emptyForm = () => ({ id: 0, slug: '', title: '', title_ar: '', content: '', content_ar: '', position: 'footer', sort_order: 0, is_published: 1 });
+  const emptyForm = () => ({ id: 0, slug: '', title: '', title_ar: '', content: '', content_ar: '', position: 'footer', sort_order: 0, is_published: 1, embed_form: 0 });
 
   const load = useCallback(async () => {
     try { setLoading(true); const res = await fetchPagesAdmin(eventId, token); setPages(res.data || []); }
@@ -131,6 +132,12 @@ export default function AdminPages({ eventId, token }: { eventId: number; token:
               style={{ accentColor: '#6C63FF' }} />
             منشورة (ظاهرة للزوار)
           </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', marginTop: '0.5rem', color: '#a5b4fc', fontSize: '0.85rem', background: 'rgba(108,99,255,0.08)', border: '1px dashed rgba(108,99,255,0.35)', borderRadius: '0.5rem', padding: '0.55rem 0.7rem' }}>
+            <input type="checkbox" checked={Number(editing.embed_form) === 1}
+              onChange={e => setEditing(p => p ? { ...p, embed_form: e.target.checked ? 1 : 0 } : p)}
+              style={{ accentColor: '#6C63FF' }} />
+            🧾 تضمين استمارة التسجيل داخل الصفحة — يسجّل الزائر ويحصل على رقم تذكرة فوراً من نفس المكان
+          </label>
         </div>
 
         {/* Page Builder */}
@@ -164,7 +171,7 @@ export default function AdminPages({ eventId, token }: { eventId: number; token:
       {success && <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '0.5rem', padding: '0.75rem', color: '#86efac' }}>{success}</div>}
 
       <div style={{ background: 'rgba(108,99,255,0.06)', border: '1px solid rgba(108,99,255,0.2)', borderRadius: '0.8rem', padding: '1rem', fontSize: '0.85rem', color: '#94a3b8' }}>
-        💡 ابنِ صفحاتك بالسحب والإفلات — لا تحتاج أي معرفة بالبرمجة. الصفحات تظهر في الفوتر أو الناف بار حسب الإعداد.
+        💡 ابنِ صفحاتك بالسحب والإفلات — لا تحتاج أي معرفة بالبرمجة. الصفحات تظهر في الفوتر أو الناف بار حسب الإعداد، ويمكنك تفعيل خيار «🧾 تضمين استمارة التسجيل» ليُسجّل الزائر ويحصل على رقم تذكرة فوراً من داخل الصفحة نفسها.
       </div>
 
       {loading ? <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>جار التحميل...</div>
@@ -186,6 +193,9 @@ export default function AdminPages({ eventId, token }: { eventId: number; token:
                     <span style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', borderRadius: 12, background: page.is_published ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.1)', color: page.is_published ? '#86efac' : '#fca5a5' }}>
                       {page.is_published ? '✅ منشورة' : '❌ مخفية'}
                     </span>
+                    {Number(page.embed_form) === 1 && (
+                      <span style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', borderRadius: 12, background: 'rgba(108,99,255,0.18)', color: '#c7d2fe' }}>🧾 استمارة مدمجة</span>
+                    )}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.4rem' }}>

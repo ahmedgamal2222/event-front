@@ -659,6 +659,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [faqs, setFaqs] = useState<Faq[]>([]);
   const [footerPages, setFooterPages] = useState<any[]>([]);
+  const [navPages, setNavPages] = useState<any[]>([]);
   const [termsData, setTermsData] = useState<{ terms_content?: string; privacy_content?: string; show_in_footer?: number } | null>(null);
   const [cfg, setCfg] = useState<FormConfig>({
     enabled_types: ['startup', 'general'],
@@ -1077,8 +1078,11 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
         setHasArticles((val(artRes)?.data || []).length > 0);
 
         // Non-critical data — non-blocking
-        fetch(`${API_URL}/api/events/${ev.id}/pages?location=footer`)
-          .then(r => r.json()).then(d => setFooterPages(d?.data || [])).catch(() => {});
+        // الصفحات الثابتة: الفوتر + الناف بار (عبر lib/api لاستخدام البروكسي الصحيح)
+        fetchPages(ev.id, 'footer')
+          .then((d: any) => setFooterPages(d?.data || [])).catch(() => {});
+        fetchPages(ev.id, 'nav')
+          .then((d: any) => setNavPages(d?.data || [])).catch(() => {});
         fetch(`${API_URL}/api/events/${ev.id}/terms`)
           .then(r => r.json()).then(d => setTermsData(d?.data || null)).catch(() => {});
 
@@ -1118,6 +1122,8 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
     ...(siteCfg.archive_link_enabled !== false && (siteCfg.archive_link_position === 'navbar' || siteCfg.archive_link_position === 'both' || siteCfg.archive_link_position === undefined)
       ? [{ href: '/archive', label: siteCfg.archive_link_label || '🗂 النسخ السابقة' }]
       : []),
+    // صفحات ثابتة معروضة في الناف بار (الموضع: الناف أو الناف + الفوتر)
+    ...navPages.map((p: any) => ({ href: `/terms?page=${encodeURIComponent(p.slug)}`, label: p.title_ar || p.title || p.slug })),
   ];
 
   const eventName = event?.name_ar || 'قمة الشركات الناشئة السورية';
@@ -2252,7 +2258,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
               </div>
             )}
             {footerPages.map(page => (
-              <a key={page.id} href={`/terms?page=${page.slug}`}
+              <a key={page.id} href={`/terms?page=${encodeURIComponent(page.slug)}`}
                 className="text-[var(--text-muted)]" style={{ textDecoration: 'none', fontSize: `${ftrTextSize}px`, transition: 'color 0.15s' }}
                 onMouseEnter={e => (e.currentTarget.style.color = '#6C63FF')}
                 onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}>
