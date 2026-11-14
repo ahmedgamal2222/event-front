@@ -19,6 +19,8 @@ export default function TallyEmbed({ url, title = 'استمارة التسجيل
   useEffect(() => {
     if (!embedUrl || !ref.current) return;
     const iframe = ref.current;
+    // اضمن ظهور النموذج حتى لو لم يعمل سكربت Tally (تحميل مباشر كاحتياط)
+    if (!iframe.getAttribute('src')) iframe.setAttribute('src', embedUrl);
     iframe.setAttribute('data-tally-src', embedUrl);
     iframe.style.background = 'transparent';
     iframe.setAttribute('allowtransparency', 'true');
@@ -52,15 +54,16 @@ export default function TallyEmbed({ url, title = 'استمارة التسجيل
     <div style={{ background: 'transparent', borderRadius: '0.9rem', overflow: 'hidden' }}>
       <iframe
         ref={ref}
+        src={embedUrl}
         data-tally-src={embedUrl}
         loading="lazy"
         width="100%"
-        height={640}
+        height={620}
         frameBorder={0}
         marginHeight={0}
         marginWidth={0}
         title={title}
-        style={{ width: '100%', minHeight: 640, border: 0, background: 'transparent', display: 'block', colorScheme: 'normal' }}
+        style={{ width: '100%', minHeight: 620, border: 0, background: 'transparent', display: 'block', colorScheme: 'normal' }}
       />
     </div>
   );

@@ -22,7 +22,7 @@ interface Page {
   id: number; slug: string; title: string; title_ar?: string;
   content?: string; content_ar?: string;
   position: string; sort_order: number; is_published: number;
-  embed_form?: number; tally_url?: string;
+  embed_form?: number; tally_url?: string; template?: string;
 }
 
 export default function AdminPages({ eventId, token }: { eventId: number; token: string }) {
@@ -36,9 +36,9 @@ export default function AdminPages({ eventId, token }: { eventId: number; token:
   const [pageBlocks, setPageBlocks] = useState<Block[]>([]);
   const [pageHtml, setPageHtml] = useState('');
 
-  const emptyPage = () => ({ id: 0, slug: '', title: '', title_ar: '', content: '', content_ar: '', position: 'footer', sort_order: 0, is_published: 1, embed_form: 0, tally_url: '' });
+  const emptyPage = () => ({ id: 0, slug: '', title: '', title_ar: '', content: '', content_ar: '', position: 'footer', sort_order: 0, is_published: 1, embed_form: 0, tally_url: '', template: 'default' });
 
-  const emptyForm = () => ({ id: 0, slug: '', title: '', title_ar: '', content: '', content_ar: '', position: 'footer', sort_order: 0, is_published: 1, embed_form: 0, tally_url: '' });
+  const emptyForm = () => ({ id: 0, slug: '', title: '', title_ar: '', content: '', content_ar: '', position: 'footer', sort_order: 0, is_published: 1, embed_form: 0, tally_url: '', template: 'default' });
 
   const load = useCallback(async () => {
     try { setLoading(true); const res = await fetchPagesAdmin(eventId, token); setPages(res.data || []); }
@@ -126,6 +126,17 @@ export default function AdminPages({ eventId, token }: { eventId: number; token:
             <div><label style={S.label}>الترتيب</label>
               <input type="number" style={S.inp} value={editing.sort_order}
                 onChange={e => setEditing(p => p ? { ...p, sort_order: Number(e.target.value) } : p)} /></div>
+            <div>
+              <label style={S.label}>🧩 قالب الصفحة</label>
+              <select style={S.inp} value={(editing as any).template || 'default'}
+                onChange={e => setEditing(p => p ? { ...p, template: e.target.value } : p)}>
+                <option value="default">📄 صفحة عادية (Page Builder)</option>
+                <option value="competition">🏆 صفحة مسابقة (تصميم كامل + Tally)</option>
+              </select>
+              <p style={{ margin: '0.3rem 0 0', fontSize: '0.7rem', color: '#64748b' }}>
+                قالب «صفحة مسابقة» يعرض تصميمًا احترافيًا كاملًا بألوان الموقع ويتجاهل محتوى الـ Page Builder.
+              </p>
+            </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={S.label}>🔗 رابط نموذج Tally (اختياري)</label>
               <input style={S.inp} dir="ltr" value={(editing as any).tally_url || ''}
@@ -181,7 +192,7 @@ export default function AdminPages({ eventId, token }: { eventId: number; token:
       {success && <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '0.5rem', padding: '0.75rem', color: '#86efac' }}>{success}</div>}
 
       <div style={{ background: 'rgba(108,99,255,0.06)', border: '1px solid rgba(108,99,255,0.2)', borderRadius: '0.8rem', padding: '1rem', fontSize: '0.85rem', color: '#94a3b8' }}>
-        💡 ابنِ صفحاتك بالسحب والإفلات — لا تحتاج أي معرفة بالبرمجة. الصفحات تظهر في الفوتر أو الناف بار حسب الإعداد، ويمكنك تفعيل خيار «🧾 تضمين استمارة التسجيل» ليُسجّل الزائر ويحصل على رقم تذكرة فوراً من داخل الصفحة نفسها.
+        💡 ابنِ صفحاتك بالسحب والإفلات، أو اختر «🏆 صفحة مسابقة» من إعدادات الصفحة لتصميم احترافي جاهز بألوان الموقع. الصفحات تظهر في الفوتر أو الناف بار حسب الإعداد، ويمكنك تفعيل «🧾 تضمين استمارة التسجيل» أو لصق رابط Tally ليُسجّل الزائر فوراً من داخل الصفحة.
       </div>
 
       {loading ? <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>جار التحميل...</div>
