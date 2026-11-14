@@ -201,7 +201,6 @@ function TermsContent() {
         <div style={{ background: 'rgba(45,212,191,0.06)', borderBottom: `1px solid ${DARK_PAGE.border}`, padding: '1.1rem 1.5rem' }}>
           <div style={{ maxWidth: 860, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
             <a href="/" style={{ color: DARK_PAGE.accent, textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600 }}>← الصفحة الرئيسية</a>
-            <span style={{ color: DARK_PAGE.muted, fontSize: '0.78rem' }}>صفحة معلومات</span>
           </div>
         </div>
         <div className="sp-wrap" style={{ maxWidth: staticPage?.template === 'competition' ? '100%' : 860, margin: '0 auto', padding: staticPage?.template === 'competition' ? 0 : '2.25rem 1.5rem 5rem' }}>
