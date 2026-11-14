@@ -1,15 +1,49 @@
 ﻿'use client';
 // app/terms/page.tsx - Terms & Privacy page
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, usePathname } from 'next/navigation';
 import PixelInjector from '../components/PixelInjector';
 import EmbeddedRegistrationForm from '../components/EmbeddedRegistrationForm';
+import TallyEmbed from '../components/TallyEmbed';
 import { apiFetch } from '../../lib/api';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
 const EVENT_ID = Number(process.env.NEXT_PUBLIC_EVENT_ID || 1);
 
-// ─── Theme helpers (ألوان الثيم تطابق صفحة المدونات) ───────────────────────────
+// ─── لوحة ألوان داكنة صريحة للصفحات الثابتة (واضحة ومقروءة) ─────────────────
+const DARK_PAGE = {
+  bg: '#070c16',
+  bgAlt: '#0a1120',
+  card: 'rgba(255,255,255,0.035)',
+  border: 'rgba(45,212,191,0.22)',
+  text: '#e8eefc',
+  muted: '#9fb0c9',
+  heading: '#ffffff',
+  accent: '#5eead4',
+  accentSoft: 'rgba(45,212,191,0.10)',
+};
+
+const DARK_STYLES = `
+  .sp-dark{color:${DARK_PAGE.text};font-size:1.04rem;line-height:2;font-family:Cairo,Tajawal,system-ui,-apple-system,'Segoe UI',sans-serif}
+  .sp-dark *{color:${DARK_PAGE.text} !important;font-family:inherit}
+  .sp-dark h1,.sp-dark h2,.sp-dark h3,.sp-dark h4,.sp-dark h5,.sp-dark strong,.sp-dark b{color:${DARK_PAGE.heading} !important}
+  .sp-dark h1{font-size:1.9rem;font-weight:900;margin:0 0 1rem}
+  .sp-dark h2{font-size:1.45rem;font-weight:800;margin:1.8rem 0 .8rem;border-bottom:1px solid ${DARK_PAGE.border};padding-bottom:.45rem}
+  .sp-dark h3{font-size:1.2rem;font-weight:700;margin:1.3rem 0 .5rem;color:${DARK_PAGE.accent} !important}
+  .sp-dark p,.sp-dark li{font-size:1.04rem;line-height:2;margin-bottom:.85rem}
+  .sp-dark a{color:${DARK_PAGE.accent} !important;text-decoration:underline}
+  .sp-dark ul,.sp-dark ol{padding-right:1.5rem;margin-bottom:1rem}
+  .sp-dark li{margin-bottom:.4rem}
+  .sp-dark img{max-width:100%;height:auto;border-radius:12px;margin:1rem 0}
+  .sp-dark hr{border:none;border-top:1px solid rgba(148,163,184,.28);margin:1.6rem 0}
+  .sp-dark table{width:100%;border-collapse:collapse;margin:1rem 0}
+  .sp-dark td,.sp-dark th{border:1px solid rgba(148,163,184,.25);padding:.6rem .7rem;text-align:right}
+  .sp-dark blockquote{border-right:4px solid ${DARK_PAGE.accent};background:${DARK_PAGE.accentSoft} !important;padding:.85rem 1rem;border-radius:8px;margin:1rem 0}
+  .sp-dark [style*="background:#fff"],.sp-dark [style*="background: #fff"],.sp-dark [style*="background:white"],.sp-dark [style*="background: white"]{background:rgba(255,255,255,0.05) !important}
+  .sp-dark [style*="color:#000"],.sp-dark [style*="color: #000"],.sp-dark [style*="color:black"]{color:${DARK_PAGE.text} !important}
+  .sp-dark iframe{max-width:100%;border-radius:10px}
+  @media(max-width:640px){.sp-dark p,.sp-dark li{font-size:1rem;line-height:1.9}.sp-wrap{padding:1rem !important}}
+`;
 function hexToRgba(hex: string, alpha: number): string {
   const h = String(hex || '').replace('#', '');
   if (h.length !== 6) return String(hex);
@@ -69,8 +103,17 @@ function useThemeColors() {
 
 function TermsContent() {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const tab = searchParams?.get('tab') || 'terms';
-  const pageSlug = searchParams?.get('page');
+  // الصفحات الثابتة تُخدم أيضًا على رابط مباشر /{slug} (عبر Pages Function)
+  const pathSlug = (() => {
+    const segs = (pathname || '').split('/').filter(Boolean);
+    if (segs.length !== 1) return null;
+    const first = segs[0];
+    if (['terms', 'blog', 'archive', 'admin', 'events', 'api-proxy'].includes(first)) return null;
+    try { return decodeURIComponent(first); } catch { return first; }
+  })();
+  const pageSlug = searchParams?.get('page') || pathSlug;
   const [terms, setTerms] = useState<{ terms_content?: string; privacy_content?: string } | null>(null);
   const [staticPage, setStaticPage] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -122,41 +165,51 @@ function TermsContent() {
     background: active === t ? btnPrimary : `${hexToRgba(primary, 0.1)}`, color: active === t ? '#ffffff' : textMuted, textDecoration: 'none', display: 'inline-block',
   } as React.CSSProperties);
 
-  // Render custom static page
+  // Render custom static page (dark, readable, direct URL friendly)
   if (pageSlug) {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--bg-dark)', color: 'var(--text)', fontFamily: 'Cairo,sans-serif', direction: 'rtl' }}>
+      <div style={{ minHeight: '100vh', background: `linear-gradient(180deg, ${DARK_PAGE.bg} 0%, ${DARK_PAGE.bgAlt} 100%)`, color: DARK_PAGE.text, fontFamily: 'Cairo,Tajawal,system-ui,-apple-system,Segoe UI,sans-serif', direction: 'rtl' }}>
+        <style>{DARK_STYLES}</style>
         <PixelInjector eventId={EVENT_ID} />
-        <div style={{ background: `${hexToRgba(primary, 0.06)}`, borderBottom: `1px solid ${hexToRgba(primary, 0.2)}`, padding: '1.5rem' }}>
-          <div style={{ maxWidth: 820, margin: '0 auto' }}>
-            <a href="/" style={{ color: link, textDecoration: 'none', fontSize: '0.88rem' }}>← الصفحة الرئيسية</a>
+        <div style={{ background: 'rgba(45,212,191,0.06)', borderBottom: `1px solid ${DARK_PAGE.border}`, padding: '1.1rem 1.5rem' }}>
+          <div style={{ maxWidth: 860, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <a href="/" style={{ color: DARK_PAGE.accent, textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600 }}>← الصفحة الرئيسية</a>
+            <span style={{ color: DARK_PAGE.muted, fontSize: '0.78rem' }}>صفحة معلومات</span>
           </div>
         </div>
-        <div style={{ maxWidth: 820, margin: '0 auto', padding: '2.5rem 1.5rem 5rem' }}>
+        <div className="sp-wrap" style={{ maxWidth: 860, margin: '0 auto', padding: '2.25rem 1.5rem 5rem' }}>
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '4rem', color: textMuted }}>
+            <div style={{ textAlign: 'center', padding: '4rem', color: DARK_PAGE.muted }}>
               <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-              <div style={{ width: 36, height: 36, border: `3px solid ${btnPrimary}`, borderTopColor: 'transparent', borderRadius: '50%', margin: '0 auto', animation: 'spin 0.8s linear infinite' }} />
+              <div style={{ width: 36, height: 36, border: `3px solid ${DARK_PAGE.accent}`, borderTopColor: 'transparent', borderRadius: '50%', margin: '0 auto', animation: 'spin 0.8s linear infinite' }} />
             </div>
           ) : !staticPage ? (
-            <div style={{ textAlign: 'center', padding: '4rem', color: textMuted }}>
+            <div style={{ textAlign: 'center', padding: '4rem', color: DARK_PAGE.muted }}>
               <p>الصفحة غير موجودة</p>
-              <a href="/" style={{ color: link, marginTop: '1rem', display: 'inline-block' }}>← العودة للرئيسية</a>
+              <a href="/" style={{ color: DARK_PAGE.accent, marginTop: '1rem', display: 'inline-block' }}>← العودة للرئيسية</a>
             </div>
           ) : (
-            <>
-              <h1 style={{ fontSize: '2rem', fontWeight: 900, color: heading, marginBottom: '2rem', borderBottom: `1px solid ${hexToRgba(primary, 0.2)}`, paddingBottom: '1rem' }}>
+            <div style={{ background: DARK_PAGE.card, border: `1px solid ${DARK_PAGE.border}`, borderRadius: '1.1rem', padding: '2rem' }}>
+              <h1 style={{ fontSize: '1.95rem', fontWeight: 900, color: DARK_PAGE.heading, margin: '0 0 1.5rem', borderBottom: `1px solid ${DARK_PAGE.border}`, paddingBottom: '0.9rem', lineHeight: 1.5 }}>
                 {staticPage.title_ar || staticPage.title}
               </h1>
-              <style>{STYLES}</style>
-              <div className="tc" dangerouslySetInnerHTML={{ __html: staticPage.content_ar || staticPage.content || '' }} />
-              {Number(staticPage.embed_form) === 1 && (
-                <div style={{ marginTop: '2rem', background: hexToRgba(primary, 0.06), border: `1px solid ${hexToRgba(primary, 0.25)}`, borderRadius: '1rem', padding: '1.5rem' }}>
-                  <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: heading, margin: '0 0 1rem' }}>📝 استمارة التسجيل</h2>
-                  <EmbeddedRegistrationForm eventId={EVENT_ID} primaryColor={btnPrimary} />
-                </div>
+              {(staticPage.content_ar || staticPage.content) && (
+                <div className="tc sp-dark" dangerouslySetInnerHTML={{ __html: staticPage.content_ar || staticPage.content || '' }} />
               )}
-            </>
+
+              {/* نموذج Tally مضمّن (بخلفية شفافة وارتفاع تلقائي) */}
+              {staticPage.tally_url ? (
+                <div style={{ marginTop: (staticPage.content_ar || staticPage.content) ? '2rem' : 0 }}>
+                  <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: DARK_PAGE.heading, margin: '0 0 1rem' }}>📝 استمارة التسجيل</h2>
+                  <TallyEmbed url={staticPage.tally_url} title={staticPage.title_ar || 'استمارة التسجيل'} />
+                </div>
+              ) : Number(staticPage.embed_form) === 1 ? (
+                <div style={{ marginTop: (staticPage.content_ar || staticPage.content) ? '2rem' : 0 }}>
+                  <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: DARK_PAGE.heading, margin: '0 0 1rem' }}>📝 استمارة التسجيل</h2>
+                  <EmbeddedRegistrationForm eventId={EVENT_ID} primaryColor={btnPrimary2} />
+                </div>
+              ) : null}
+            </div>
           )}
         </div>
       </div>

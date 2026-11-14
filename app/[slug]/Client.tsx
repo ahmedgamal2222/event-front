@@ -12,6 +12,18 @@ import { ThemeToggle, ThemeToggleAuto, IconX, IconInstagram, IconLinkedIn, IconT
 
 const DEFAULT_EVENT_SLUG = ''; // No hardcoded fallback — slug MUST come from URL params
 
+// رابط الصفحة الثابتة: مباشر /{slug} على الإنتاج (عبر Pages Function)،
+// و/terms?page= محليًا أثناء التطوير (next dev لا يشغّل Functions)
+function pageHref(slug: string): string {
+  const clean = String(slug || '').trim();
+  if (!clean) return '/terms';
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1') return `/terms?page=${encodeURIComponent(clean)}`;
+  }
+  return `/${encodeURIComponent(clean)}`;
+}
+
 // ─── Event Navigation Bar ──────────────────────────────────────────────────────
 function EventNavBar({ eventId, primaryColor, archiveLabel, showArchive, showThemeToggle, themeMode, onThemeToggle, editableText }: { eventId: number; primaryColor: string; archiveLabel?: string; showArchive?: boolean; showThemeToggle?: boolean; themeMode: 'dark' | 'light'; onThemeToggle: () => void; editableText: Record<string, string> }) {
   const [nav, setNav] = useState<{ prev: any; current: any; next: any } | null>(null);
@@ -1123,7 +1135,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
       ? [{ href: '/archive', label: siteCfg.archive_link_label || '🗂 النسخ السابقة' }]
       : []),
     // صفحات ثابتة معروضة في الناف بار (الموضع: الناف أو الناف + الفوتر)
-    ...navPages.map((p: any) => ({ href: `/terms?page=${encodeURIComponent(p.slug)}`, label: p.title_ar || p.title || p.slug })),
+    ...navPages.map((p: any) => ({ href: pageHref(p.slug), label: p.title_ar || p.title || p.slug, direct: true })),
   ];
 
   const eventName = event?.name_ar || 'قمة الشركات الناشئة السورية';
@@ -1437,7 +1449,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
           </div>
           <div className="hidden md:flex items-center gap-6">
             {navLinks.map((l, i) => (
-              l.href.startsWith('/') && l.href !== '#'
+              l.href.startsWith('/') && l.href !== '#' && !(l as any).direct
                 ? <Link key={l.href} href={l.href} className="text-sm text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors"
                     data-edit="text" data-label="رابط في النافبار" data-text={`nav_label_${i}`} data-color="text" data-size="fs_nav" data-min="10" data-max="28">
                     <RichInline html={editableText[`nav_label_${i}`]} fallback={l.label} />
@@ -2258,7 +2270,7 @@ export default function EventLandingClient({ slug }: { slug?: string } = {}) {
               </div>
             )}
             {footerPages.map(page => (
-              <a key={page.id} href={`/terms?page=${encodeURIComponent(page.slug)}`}
+              <a key={page.id} href={pageHref(page.slug)}
                 className="text-[var(--text-muted)]" style={{ textDecoration: 'none', fontSize: `${ftrTextSize}px`, transition: 'color 0.15s' }}
                 onMouseEnter={e => (e.currentTarget.style.color = '#6C63FF')}
                 onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}>

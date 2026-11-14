@@ -6,11 +6,12 @@
  */
 import { useState, useEffect } from 'react';
 import EventLandingClient from './[slug]/Client';
+import TermsPage from './terms/page';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
 
 export default function NotFound() {
-  const [state, setState] = useState<'loading' | 'event' | 'notfound'>('loading');
+  const [state, setState] = useState<'loading' | 'event' | 'page' | 'notfound'>('loading');
   const [slug, setSlug] = useState('');
   const [eventName, setEventName] = useState('');
 
@@ -36,9 +37,13 @@ export default function NotFound() {
         if (data.success && data.data) {
           setEventName(data.data.name_ar || data.data.name || path);
           setState('event');
-        } else {
-          setState('notfound');
+          return;
         }
+        // ليس حدثًا — قد تكون صفحة ثابتة (رابط مباشر بدون /terms)
+        fetch(`${API_BASE}/api/pages/${encodeURIComponent(path)}`, { cache: 'no-store' })
+          .then(r => r.json())
+          .then(p => setState(p?.success && p?.data ? 'page' : 'notfound'))
+          .catch(() => setState('notfound'));
       })
       .catch(() => setState('notfound'));
   }, []);
@@ -62,6 +67,11 @@ export default function NotFound() {
   if (state === 'event' && slug) {
     // key={slug} forces full remount when navigating between different event slugs
     return <EventLandingClient key={slug} slug={slug} />;
+  }
+
+  // صفحة ثابتة على رابط مباشر (تقرأ الـ slug من pathname داخل TermsPage)
+  if (state === 'page') {
+    return <TermsPage />;
   }
 
   // Proper 404 page

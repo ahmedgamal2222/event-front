@@ -22,7 +22,7 @@ interface Page {
   id: number; slug: string; title: string; title_ar?: string;
   content?: string; content_ar?: string;
   position: string; sort_order: number; is_published: number;
-  embed_form?: number;
+  embed_form?: number; tally_url?: string;
 }
 
 export default function AdminPages({ eventId, token }: { eventId: number; token: string }) {
@@ -36,9 +36,9 @@ export default function AdminPages({ eventId, token }: { eventId: number; token:
   const [pageBlocks, setPageBlocks] = useState<Block[]>([]);
   const [pageHtml, setPageHtml] = useState('');
 
-  const emptyPage = () => ({ id: 0, slug: '', title: '', title_ar: '', content: '', content_ar: '', position: 'footer', sort_order: 0, is_published: 1, embed_form: 0 });
+  const emptyPage = () => ({ id: 0, slug: '', title: '', title_ar: '', content: '', content_ar: '', position: 'footer', sort_order: 0, is_published: 1, embed_form: 0, tally_url: '' });
 
-  const emptyForm = () => ({ id: 0, slug: '', title: '', title_ar: '', content: '', content_ar: '', position: 'footer', sort_order: 0, is_published: 1, embed_form: 0 });
+  const emptyForm = () => ({ id: 0, slug: '', title: '', title_ar: '', content: '', content_ar: '', position: 'footer', sort_order: 0, is_published: 1, embed_form: 0, tally_url: '' });
 
   const load = useCallback(async () => {
     try { setLoading(true); const res = await fetchPagesAdmin(eventId, token); setPages(res.data || []); }
@@ -114,9 +114,10 @@ export default function AdminPages({ eventId, token }: { eventId: number; token:
             <div><label style={S.label}>العنوان (عربي) *</label>
               <input style={S.inp} value={editing.title_ar || ''} dir="rtl"
                 onChange={e => setEditing(p => p ? { ...p, title_ar: e.target.value, title: e.target.value } : p)} placeholder="عنوان الصفحة" /></div>
-            <div><label style={S.label}>Slug (رابط الصفحة) *</label>
+            <div><label style={S.label}>Slug (رابط الصفحة المباشر) *</label>
               <input style={S.inp} value={editing.slug} dir="ltr"
-                onChange={e => setEditing(p => p ? { ...p, slug: e.target.value.toLowerCase().replace(/\s+/g,'-') } : p)} placeholder="about-us" /></div>
+                onChange={e => setEditing(p => p ? { ...p, slug: e.target.value.toLowerCase().replace(/\s+/g,'-') } : p)} placeholder="about-us" />
+              <p style={{ margin: '0.3rem 0 0', fontSize: '0.7rem', color: '#64748b' }}>يعمل مباشرة على /{editing.slug || 'slug'} (بدون /terms)</p></div>
             <div><label style={S.label}>الموضع</label>
               <select style={S.inp} value={editing.position}
                 onChange={e => setEditing(p => p ? { ...p, position: e.target.value } : p)}>
@@ -125,6 +126,15 @@ export default function AdminPages({ eventId, token }: { eventId: number; token:
             <div><label style={S.label}>الترتيب</label>
               <input type="number" style={S.inp} value={editing.sort_order}
                 onChange={e => setEditing(p => p ? { ...p, sort_order: Number(e.target.value) } : p)} /></div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={S.label}>🔗 رابط نموذج Tally (اختياري)</label>
+              <input style={S.inp} dir="ltr" value={(editing as any).tally_url || ''}
+                onChange={e => setEditing(p => p ? { ...p, tally_url: e.target.value } : p)}
+                placeholder="https://tally.so/r/Qoe958" />
+              <p style={{ margin: '0.35rem 0 0', fontSize: '0.72rem', color: '#94a3b8' }}>
+                يُضمَّن النموذج داخل الصفحة بخلفية شفافة وارتفاع تلقائي (بدون نافذة بيضاء). اتركه فارغًا لاستخدام استمارة الموقع المدمجة.
+              </p>
+            </div>
           </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', marginTop: '0.75rem', color: '#94a3b8', fontSize: '0.85rem' }}>
             <input type="checkbox" checked={editing.is_published === 1}
