@@ -4,8 +4,9 @@ import AdminEventRegistrations from './AdminEventRegistrations';
 import AdminCRMUnified from './AdminCRMUnified';
 import AdminCRMTasks from './AdminCRMTasks';
 import AdminInteractions from './AdminInteractions';
+import AdminCRMClassifications from './AdminCRMClassifications';
 
-type View = 'registrations' | 'contacts' | 'interactions' | 'tasks' | 'escalated';
+type View = 'classifications' | 'registrations' | 'contacts' | 'interactions' | 'tasks' | 'escalated';
 
 interface Props {
   token: string;
@@ -17,6 +18,7 @@ interface Props {
 }
 
 const VIEW_PERMISSION_KEYS: Record<View, string[]> = {
+  classifications: ['registrations', 'crm_contacts', 'crm_unified', 'crm_main'],
   registrations: ['registrations'],
   contacts:      ['crm_contacts', 'crm_unified', 'crm_main'],
   interactions:  ['crm_contacts', 'crm_unified', 'crm_main'],
@@ -25,6 +27,7 @@ const VIEW_PERMISSION_KEYS: Record<View, string[]> = {
 };
 
 const ALL_VIEWS: { key: View; label: string; desc: string }[] = [
+  { key: 'classifications', label: '📊 التصنيفات والإحصاءات', desc: 'تصنيف كل التسجيلات حسب النوع (شركات ناشئة وغيرها) مع الأعداد والنسب' },
   { key: 'registrations', label: 'التسجيلات',       desc: 'عرض الطلبات وتغيير الحالات وتحويل للجهات' },
   { key: 'contacts',      label: 'جهات الاتصال',   desc: 'ملفات شاملة مع التاريخ والمهام' },
   { key: 'interactions',  label: '💬 سجل التواصل',  desc: 'جميع المكالمات والرسائل والاجتماعات مع العملاء' },
@@ -96,6 +99,7 @@ export default function AdminCRMMain({ token, apiBase, eventId, isSuperAdmin, my
         ))}
         <span style={{ marginRight: 'auto', color: '#4b5563', fontSize: '0.75rem' }}>{current.desc}</span>
       </div>
+      {view === 'classifications' && <AdminCRMClassifications key={`cls-${eventId}`} token={token} eventId={eventId} />}
       {view === 'registrations' && <AdminEventRegistrations key={`regs-${eventId}`} token={token} eventId={eventId} readOnly={readOnly} onInteractionSaved={goToInteractions} />}
       {view === 'contacts' && <AdminCRMUnified key={`contacts-${eventId}`} token={token} apiBase={apiBase} eventId={eventId} readOnly={readOnly} onInteractionSaved={goToInteractions} />}
       {view === 'interactions' && <AdminInteractions key={`inter-${eventId}-${interactionsKey}`} token={token} apiBase={apiBase} eventId={eventId} readOnly={readOnly} />}
