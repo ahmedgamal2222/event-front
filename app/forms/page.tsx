@@ -14,8 +14,13 @@ function PublicForm() {
 
   const pathSlug = (() => {
     const segs = (pathname || '').split('/').filter(Boolean);
-    // /f/{slug}
+    // /f/{slug} (توافق خلفي)
     if (segs[0] === 'f' && segs[1]) { try { return decodeURIComponent(segs[1]); } catch { return segs[1]; } }
+    // /{event-slug}/{form-slug}
+    const systemFirst = ['admin', 'blog', 'archive', 'terms', 'f', 'assign', 'api-proxy'];
+    if (segs.length === 2 && !systemFirst.includes(segs[0])) {
+      try { return decodeURIComponent(segs[1]); } catch { return segs[1]; }
+    }
     return null;
   })();
 

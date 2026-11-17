@@ -664,7 +664,7 @@ function AdminDashboardInner() {
           {activeTab === 'articles'      && <ArticlesTab key={eventId} eventId={eventId} token={token} showToast={showToast} />}
           {activeTab === 'terms'         && <AdminTerms key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'pages'         && <AdminPages key={eventId} eventId={eventId} token={token} />}
-          {activeTab === 'forms'         && <AdminForms key={eventId} eventId={eventId} token={token} showToast={showToast} />}
+          {activeTab === 'forms'         && <AdminForms key={eventId} eventId={eventId} eventSlug={eventSlug} token={token} showToast={showToast} />}
           {activeTab === 'admins_mgmt'   && <AdminManagement token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} isSuperAdmin={isSuperAdmin} />}
           {activeTab === 'payments'      && <AdminPayments key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'campaigns'     && <AdminCampaigns key={eventId} eventId={eventId} token={token} />}

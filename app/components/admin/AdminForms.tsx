@@ -41,7 +41,7 @@ const emptyForm = () => ({
   is_published: 1, fields: defaultFields(),
 });
 
-export default function AdminForms({ eventId, token, showToast }: { eventId: number; token: string; showToast?: (m: string) => void }) {
+export default function AdminForms({ eventId, token, eventSlug, showToast }: { eventId: number; token: string; eventSlug?: string; showToast?: (m: string) => void }) {
   const [forms, setForms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<any | null>(null);
@@ -126,11 +126,14 @@ export default function AdminForms({ eventId, token, showToast }: { eventId: num
     catch (e: any) { setError(e?.message || 'فشل الحذف'); }
   };
 
+  const publicPath = (slug: string) => {
+    const dev = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
+    if (dev) return `/forms?slug=${encodeURIComponent(slug)}`;
+    return eventSlug ? `/${eventSlug}/${slug}` : `/f/${slug}`;
+  };
+
   const copyLink = async (f: any) => {
-    const host = typeof window !== 'undefined' ? window.location.hostname : '';
-    const dev = host === 'localhost' || host === '127.0.0.1';
-    const path = dev ? `/forms?slug=${encodeURIComponent(f.slug)}` : `/f/${f.slug}`;
-    const url = `${typeof window !== 'undefined' ? window.location.origin : ''}${path}`;
+    const url = `${typeof window !== 'undefined' ? window.location.origin : ''}${publicPath(f.slug)}`;
     try { await navigator.clipboard.writeText(url); notify('🔗 تم نسخ رابط الاستمارة'); }
     catch { prompt('انسخ الرابط:', url); }
   };
@@ -179,7 +182,7 @@ export default function AdminForms({ eventId, token, showToast }: { eventId: num
         <div>
           <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'white', margin: 0 }}>📝 الاستمارات المستقلة</h1>
           <p style={{ margin: '4px 0 0', color: '#94a3b8', fontSize: '0.82rem' }}>
-            أنشئ استمارة، عدّل حقولها، وانسخ رابطها المباشر <code style={{ color: '#a5b4fc' }}>/f/slug</code> — بدون أي برمجة.
+            أنشئ استمارة، عدّل حقولها، وانسخ رابطها المباشر <code style={{ color: '#a5b4fc' }}>/{eventSlug || 'event-slug'}/slug</code> — بدون أي برمجة.
           </p>
         </div>
         <button style={S.btn()} onClick={startCreate}>➕ استمارة جديدة</button>
@@ -205,7 +208,7 @@ export default function AdminForms({ eventId, token, showToast }: { eventId: num
             <div>
               <label style={S.label}>رابط الاستمارة (Slug)</label>
               <input style={S.inp} dir="ltr" value={editing.slug || ''} onChange={e => setEditing((p: any) => ({ ...p, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') }))} placeholder="participation" />
-              <p style={{ margin: '0.3rem 0 0', fontSize: '0.7rem', color: '#64748b' }}>الرابط: /f/{editing.slug || 'slug'}</p>
+              <p style={{ margin: '0.3rem 0 0', fontSize: '0.7rem', color: '#64748b' }}>الرابط: /{eventSlug || 'event-slug'}/{editing.slug || 'slug'}</p>
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={S.label}>الوصف (يظهر أعلى الاستمارة)</label>
@@ -363,7 +366,7 @@ export default function AdminForms({ eventId, token, showToast }: { eventId: num
                 <div style={{ color: 'white', fontWeight: 700, fontSize: '0.98rem' }}>{f.title}</div>
                 {f.description && <div style={{ color: '#94a3b8', fontSize: '0.78rem', marginTop: 2 }}>{f.description}</div>}
                 <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', borderRadius: 12, background: 'rgba(108,99,255,0.15)', color: '#a5b4fc' }}>🔗 /f/{f.slug}</span>
+                  <span style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', borderRadius: 12, background: 'rgba(108,99,255,0.15)', color: '#a5b4fc' }}>🔗 {publicPath(f.slug)}</span>
                   <span style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', borderRadius: 12, background: 'rgba(16,185,129,0.15)', color: '#86efac' }}>📥 {f.submissions_count || 0} مشاركة</span>
                   <span style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', borderRadius: 12, background: f.is_published ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.1)', color: f.is_published ? '#86efac' : '#fca5a5' }}>
                     {f.is_published ? '✅ منشورة' : '❌ مخفية'}

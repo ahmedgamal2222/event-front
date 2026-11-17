@@ -41,7 +41,15 @@ export default function NotFound() {
           setState('event');
           return;
         }
-        // ليس حدثًا — قد تكون صفحة ثابتة (رابط مباشر بدون /terms)
+        // ليس حدثًا — قد تكون صفحة ثابتة (رابط مباشر بدون /terms) أو استمارة /{event}/{form}
+        const segs = path.split('/').filter(Boolean);
+        if (segs.length === 2) {
+          fetch(`${API_BASE}/api/forms/${encodeURIComponent(segs[1])}`, { cache: 'no-store' })
+            .then(r => r.json())
+            .then(f => setState(f?.success && f?.data ? 'form' : 'notfound'))
+            .catch(() => setState('notfound'));
+          return;
+        }
         fetch(`${API_BASE}/api/pages/${encodeURIComponent(path)}`, { cache: 'no-store' })
           .then(r => r.json())
           .then(p => setState(p?.success && p?.data ? 'page' : 'notfound'))
