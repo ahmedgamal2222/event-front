@@ -23,6 +23,7 @@ import AdminEmailTemplates from '../../../app/components/admin/AdminEmailTemplat
 import AdminThemeBuilder from '../../../app/components/admin/AdminThemeBuilder';
 import AdminTerms from '../../../app/components/admin/AdminTerms';
 import AdminPages from '../../../app/components/admin/AdminPages';
+import AdminForms from '../../../app/components/admin/AdminForms';
 import AdminPayments from '../../../app/components/admin/AdminPayments';
 import AdminCampaigns from '../../../app/components/admin/AdminCampaigns';
 import RichEditor from '../../../app/components/admin/RichEditor';
@@ -82,6 +83,7 @@ const TABS = [
   { key: 'faqs',             label: '❓ الأسئلة الشائعة',    group: 'المحتوى' },
   { key: 'articles',         label: '📝 المقالات',            group: 'المحتوى' },
   { key: 'pages',            label: '📄 الصفحات الثابتة',    group: 'المحتوى' },
+  { key: 'forms',            label: '📝 الاستمارات',          group: 'المحتوى' },
   // الدعم والتتبع
   { key: 'support',          label: '💬 الدعم الفني',        group: 'الدعم' },
   { key: 'pixels',           label: '📊 البكسل والتتبع',     group: 'الدعم' },
@@ -422,7 +424,7 @@ function AdminDashboardInner() {
     // إدارة المسؤولين للـ super_admin فقط
     if (tabKey === 'admins_mgmt') return false;
     // التبويبات المتاحة دائماً لأي مسؤول معتمد
-    const alwaysTabs = ['overview', 'files'];
+    const alwaysTabs = ['overview', 'files', 'forms'];
     if (alwaysTabs.includes(tabKey)) return true;
     // crm_main يشمل registrations و crm_contacts و المهام
     if (tabKey === 'crm_main' || tabKey === 'crm_unified') {
@@ -662,6 +664,7 @@ function AdminDashboardInner() {
           {activeTab === 'articles'      && <ArticlesTab key={eventId} eventId={eventId} token={token} showToast={showToast} />}
           {activeTab === 'terms'         && <AdminTerms key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'pages'         && <AdminPages key={eventId} eventId={eventId} token={token} />}
+          {activeTab === 'forms'         && <AdminForms key={eventId} eventId={eventId} token={token} showToast={showToast} />}
           {activeTab === 'admins_mgmt'   && <AdminManagement token={token} apiBase={process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev'} isSuperAdmin={isSuperAdmin} />}
           {activeTab === 'payments'      && <AdminPayments key={eventId} eventId={eventId} token={token} />}
           {activeTab === 'campaigns'     && <AdminCampaigns key={eventId} eventId={eventId} token={token} />}

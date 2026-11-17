@@ -7,11 +7,12 @@
 import { useState, useEffect } from 'react';
 import EventLandingClient from './[slug]/Client';
 import TermsPage from './terms/page';
+import FormsPage from './forms/page';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
 
 export default function NotFound() {
-  const [state, setState] = useState<'loading' | 'event' | 'page' | 'notfound'>('loading');
+  const [state, setState] = useState<'loading' | 'event' | 'page' | 'form' | 'notfound'>('loading');
   const [slug, setSlug] = useState('');
   const [eventName, setEventName] = useState('');
 
@@ -23,6 +24,7 @@ export default function NotFound() {
 
     // Ignore non-event paths (admin, archive, blog, etc.)
     const systemPaths = ['admin', 'archive', 'blog', 'terms', 'assign', ''];
+    if (path.startsWith('f/')) { setState('form'); return; }
     if (!path || systemPaths.some(p => path === p || path.startsWith(p + '/'))) {
       setState('notfound');
       return;
@@ -72,6 +74,11 @@ export default function NotFound() {
   // صفحة ثابتة على رابط مباشر (تقرأ الـ slug من pathname داخل TermsPage)
   if (state === 'page') {
     return <TermsPage />;
+  }
+
+  // استمارة مستقلة على /f/{slug}
+  if (state === 'form') {
+    return <FormsPage />;
   }
 
   // Proper 404 page

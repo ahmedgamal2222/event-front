@@ -366,6 +366,42 @@ export const deletePage = (eventId: number, id: number, token: string) =>
     method: 'DELETE', headers: getAuthHeaders(token)
   });
 
+// ── Admin – Independent Forms ──────────────────────────────────────────────
+export const fetchFormsAdmin = (eventId: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/forms`, { headers: getAuthHeaders(token) });
+
+export const createForm = (eventId: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/forms`, {
+    method: 'POST', body: JSON.stringify(body), headers: getAuthHeaders(token)
+  });
+
+export const updateForm = (eventId: number, id: number, body: any, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/forms/${id}`, {
+    method: 'PUT', body: JSON.stringify(body), headers: getAuthHeaders(token)
+  });
+
+export const deleteForm = (eventId: number, id: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/forms/${id}`, {
+    method: 'DELETE', headers: getAuthHeaders(token)
+  });
+
+export const fetchFormSubmissions = (eventId: number, id: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/forms/${id}/submissions`, { headers: getAuthHeaders(token) });
+
+export const deleteFormSubmission = (eventId: number, id: number, sid: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/forms/${id}/submissions/${sid}`, {
+    method: 'DELETE', headers: getAuthHeaders(token)
+  });
+
+// ── Public – Independent Forms ─────────────────────────────────────────────
+export const fetchPublicForm = (slug: string) =>
+  apiFetch<any>(`/api/forms/${encodeURIComponent(slug)}`);
+
+export const submitPublicForm = (slug: string, body: any) =>
+  apiFetch<any>(`/api/forms/${encodeURIComponent(slug)}/submit`, {
+    method: 'POST', body: JSON.stringify(body)
+  });
+
 // ── Admin – Auth Profile ───────────────────────────────────────────────────
 export const updateAdminProfile = (body: any, token: string) =>
   apiFetch<any>('/api/auth/profile', {
