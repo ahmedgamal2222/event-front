@@ -105,13 +105,21 @@ function TermsContent() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const tab = searchParams?.get('tab') || 'terms';
-  // الصفحات الثابتة تُخدم أيضًا على رابط مباشر /{slug} (عبر Pages Function)
+  // الصفحات الثابتة تُخدم على: /{slug} أو /f/{slug} أو /{event-slug}/{slug}
   const pathSlug = (() => {
     const segs = (pathname || '').split('/').filter(Boolean);
-    if (segs.length !== 1) return null;
-    const first = segs[0];
-    if (['terms', 'blog', 'archive', 'admin', 'events', 'api-proxy'].includes(first)) return null;
-    try { return decodeURIComponent(first); } catch { return first; }
+    const systemFirst = ['terms', 'blog', 'archive', 'admin', 'events', 'api-proxy', 'f', 'assign'];
+    if (segs.length === 1) {
+      if (systemFirst.includes(segs[0])) return null;
+      try { return decodeURIComponent(segs[0]); } catch { return segs[0]; }
+    }
+    if (segs[0] === 'f' && segs[1]) {
+      try { return decodeURIComponent(segs[1]); } catch { return segs[1]; }
+    }
+    if (segs.length === 2 && !systemFirst.includes(segs[0])) {
+      try { return decodeURIComponent(segs[1]); } catch { return segs[1]; }
+    }
+    return null;
   })();
   const pageSlug = searchParams?.get('page') || pathSlug;
   const [terms, setTerms] = useState<{ terms_content?: string; privacy_content?: string } | null>(null);
