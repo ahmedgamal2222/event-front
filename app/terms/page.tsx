@@ -5,7 +5,6 @@ import { useSearchParams, usePathname } from 'next/navigation';
 import PixelInjector from '../components/PixelInjector';
 import EmbeddedRegistrationForm from '../components/EmbeddedRegistrationForm';
 import TallyEmbed from '../components/TallyEmbed';
-import CompetitionPage from '../components/CompetitionPage';
 import { apiFetch } from '../../lib/api';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
@@ -203,7 +202,7 @@ function TermsContent() {
             <a href="/" style={{ color: DARK_PAGE.accent, textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600 }}>← الصفحة الرئيسية</a>
           </div>
         </div>
-        <div className="sp-wrap" style={{ maxWidth: staticPage?.template === 'competition' ? '100%' : 860, margin: '0 auto', padding: staticPage?.template === 'competition' ? 0 : '2.25rem 1.5rem 5rem' }}>
+        <div className="sp-wrap" style={{ maxWidth: 860, margin: '0 auto', padding: '2.25rem 1.5rem 5rem' }}>
           {loading ? (
             <div style={{ textAlign: 'center', padding: '4rem', color: DARK_PAGE.muted }}>
               <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
@@ -214,12 +213,6 @@ function TermsContent() {
               <p>الصفحة غير موجودة</p>
               <a href="/" style={{ color: DARK_PAGE.accent, marginTop: '1rem', display: 'inline-block' }}>← العودة للرئيسية</a>
             </div>
-          ) : staticPage.template === 'competition' ? (
-            <CompetitionPage
-              tallyUrl={staticPage.tally_url || ''}
-              eventId={EVENT_ID}
-              eventName={staticPage.title_ar || 'قمة الشركات الناشئة السورية'}
-            />
           ) : (
             <div style={{ background: DARK_PAGE.card, border: `1px solid ${DARK_PAGE.border}`, borderRadius: '1.1rem', padding: '2rem' }}>
               <h1 style={{ fontSize: '1.95rem', fontWeight: 900, color: DARK_PAGE.heading, margin: '0 0 1.5rem', borderBottom: `1px solid ${DARK_PAGE.border}`, paddingBottom: '0.9rem', lineHeight: 1.5 }}>
