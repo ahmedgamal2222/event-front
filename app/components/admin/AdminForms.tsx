@@ -2,7 +2,7 @@
 // app/components/admin/AdminForms.tsx – Independent Forms Builder
 import { useCallback, useEffect, useState } from 'react';
 import {
-  fetchFormsAdmin, createForm, updateForm, deleteForm,
+  fetchFormsAdmin, createForm, updateForm, deleteForm, duplicateForm,
   fetchFormSubmissions, deleteFormSubmission,
 } from '@/lib/api';
 
@@ -124,6 +124,15 @@ export default function AdminForms({ eventId, token, eventSlug, showToast }: { e
     if (!confirm(`حذف الاستمارة «${f.title}» وجميع مشاركاتها؟`)) return;
     try { await deleteForm(eventId, f.id, token); notify('🗑️ تم الحذف'); load(); }
     catch (e: any) { setError(e?.message || 'فشل الحذف'); }
+  };
+
+  const handleDuplicate = async (f: any) => {
+    setError('');
+    try {
+      const res = await duplicateForm(eventId, f.id, token);
+      notify(`📋 تم إنشاء نسخة مستقلة: ${res?.data?.title || ''}`);
+      await load();
+    } catch (e: any) { setError(e?.message || 'فشل النسخ'); }
   };
 
   const publicPath = (slug: string) => {
@@ -375,6 +384,7 @@ export default function AdminForms({ eventId, token, eventSlug, showToast }: { e
               </div>
               <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
                 <button style={S.small} onClick={() => copyLink(f)}>🔗 نسخ الرابط</button>
+                <button style={S.small} onClick={() => handleDuplicate(f)} title="إنشاء نسخة مستقلة قابلة للتعديل">📋 نسخ الاستمارة</button>
                 <button style={S.small} onClick={() => openSubmissions(f)}>📥 المشاركات</button>
                 <button style={S.btn()} onClick={() => startEdit(f)}>✏️ تعديل</button>
                 <button style={S.del} onClick={() => handleDelete(f)}>🗑️</button>

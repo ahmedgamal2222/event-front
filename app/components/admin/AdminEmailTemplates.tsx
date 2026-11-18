@@ -1,5 +1,6 @@
 ﻿'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { uploadImage } from '@/lib/api';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://event-api.info1703.workers.dev';
 
@@ -52,6 +53,79 @@ function Toggle({ on, onChange, label, color = '#10b981' }: { on: boolean; onCha
 }
 
 interface Props { eventId: number; token: string; }
+
+function BodyEditor({
+  value, onChange, dir, token, placeholder,
+}: { value: string; onChange: (v: string) => void; dir: 'rtl' | 'ltr'; token: string; placeholder?: string }) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const [preview, setPreview] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [imgError, setImgError] = useState('');
+
+  const insert = (snippet: string) => {
+    const el = ref.current;
+    if (!el) { onChange((value || '') + snippet); return; }
+    const start = el.selectionStart ?? (value || '').length;
+    const end = el.selectionEnd ?? (value || '').length;
+    const next = (value || '').slice(0, start) + snippet + (value || '').slice(end);
+    onChange(next);
+    requestAnimationFrame(() => {
+      try { el.focus(); const pos = start + snippet.length; el.setSelectionRange(pos, pos); } catch {}
+    });
+  };
+
+  const addLink = () => {
+    const url = prompt('أدخل الرابط الكامل (مثال: https://s3syria.com)');
+    if (!url) return;
+    const el = ref.current;
+    const selected = el ? (value || '').slice(el.selectionStart ?? 0, el.selectionEnd ?? 0) : '';
+    const text = selected || prompt('نص الرابط الظاهر', url) || url;
+    insert(`<a href="${url.trim()}" target="_blank" style="color:#0f766e;text-decoration:underline;font-weight:600">${text}</a>`);
+  };
+
+  const addImage = async (file?: File | null) => {
+    if (!file) return;
+    setUploading(true); setImgError('');
+    try {
+      const { url } = await uploadImage(file, token);
+      insert(`<img src="${url}" alt="" style="max-width:100%;height:auto;border-radius:10px;display:block;margin:14px auto" />`);
+    } catch (e: any) { setImgError(e?.message || 'فشل رفع الصورة'); }
+    setUploading(false);
+  };
+
+  const toolBtn = (color: string): React.CSSProperties => ({
+    background: color, color: 'white', border: 'none', borderRadius: '0.35rem',
+    padding: '0.32rem 0.7rem', fontSize: '0.76rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+  });
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+        <button type="button" onClick={addLink} style={toolBtn('#4f46e5')}>🔗 إدراج رابط</button>
+        <label style={{ ...toolBtn('#0e7490'), display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+          🖼️ إدراج صورة
+          <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => addImage(e.target.files?.[0])} />
+        </label>
+        <button type="button" onClick={() => setPreview(p => !p)} style={toolBtn('#374151')}>
+          {preview ? '✏️ تحرير' : '👁️ معاينة'}
+        </button>
+        {uploading && <span style={{ color: '#fcd34d', fontSize: '0.75rem' }}>⏳ جارٍ رفع الصورة...</span>}
+        {imgError && <span style={{ color: '#fca5a5', fontSize: '0.75rem' }}>❌ {imgError}</span>}
+      </div>
+
+      {preview ? (
+        <div dir={dir} style={{ background: '#fff', color: '#111', borderRadius: '0.5rem', padding: '0.9rem', minHeight: 120, fontSize: '0.9rem', lineHeight: 1.9, overflowX: 'auto' }}
+          dangerouslySetInnerHTML={{ __html: (value || '').replace(/\n/g, '<br>') || '<span style="color:#94a3b8">لا يوجد محتوى</span>' }} />
+      ) : (
+        <textarea ref={ref} style={S.ta} dir={dir} value={value || ''} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={6} />
+      )}
+      <span style={{ color: '#64748b', fontSize: '0.7rem' }}>
+        يدعم HTML — الصور والروابط تُرسل فعلية في البريد (وليست نصاً).
+      </span>
+    </div>
+  );
+}
+
 
 export default function AdminEmailTemplates({ eventId, token }: Props) {
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -205,9 +279,9 @@ export default function AdminEmailTemplates({ eventId, token }: Props) {
                         </div>
                         <div>
                           <label style={S.label}>نص الرسالة</label>
-                          <textarea style={S.ta} dir="rtl" value={current.body_ar}
-                            onChange={e => update(current.status, 'body_ar', e.target.value)}
-                            placeholder="نص الرسالة بالعربية..." rows={5} />
+                          <BodyEditor value={current.body_ar} dir="rtl" token={token}
+                            onChange={v => update(current.status, 'body_ar', v)}
+                            placeholder="نص الرسالة بالعربية..." />
                         </div>
                       </div>
                     )}
@@ -223,9 +297,9 @@ export default function AdminEmailTemplates({ eventId, token }: Props) {
                         </div>
                         <div>
                           <label style={S.label}>Body</label>
-                          <textarea style={S.ta} dir="ltr" value={current.body_en}
-                            onChange={e => update(current.status, 'body_en', e.target.value)}
-                            placeholder="Email body in English..." rows={5} />
+                          <BodyEditor value={current.body_en} dir="ltr" token={token}
+                            onChange={v => update(current.status, 'body_en', v)}
+                            placeholder="Email body in English..." />
                         </div>
                       </div>
                     )}

@@ -385,6 +385,11 @@ export const deleteForm = (eventId: number, id: number, token: string) =>
     method: 'DELETE', headers: getAuthHeaders(token)
   });
 
+export const duplicateForm = (eventId: number, id: number, token: string) =>
+  apiFetch<any>(`/api/events/${eventId}/forms/${id}/duplicate`, {
+    method: 'POST', headers: getAuthHeaders(token)
+  });
+
 export const fetchFormSubmissions = (eventId: number, id: number, token: string) =>
   apiFetch<any>(`/api/events/${eventId}/forms/${id}/submissions`, { headers: getAuthHeaders(token) });
 
