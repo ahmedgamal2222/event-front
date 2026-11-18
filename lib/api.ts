@@ -407,6 +407,19 @@ export const submitPublicForm = (slug: string, body: any) =>
     method: 'POST', body: JSON.stringify(body)
   });
 
+// رفع شعار/صورة ضمن استمارة عامة (بدون مصادقة)
+export async function uploadFormFile(slug: string, file: File): Promise<string> {
+  const fd = new FormData();
+  fd.append('file', file);
+  const res = await fetch(`${getApiBase()}/api/forms/${encodeURIComponent(slug)}/upload`, {
+    method: 'POST',
+    body: fd,
+  });
+  const data = await res.json().catch(() => null);
+  if (!data?.success) throw new Error(data?.error || 'فشل رفع الملف');
+  return data.url as string;
+}
+
 // ── Admin – Auth Profile ───────────────────────────────────────────────────
 export const updateAdminProfile = (body: any, token: string) =>
   apiFetch<any>('/api/auth/profile', {

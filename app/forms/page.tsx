@@ -114,7 +114,7 @@ function PublicForm() {
               <div className="pf-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.9rem' }}>
                 {(form.fields || []).map((f: any) => (
                   <div key={f.key} style={{ gridColumn: f.width === 'half' ? 'auto' : '1 / -1' }}>
-                    <PublicFormField field={f} value={values[f.key]} onChange={v => set(f.key, v)} />
+                    <PublicFormField field={f} value={values[f.key]} onChange={v => set(f.key, v)} slug={slug} />
                   </div>
                 ))}
               </div>

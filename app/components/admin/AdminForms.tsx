@@ -25,6 +25,7 @@ const FIELD_TYPES = [
   { value: 'checkbox', label: 'مربع موافقة' },
   { value: 'date', label: 'تاريخ' },
   { value: 'url', label: 'رابط' },
+  { value: 'file', label: 'رفع صورة/شعار' },
 ];
 
 const defaultFields = () => ([
@@ -340,7 +341,9 @@ export default function AdminForms({ eventId, token, eventSlug, showToast }: { e
                         const v = s.data?.[f.key];
                         return (
                           <td key={f.key} style={{ padding: '0.5rem', color: '#e2e8f0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                            {f.type === 'checkbox' ? (v ? '✅ نعم' : '—') : (v ?? '—')}
+                            {f.type === 'checkbox' ? (v ? '✅ نعم' : '—') : f.type === 'file' && v ? (
+                              <a href={v} target="_blank" rel="noopener noreferrer" style={{ color: '#5eead4' }}>عرض الصورة ↗</a>
+                            ) : (v ?? '—')}
                           </td>
                         );
                       })}
