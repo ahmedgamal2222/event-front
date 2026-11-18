@@ -218,6 +218,15 @@ function TermsContent() {
               <h1 style={{ fontSize: '1.95rem', fontWeight: 900, color: DARK_PAGE.heading, margin: '0 0 1.5rem', borderBottom: `1px solid ${DARK_PAGE.border}`, paddingBottom: '0.9rem', lineHeight: 1.5 }}>
                 {staticPage.title_ar || staticPage.title}
               </h1>
+              {(staticPage.image_url) && (
+                <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                  <img
+                    src={staticPage.image_url}
+                    alt={staticPage.title_ar || staticPage.title || ''}
+                    style={{ maxWidth: 360, width: '100%', height: 'auto', borderRadius: 16, border: `1px solid ${DARK_PAGE.border}`, background: '#ffffff', padding: 12, display: 'inline-block' }}
+                  />
+                </div>
+              )}
               {(staticPage.content_ar || staticPage.content) && (
                 <div className="tc sp-dark" dangerouslySetInnerHTML={{ __html: staticPage.content_ar || staticPage.content || '' }} />
               )}

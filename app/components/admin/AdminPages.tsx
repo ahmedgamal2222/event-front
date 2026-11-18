@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { fetchPagesAdmin, createPage, updatePage, deletePage } from '@/lib/api';
+import { fetchPagesAdmin, createPage, updatePage, deletePage, uploadImage } from '@/lib/api';
 import PageBuilder, { Block, blocksToHtml, htmlToBlocks } from './PageBuilder';
 
 const S = {
@@ -22,7 +22,7 @@ interface Page {
   id: number; slug: string; title: string; title_ar?: string;
   content?: string; content_ar?: string;
   position: string; sort_order: number; is_published: number;
-  embed_form?: number; tally_url?: string;
+  embed_form?: number; tally_url?: string; image_url?: string;
 }
 
 export default function AdminPages({ eventId, token }: { eventId: number; token: string }) {
@@ -35,10 +35,11 @@ export default function AdminPages({ eventId, token }: { eventId: number; token:
   // Builder state
   const [pageBlocks, setPageBlocks] = useState<Block[]>([]);
   const [pageHtml, setPageHtml] = useState('');
+  const [uploadingImg, setUploadingImg] = useState(false);
 
-  const emptyPage = () => ({ id: 0, slug: '', title: '', title_ar: '', content: '', content_ar: '', position: 'footer', sort_order: 0, is_published: 1, embed_form: 0, tally_url: '' });
+  const emptyPage = () => ({ id: 0, slug: '', title: '', title_ar: '', content: '', content_ar: '', position: 'footer', sort_order: 0, is_published: 1, embed_form: 0, tally_url: '', image_url: '' });
 
-  const emptyForm = () => ({ id: 0, slug: '', title: '', title_ar: '', content: '', content_ar: '', position: 'footer', sort_order: 0, is_published: 1, embed_form: 0, tally_url: '' });
+  const emptyForm = () => ({ id: 0, slug: '', title: '', title_ar: '', content: '', content_ar: '', position: 'footer', sort_order: 0, is_published: 1, embed_form: 0, tally_url: '', image_url: '' });
 
   const load = useCallback(async () => {
     try { setLoading(true); const res = await fetchPagesAdmin(eventId, token); setPages(res.data || []); }
@@ -126,6 +127,35 @@ export default function AdminPages({ eventId, token }: { eventId: number; token:
             <div><label style={S.label}>الترتيب</label>
               <input type="number" style={S.inp} value={editing.sort_order}
                 onChange={e => setEditing(p => p ? { ...p, sort_order: Number(e.target.value) } : p)} /></div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={S.label}>🖼️ صورة الصفحة (مثال: رمز QR للدفع)</label>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                <label style={{ ...S.btn('#0e7490'), display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  {uploadingImg ? '⏳ جارٍ الرفع...' : '📤 رفع صورة من الجهاز'}
+                  <input type="file" accept="image/*" style={{ display: 'none' }} disabled={uploadingImg}
+                    onChange={async e => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setUploadingImg(true);
+                      try {
+                        const { url } = await uploadImage(file, token);
+                        setEditing(p => p ? { ...p, image_url: url } : p);
+                      } catch (err: any) { alert(err?.message || 'فشل رفع الصورة'); }
+                      setUploadingImg(false);
+                      e.target.value = '';
+                    }} />
+                </label>
+                {(editing as any).image_url && (
+                  <>
+                    <img src={(editing as any).image_url} alt="" style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8, border: '1px solid rgba(108,99,255,0.35)' }} />
+                    <button type="button" style={S.del} onClick={() => setEditing(p => p ? { ...p, image_url: '' } : p)}>إزالة</button>
+                  </>
+                )}
+              </div>
+              <p style={{ margin: '0.35rem 0 0', fontSize: '0.72rem', color: '#94a3b8' }}>
+                تظهر الصورة أعلى محتوى الصفحة وبعرض مناسب (مثالية لرمز QR أو شعار).
+              </p>
+            </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={S.label}>🔗 رابط نموذج Tally (اختياري)</label>
               <input style={S.inp} dir="ltr" value={(editing as any).tally_url || ''}
